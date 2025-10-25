@@ -51,7 +51,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           overflow: 'hidden',
           backgroundColor: 'white',
           transition: 'all 0.3s ease',
-          width: sidebarOpen ? 'calc(100% - 280px)' : '100%',
+          width: sidebarOpen ? 'calc(100% - 240px)' : '100%',
         }}
       >
         {/* Header */}

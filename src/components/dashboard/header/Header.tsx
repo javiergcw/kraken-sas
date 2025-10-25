@@ -25,25 +25,27 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        p: 2,
+        p: 1,
         backgroundColor: 'white',
         borderBottom: '1px solid #E0E0E0',
-        minHeight: 64,
+        minHeight: 48,
       }}
       onClick={(e) => e.stopPropagation()}
     >
       <IconButton
         onClick={handleMenuClick}
         sx={{
-          mr: 2,
+          mr: 1.5,
           color: '#757575',
           backgroundColor: '#F5F5F5',
+          width: 32,
+          height: 32,
           '&:hover': {
             backgroundColor: '#E0E0E0',
           },
         }}
       >
-        <MenuIcon />
+        <MenuIcon sx={{ fontSize: 18 }} />
       </IconButton>
 
       <DynamicBreadcrumbs onMenuClick={onMenuClick} />

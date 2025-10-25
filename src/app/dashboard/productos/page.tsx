@@ -19,6 +19,10 @@ import {
   Avatar,
   Pagination,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -27,6 +31,11 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
+  Inventory as InventoryIcon,
+  Close as CloseIcon,
+  DeleteOutlineOutlined as DeleteOutlineOutlinedIcon,
+  ModeEditOutlineOutlined as ModeEditOutlineOutlinedIcon,
+  CenterFocusStrongOutlined as CenterFocusStrongOutlinedIcon,
 } from '@mui/icons-material';
 
 interface Product {
@@ -43,6 +52,10 @@ const ProductsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // Datos de ejemplo de productos
   const products: Product[] = [
@@ -110,6 +123,14 @@ const ProductsPage: React.FC = () => {
       price: '$1.990.000',
       image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
     },
+    {
+      id: 9,
+      name: 'PADI Rescue Diver + EFR',
+      category: 'Otros servicios',
+      subcategory: '¡Formación PADI a otro nivel!',
+      price: '$1.990.000',
+      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
+    },
   ];
 
   const filteredProducts = products.filter(product =>
@@ -123,12 +144,137 @@ const ProductsPage: React.FC = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+  const handlePageChange = (event: React.ChangeEvent<unknown> | null, page: number) => {
     setCurrentPage(page);
   };
 
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setViewModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    setProductToDelete(product);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setProductToDelete(null);
+  };
+
+  const handleConfirmDelete = () => {
+    // Aquí iría la lógica para eliminar el producto
+    console.log('Eliminando producto:', productToDelete);
+    handleCloseDeleteModal();
+  };
+
+  // Si no hay productos, mostrar estado vacío
+  if (filteredProducts.length === 0) {
+    return (
+      <Box sx={{ 
+        px: 6, 
+        py: 2, 
+        backgroundColor: 'white', 
+        height: 'calc(100vh - 64px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          textAlign: 'center',
+          maxWidth: '400px',
+          px: 4
+        }}>
+          {/* Icono */}
+          <Box sx={{ mb: 3 }}>
+            <InventoryIcon 
+              sx={{ 
+                fontSize: 80, 
+                color: '#bdbdbd',
+                opacity: 0.6
+              }} 
+            />
+          </Box>
+
+          {/* Título */}
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontWeight: 'bold', 
+              color: '#424242',
+              mb: 2,
+              fontSize: '24px'
+            }}
+          >
+            No hay productos
+          </Typography>
+
+          {/* Descripción */}
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: '#757575',
+              mb: 4,
+              fontSize: '16px',
+              lineHeight: 1.5
+            }}
+          >
+            Comienza abasteciendo tu tienda con productos que tus clientes amarán
+          </Typography>
+
+          {/* Botón Añadir producto */}
+          <Button
+            variant="contained"
+            onClick={() => router.push('/dashboard/productos/create')}
+            sx={{
+              backgroundColor: '#424242',
+              fontSize: '16px',
+              px: 4,
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: 'capitalize',
+              fontWeight: 'medium',
+              boxShadow: 'none',
+              '&:hover': { 
+                backgroundColor: '#303030',
+                boxShadow: 'none'
+              },
+            }}
+          >
+            Añadir producto
+          </Button>
+
+          {/* Enlace de ayuda */}
+          <Box sx={{ mt: 4 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#757575',
+                fontSize: '14px',
+                cursor: 'pointer',
+                '&:hover': {
+                  color: '#424242',
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              ¿Necesitas ayuda?
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ p: 2, backgroundColor: 'white', minHeight: '100vh' }}>
+    <Box sx={{ px: 6, py: 2, backgroundColor: 'white', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
       {/* Header */}
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
@@ -159,6 +305,7 @@ const ProductsPage: React.FC = () => {
                 fontSize: '14px',
                 px: 2,
                 py: 0.5,
+                textTransform: 'capitalize',
                 '&:hover': { backgroundColor: '#303030' },
               }}
             >
@@ -174,6 +321,7 @@ const ProductsPage: React.FC = () => {
                 fontSize: '14px',
                 px: 2,
                 py: 0.5,
+                textTransform: 'capitalize',
                 '&:hover': { borderColor: '#bdbdbd' },
               }}
             >
@@ -210,17 +358,17 @@ const ProductsPage: React.FC = () => {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '14px' }}>Nombre</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '14px' }}>Categoría</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '14px' }}>Subcategoría</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '14px' }}>Precio</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', textAlign: 'center', py: 1, fontSize: '14px' }}>Acciones</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Nombre</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Categoría</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Subcategoría</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Precio</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', textAlign: 'center', py: 0.5, fontSize: '14px' }}>Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {currentProducts.map((product) => (
               <TableRow key={product.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                <TableCell sx={{ py: 1 }}>
+                <TableCell sx={{ py: 0.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Avatar
                       src={product.image}
@@ -233,7 +381,7 @@ const ProductsPage: React.FC = () => {
                     </Typography>
                   </Box>
                 </TableCell>
-                <TableCell sx={{ py: 1 }}>
+                <TableCell sx={{ py: 0.5 }}>
                   <Chip
                     label={product.category}
                     size="small"
@@ -246,26 +394,71 @@ const ProductsPage: React.FC = () => {
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ py: 1 }}>
+                <TableCell sx={{ py: 0.5 }}>
                   <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
                     {product.subcategory}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ py: 1 }}>
+                <TableCell sx={{ py: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>
                     {product.price}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ textAlign: 'center', py: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
-                    <IconButton size="small" sx={{ color: '#757575', p: 0.5 }}>
-                      <ViewIcon sx={{ fontSize: 16 }} />
+                <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleViewProduct(product)}
+                      sx={{ 
+                        border: '1px solid #e0e0e0',
+                        borderRight: 'none',
+                        borderRadius: '4px 0 0 4px',
+                        color: '#757575',
+                        p: 1,
+                        textTransform: 'capitalize',
+                        '&:hover': { 
+                          backgroundColor: '#f5f5f5',
+                          borderColor: '#bdbdbd'
+                        },
+                      }}
+                    >
+                      <CenterFocusStrongOutlinedIcon sx={{ fontSize: 16 }} />
                     </IconButton>
-                    <IconButton size="small" sx={{ color: '#757575', p: 0.5 }}>
-                      <EditIcon sx={{ fontSize: 16 }} />
+                    <IconButton 
+                      size="small"
+                      onClick={() => router.push(`/dashboard/productos/edit/${product.id}`)}
+                      sx={{ 
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 0,
+                        color: '#757575',
+                        p: 1,
+                        textTransform: 'capitalize',
+                        '&:hover': { 
+                          backgroundColor: '#f5f5f5',
+                          borderColor: '#bdbdbd'
+                        },
+                      }}
+                    >
+                      <ModeEditOutlineOutlinedIcon sx={{ fontSize: 16 }} />
                     </IconButton>
-                    <IconButton size="small" sx={{ color: '#f44336', p: 0.5 }}>
-                      <DeleteIcon sx={{ fontSize: 16 }} />
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleDeleteProduct(product)}
+                      sx={{ 
+                        border: '1px solid #f44336',
+                        borderLeft: 'none',
+                        borderRadius: '0 4px 4px 0',
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        p: 1,
+                        textTransform: 'capitalize',
+                        '&:hover': { 
+                          backgroundColor: '#ff5252',
+                          borderColor: '#ff5252'
+                        },
+                      }}
+                    >
+                      <DeleteOutlineOutlinedIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Box>
                 </TableCell>
@@ -280,14 +473,243 @@ const ProductsPage: React.FC = () => {
         <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
           Mostrando {startIndex + 1} - {Math.min(endIndex, filteredProducts.length)} de {filteredProducts.length} registros
         </Typography>
-        <Pagination
-          count={totalPages}
-          page={currentPage}
-          onChange={handlePageChange}
-          color="primary"
-          size="small"
-        />
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(null, currentPage - 1)}
+            sx={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '4px',
+              color: '#757575',
+              px: 1.5,
+              py: 0.5,
+              fontSize: '12px',
+              textTransform: 'capitalize',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#bdbdbd'
+              },
+              '&:disabled': {
+                color: '#bdbdbd',
+                borderColor: '#e0e0e0'
+              }
+            }}
+          >
+            anterior
+          </Button>
+          
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <Button
+              key={page}
+              variant="text"
+              size="small"
+              onClick={() => handlePageChange(null, page)}
+              sx={{
+                border: currentPage === page ? 'none' : '1px solid #e0e0e0',
+                borderRadius: '4px',
+                color: currentPage === page ? 'white' : '#757575',
+                backgroundColor: currentPage === page ? '#424242' : 'white',
+                px: 1,
+                py: 0.5,
+                fontSize: '12px',
+                minWidth: '32px',
+                textTransform: 'capitalize',
+                boxShadow: 'none',
+                '&:hover': {
+                  backgroundColor: currentPage === page ? '#303030' : '#f5f5f5',
+                  borderColor: currentPage === page ? 'transparent' : '#bdbdbd'
+                }
+              }}
+            >
+              {page}
+            </Button>
+          ))}
+          
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(null, currentPage + 1)}
+            sx={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '4px',
+              color: '#757575',
+              px: 1.5,
+              py: 0.5,
+              fontSize: '12px',
+              textTransform: 'capitalize',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#bdbdbd'
+              },
+              '&:disabled': {
+                color: '#bdbdbd',
+                borderColor: '#e0e0e0'
+              }
+            }}
+          >
+            siguiente
+          </Button>
+        </Box>
       </Box>
+
+      {/* Modal de Ver Producto */}
+      <Dialog
+        open={viewModalOpen}
+        onClose={handleCloseViewModal}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: 2,
+            maxWidth: '450px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 1,
+          px: 2,
+          pt: 2,
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
+            {selectedProduct?.name}
+          </Typography>
+          <IconButton
+            onClick={handleCloseViewModal}
+            size="small"
+            sx={{
+              color: '#757575',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+              },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 2, pb: 2 }}>
+          {selectedProduct && (
+            <Box>
+              {/* Imagen del producto */}
+              <Box
+                component="img"
+                src={selectedProduct.image}
+                alt={selectedProduct.name}
+                sx={{
+                  width: '100%',
+                  height: 'auto',
+                  borderRadius: 1,
+                  mb: 2,
+                  objectFit: 'cover',
+                }}
+              />
+
+              {/* Información del producto */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                    Precio: {selectedProduct.price}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                    Categoría: {selectedProduct.category}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                    Subcategoría: {selectedProduct.subcategory}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Eliminar Producto */}
+      <Dialog
+        open={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: 2,
+            maxWidth: '420px',
+            padding: '12px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ 
+          pb: 0.5,
+          px: 1.5,
+          pt: 1,
+        }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '16px' }}>
+            Eliminar Producto
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 1.5, py: 1 }}>
+          <Typography variant="body2" sx={{ color: '#424242', fontSize: '13px', lineHeight: 1.4 }}>
+            ¿Estás seguro de que deseas eliminar el producto{' '}
+            <Typography component="span" sx={{ fontWeight: 'bold', color: '#f44336', fontSize: '13px' }}>
+              {productToDelete?.name}
+            </Typography>
+            ?
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#757575', fontSize: '12px', mt: 0.5 }}>
+            Esta acción no se puede deshacer.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 1.5, pb: 1, pt: 0.5, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={handleCloseDeleteModal}
+            sx={{
+              borderColor: '#e0e0e0',
+              color: '#424242',
+              textTransform: 'capitalize',
+              boxShadow: 'none',
+              fontSize: '13px',
+              px: 2,
+              py: 0.5,
+              '&:hover': {
+                borderColor: '#bdbdbd',
+                backgroundColor: '#f5f5f5',
+              },
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmDelete}
+            sx={{
+              backgroundColor: '#f44336',
+              textTransform: 'capitalize',
+              boxShadow: 'none',
+              fontSize: '13px',
+              px: 2,
+              py: 0.5,
+              '&:hover': {
+                backgroundColor: '#d32f2f',
+                boxShadow: 'none',
+              },
+            }}
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

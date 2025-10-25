@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   const [prospectosOpen, setProspectosOpen] = useState(false);
   const [herramientasOpen, setHerramientasOpen] = useState(false);
 
-  const drawerWidth = open ? 280 : 64;
+  const drawerWidth = open ? 240 : 56;
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       {/* Header */}
       <Box 
         sx={{ 
-          p: open ? 2 : 1.5, 
+          p: open ? 1.5 : 1.5, 
           backgroundColor: '#F8F8F8',
           cursor: !open ? 'pointer' : 'default',
           '&:hover': !open ? { backgroundColor: '#F0F0F0' } : {}
@@ -101,18 +101,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           }
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: open ? 1 : 0 }}>
-          <Avatar sx={{ width: 32, height: 32, backgroundColor: '#E0E0E0', mr: open ? 1 : 0 }}>
-            <Typography variant="h6" sx={{ color: 'white', fontSize: '14px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: open ? 0.5 : 0 }}>
+          <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: open ? 0.75 : 0 }}>
+            <Typography variant="h6" sx={{ color: 'white', fontSize: '12px' }}>
               N
             </Typography>
           </Avatar>
           {open && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px', lineHeight: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 28 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '12px', lineHeight: 1 }}>
                 OCEANOSCUBA
               </Typography>
-              <Typography variant="body2" sx={{ color: '#757575', fontSize: '10px', lineHeight: 1 }}>
+              <Typography variant="body2" sx={{ color: '#757575', fontSize: '9px', lineHeight: 1 }}>
                 Santa marta.
               </Typography>
             </Box>
@@ -126,11 +126,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           <Typography
             variant="subtitle2"
             sx={{
-              px: 2,
-              py: 0.5,
+              px: 1.5,
+              py: 0.25,
               color: '#424242',
               fontWeight: 'bold',
-              fontSize: '12px',
+              fontSize: '10px',
               textTransform: 'uppercase',
             }}
           >
@@ -138,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           </Typography>
         )}
 
-        <List sx={{ px: open ? 1 : 1.5 }}>
+        <List sx={{ px: open ? 0.75 : 1 }}>
           {menuItems.map((item, index) => (
             <React.Fragment key={index}>
               <ListItem disablePadding>
@@ -154,16 +154,16 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                     sx={{
                       backgroundColor: item.title === 'Principal' ? '#E0E0E0' : 'transparent',
                       borderRadius: 1,
-                      mb: 0.5,
-                      minHeight: 48,
+                      mb: 0.25,
+                      minHeight: 36,
                       justifyContent: open ? 'flex-start' : 'center',
-                      px: open ? 2 : 1,
+                      px: open ? 1.5 : 0.75,
                       '&:hover': {
                         backgroundColor: item.title === 'Principal' ? '#D5D5D5' : '#F0F0F0',
                       },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: open ? 40 : 'auto', color: '#424242' }}>
+                    <ListItemIcon sx={{ minWidth: open ? 32 : 'auto', color: '#424242' }}>
                       {item.icon}
                     </ListItemIcon>
                     {open && (
@@ -172,13 +172,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                           primary={item.title}
                           sx={{
                             '& .MuiListItemText-primary': {
-                              fontSize: '14px',
+                              fontSize: '12px',
                               fontWeight: item.title === 'Principal' ? 'bold' : 'normal',
                               color: '#424242',
                             },
                           }}
                         />
-                        {item.expanded ? <ExpandLess /> : <ExpandMore />}
+                        {item.expanded ? <ExpandLess sx={{ fontSize: 16 }} /> : <ExpandMore sx={{ fontSize: 16 }} />}
                       </>
                     )}
                   </ListItemButton>
@@ -200,23 +200,24 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                               }
                             }}
                             sx={{
-                              pl: 4,
+                              pl: 3,
                               backgroundColor: child.active ? '#F0F0F0' : 'transparent',
                               borderRadius: 1,
-                              mb: 0.5,
+                              mb: 0.25,
+                              minHeight: 32,
                               '&:hover': {
                                 backgroundColor: child.active ? '#E8E8E8' : '#F5F5F5',
                               },
                             }}
                           >
-                            <ListItemIcon sx={{ minWidth: 40, color: '#424242' }}>
+                            <ListItemIcon sx={{ minWidth: 32, color: '#424242' }}>
                               {child.icon}
                             </ListItemIcon>
                             <ListItemText
                               primary={child.title}
                               sx={{
                                 '& .MuiListItemText-primary': {
-                                  fontSize: '14px',
+                                  fontSize: '12px',
                                   fontWeight: child.active ? 'bold' : 'normal',
                                   color: '#424242',
                                 },
@@ -237,7 +238,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       {/* Footer */}
       <Box 
         sx={{ 
-          p: open ? 2 : 1.5, 
+          p: open ? 1.5 : 1.5, 
           backgroundColor: '#F8F8F8',
           cursor: !open ? 'pointer' : 'default',
           '&:hover': !open ? { backgroundColor: '#F0F0F0' } : {}
@@ -248,7 +249,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           }
         }}
       >
-        {open && <Divider sx={{ mb: 2 }} />}
+        {open && <Divider sx={{ mb: 1 }} />}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: open ? 'space-between' : 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography
@@ -256,19 +257,19 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               sx={{
                 fontWeight: 'bold',
                 color: '#424242',
-                mr: open ? 1 : 0,
-                fontSize: '14px',
+                mr: open ? 0.75 : 0,
+                fontSize: '12px',
               }}
             >
               AS
             </Typography>
             {open && (
-              <Typography variant="body2" sx={{ color: '#757575', fontSize: '12px' }}>
+              <Typography variant="body2" sx={{ color: '#757575', fontSize: '10px' }}>
                 nanobonilla@hotmail.com
               </Typography>
             )}
           </Box>
-          {open && <KeyboardArrowDown sx={{ color: '#BDBDBD', fontSize: 20 }} />}
+          {open && <KeyboardArrowDown sx={{ color: '#BDBDBD', fontSize: 16 }} />}
         </Box>
       </Box>
     </Box>
