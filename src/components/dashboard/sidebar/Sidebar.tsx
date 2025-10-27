@@ -23,6 +23,7 @@ import {
   MenuBookOutlined,
   SettingsOutlined,
   KeyboardArrowDown,
+  WorkOutline,
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -38,10 +39,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   // Determinar qué sección debe estar abierta según la ruta actual
   const isMarketingRoute = pathname.startsWith('/dashboard/marketing');
   const isHerramientasRoute = pathname.startsWith('/dashboard/herramientas');
+  const isProyectosRoute = pathname.startsWith('/dashboard/contract');
   
-  const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute);
+  const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute && !isProyectosRoute);
   const [marketingOpen, setMarketingOpen] = useState(isMarketingRoute);
   const [herramientasOpen, setHerramientasOpen] = useState(isHerramientasRoute);
+  const [proyectosOpen, setProyectosOpen] = useState(isProyectosRoute);
 
   // Actualizar el estado cuando cambia la ruta
   useEffect(() => {
@@ -49,14 +52,22 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       setMarketingOpen(true);
       setPrincipalOpen(false);
       setHerramientasOpen(false);
+      setProyectosOpen(false);
     } else if (pathname.startsWith('/dashboard/herramientas')) {
       setHerramientasOpen(true);
       setPrincipalOpen(false);
       setMarketingOpen(false);
+      setProyectosOpen(false);
+    } else if (pathname.startsWith('/dashboard/contract')) {
+      setProyectosOpen(true);
+      setPrincipalOpen(false);
+      setMarketingOpen(false);
+      setHerramientasOpen(false);
     } else {
       setPrincipalOpen(true);
       setMarketingOpen(false);
       setHerramientasOpen(false);
+      setProyectosOpen(false);
     }
   }, [pathname]);
 
@@ -73,12 +84,23 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       icon: <HomeOutlined />,
       expanded: principalOpen,
       onToggle: () => setPrincipalOpen(!principalOpen),
-      active: !isMarketingRoute && !isHerramientasRoute,
+      active: !isMarketingRoute && !isHerramientasRoute && !isProyectosRoute,
       children: [
         { title: 'Dashboard', path: '/dashboard', active: pathname === '/dashboard' },
         { title: 'Productos', path: '/dashboard/productos', active: pathname.startsWith('/dashboard/productos') },
         { title: 'Categorías', path: '/dashboard/categorias', active: pathname.startsWith('/dashboard/categorias') },
         { title: 'Historial de ventas', path: '/dashboard/historial', active: pathname.startsWith('/dashboard/historial') },
+        { title: 'Reservas', path: '/dashboard/reservation', active: pathname.startsWith('/dashboard/reservation') },
+      ],
+    },
+    {
+      title: 'Prospectos',
+      icon: <WorkOutline />,
+      expanded: proyectosOpen,
+      onToggle: () => setProyectosOpen(!proyectosOpen),
+      active: isProyectosRoute,
+      children: [
+        { title: 'Contratos', path: '/dashboard/contract', active: pathname.startsWith('/dashboard/contract') },
       ],
     },
     {
