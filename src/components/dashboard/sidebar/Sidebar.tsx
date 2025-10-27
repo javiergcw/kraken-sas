@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Box,
@@ -20,12 +20,7 @@ import {
   HomeOutlined,
   ExpandMore,
   ExpandLess,
-  DashboardOutlined,
-  InventoryOutlined,
-  CategoryOutlined,
-  HistoryOutlined,
   MenuBookOutlined,
-  PersonAddOutlined,
   SettingsOutlined,
   KeyboardArrowDown,
 } from '@mui/icons-material';
@@ -33,17 +28,40 @@ import {
 interface SidebarProps {
   open: boolean;
   onToggle: () => void;
+  isMobile?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [principalOpen, setPrincipalOpen] = useState(true);
-  const [marketingOpen, setMarketingOpen] = useState(false);
-  const [prospectosOpen, setProspectosOpen] = useState(false);
-  const [herramientasOpen, setHerramientasOpen] = useState(false);
+  
+  // Determinar qué sección debe estar abierta según la ruta actual
+  const isMarketingRoute = pathname.startsWith('/dashboard/marketing');
+  const isHerramientasRoute = pathname.startsWith('/dashboard/herramientas');
+  
+  const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute);
+  const [marketingOpen, setMarketingOpen] = useState(isMarketingRoute);
+  const [herramientasOpen, setHerramientasOpen] = useState(isHerramientasRoute);
 
-  const drawerWidth = open ? 240 : 56;
+  // Actualizar el estado cuando cambia la ruta
+  useEffect(() => {
+    if (pathname.startsWith('/dashboard/marketing')) {
+      setMarketingOpen(true);
+      setPrincipalOpen(false);
+      setHerramientasOpen(false);
+    } else if (pathname.startsWith('/dashboard/herramientas')) {
+      setHerramientasOpen(true);
+      setPrincipalOpen(false);
+      setMarketingOpen(false);
+    } else {
+      setPrincipalOpen(true);
+      setMarketingOpen(false);
+      setHerramientasOpen(false);
+    }
+  }, [pathname]);
+
+  // Ancho dinámico: 240px expandido, 60px colapsado
+  const drawerWidth = isMobile ? 240 : (open ? 240 : 60);
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -55,11 +73,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       icon: <HomeOutlined />,
       expanded: principalOpen,
       onToggle: () => setPrincipalOpen(!principalOpen),
+      active: !isMarketingRoute && !isHerramientasRoute,
       children: [
-        { title: 'Dashboard', icon: <DashboardOutlined />, path: '/dashboard', active: pathname === '/dashboard' },
-        { title: 'Productos', icon: <InventoryOutlined />, path: '/dashboard/productos', active: pathname.startsWith('/dashboard/productos') },
-        { title: 'Categorías', icon: <CategoryOutlined />, path: '/dashboard/categorias', active: pathname.startsWith('/dashboard/categorias') },
-        { title: 'Historial de ventas', icon: <HistoryOutlined />, path: '/dashboard/historial', active: pathname.startsWith('/dashboard/historial') },
+        { title: 'Dashboard', path: '/dashboard', active: pathname === '/dashboard' },
+        { title: 'Productos', path: '/dashboard/productos', active: pathname.startsWith('/dashboard/productos') },
+        { title: 'Categorías', path: '/dashboard/categorias', active: pathname.startsWith('/dashboard/categorias') },
+        { title: 'Historial de ventas', path: '/dashboard/historial', active: pathname.startsWith('/dashboard/historial') },
       ],
     },
     {
@@ -67,52 +86,54 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       icon: <MenuBookOutlined />,
       expanded: marketingOpen,
       onToggle: () => setMarketingOpen(!marketingOpen),
-      children: [],
-    },
-    {
-      title: 'Prospectos',
-      icon: <PersonAddOutlined />,
-      expanded: prospectosOpen,
-      onToggle: () => setProspectosOpen(!prospectosOpen),
-      children: [],
+      active: isMarketingRoute,
+      children: [
+        { title: 'Banner', path: '/dashboard/marketing/banner', active: pathname.startsWith('/dashboard/marketing/banner') },
+      ],
     },
     {
       title: 'Herramientas',
       icon: <SettingsOutlined />,
       expanded: herramientasOpen,
       onToggle: () => setHerramientasOpen(!herramientasOpen),
-      children: [],
+      active: isHerramientasRoute,
+      children: [
+        { title: 'Configuración', path: '/dashboard/herramientas/configuracion', active: pathname.startsWith('/dashboard/herramientas/configuracion') },
+      ],
     },
   ];
+
+  // Expandido si es mobile O si open es true
+  const isExpanded = isMobile ? true : open;
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box 
         sx={{ 
-          p: open ? 1.5 : 1.5, 
-          backgroundColor: '#F8F8F8',
-          cursor: !open ? 'pointer' : 'default',
-          '&:hover': !open ? { backgroundColor: '#F0F0F0' } : {}
+          p: 1.5, 
+          backgroundColor: 'white',
+          cursor: !isExpanded && !isMobile ? 'pointer' : 'default',
+          '&:hover': !isExpanded && !isMobile ? { backgroundColor: '#F5F5F5' } : {},
         }}
         onClick={() => {
-          if (!open) {
+          if (!isExpanded && !isMobile) {
             onToggle();
           }
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: open ? 0.5 : 0 }}>
-          <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: open ? 0.75 : 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: isExpanded ? 0.5 : 0 }}>
+          <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: isExpanded ? 0.75 : 0, borderRadius: '4px' }}>
             <Typography variant="h6" sx={{ color: 'white', fontSize: '12px' }}>
               N
             </Typography>
           </Avatar>
-          {open && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 28 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '12px', lineHeight: 1 }}>
+          {isExpanded && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px', lineHeight: 1.1 }}>
                 OCEANOSCUBA
               </Typography>
-              <Typography variant="body2" sx={{ color: '#757575', fontSize: '9px', lineHeight: 1 }}>
+              <Typography variant="body2" sx={{ color: '#757575', fontSize: '10px', lineHeight: 1.1, mt: 0.2 }}>
                 Santa marta.
               </Typography>
             </Box>
@@ -121,16 +142,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       </Box>
 
       {/* Navigation */}
-      <Box sx={{ flex: 1, backgroundColor: '#F8F8F8', mt: -2 }}>
-        {open && (
+      <Box sx={{ flex: 1, backgroundColor: 'white', mt: 0 }}>
+        {isExpanded && (
           <Typography
             variant="subtitle2"
             sx={{
               px: 1.5,
               py: 0.25,
+              pt: 1,
               color: '#424242',
               fontWeight: 'bold',
-              fontSize: '10px',
+              fontSize: '12px',
               textTransform: 'uppercase',
             }}
           >
@@ -138,42 +160,44 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           </Typography>
         )}
 
-        <List sx={{ px: open ? 0.75 : 1 }}>
+        <List sx={{ px: isExpanded ? 0.75 : 1 }}>
           {menuItems.map((item, index) => (
             <React.Fragment key={index}>
               <ListItem disablePadding>
-                <Tooltip title={!open ? item.title : ''} placement="right">
+                <Tooltip title={!isExpanded ? item.title : ''} placement="right">
                   <ListItemButton
                     onClick={() => {
-                      if (!open) {
+                      if (!isExpanded && !isMobile) {
+                        // Si está colapsado, primero expandir
                         onToggle();
                       } else {
+                        // Si está expandido, toggle de la sección
                         item.onToggle();
                       }
                     }}
                     sx={{
-                      backgroundColor: item.title === 'Principal' ? '#E0E0E0' : 'transparent',
+                      backgroundColor: item.active ? '#E0E0E0' : 'transparent',
                       borderRadius: 1,
                       mb: 0.25,
                       minHeight: 36,
-                      justifyContent: open ? 'flex-start' : 'center',
-                      px: open ? 1.5 : 0.75,
+                      justifyContent: isExpanded ? 'flex-start' : 'center',
+                      px: isExpanded ? 1.5 : 0.75,
                       '&:hover': {
-                        backgroundColor: item.title === 'Principal' ? '#D5D5D5' : '#F0F0F0',
+                        backgroundColor: item.active ? '#D5D5D5' : '#F0F0F0',
                       },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: open ? 32 : 'auto', color: '#424242' }}>
+                    <ListItemIcon sx={{ minWidth: isExpanded ? 32 : 'auto', color: '#424242' }}>
                       {item.icon}
                     </ListItemIcon>
-                    {open && (
+                    {isExpanded && (
                       <>
                         <ListItemText
                           primary={item.title}
                           sx={{
                             '& .MuiListItemText-primary': {
                               fontSize: '12px',
-                              fontWeight: item.title === 'Principal' ? 'bold' : 'normal',
+                              fontWeight: item.active ? 'bold' : 'normal',
                               color: '#424242',
                             },
                           }}
@@ -185,7 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 </Tooltip>
               </ListItem>
 
-              {item.children && open && (
+              {item.children && isExpanded && (
                 <Collapse in={item.expanded} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
                     {item.children.map((child, childIndex) => (
@@ -193,14 +217,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                         <Tooltip title={child.title} placement="right">
                           <ListItemButton
                             onClick={() => {
-                              if (!open) {
-                                onToggle();
-                              } else {
-                                handleNavigation(child.path);
+                              handleNavigation(child.path);
+                              if (isMobile) {
+                                onToggle(); // Close sidebar after navigation on mobile
                               }
                             }}
                             sx={{
-                              pl: 3,
+                              pl: 4,
                               backgroundColor: child.active ? '#F0F0F0' : 'transparent',
                               borderRadius: 1,
                               mb: 0.25,
@@ -210,9 +233,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                               },
                             }}
                           >
-                            <ListItemIcon sx={{ minWidth: 32, color: '#424242' }}>
-                              {child.icon}
-                            </ListItemIcon>
                             <ListItemText
                               primary={child.title}
                               sx={{
@@ -238,62 +258,95 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       {/* Footer */}
       <Box 
         sx={{ 
-          p: open ? 1.5 : 1.5, 
-          backgroundColor: '#F8F8F8',
-          cursor: !open ? 'pointer' : 'default',
-          '&:hover': !open ? { backgroundColor: '#F0F0F0' } : {}
+          p: 1.5, 
+          backgroundColor: 'white',
+          cursor: !isExpanded && !isMobile ? 'pointer' : 'default',
+          '&:hover': !isExpanded && !isMobile ? { backgroundColor: '#F5F5F5' } : {},
         }}
         onClick={() => {
-          if (!open) {
+          if (!isExpanded && !isMobile) {
             onToggle();
           }
         }}
       >
-        {open && <Divider sx={{ mb: 1 }} />}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: open ? 'space-between' : 'center' }}>
+        {isExpanded && <Divider sx={{ mb: 1 }} />}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: isExpanded ? 'space-between' : 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography
               variant="body2"
               sx={{
                 fontWeight: 'bold',
                 color: '#424242',
-                mr: open ? 0.75 : 0,
+                mr: isExpanded ? 0.75 : 0,
                 fontSize: '12px',
               }}
             >
               AS
             </Typography>
-            {open && (
+            {isExpanded && (
               <Typography variant="body2" sx={{ color: '#757575', fontSize: '10px' }}>
                 nanobonilla@hotmail.com
               </Typography>
             )}
           </Box>
-          {open && <KeyboardArrowDown sx={{ color: '#BDBDBD', fontSize: 16 }} />}
+          {isExpanded && <KeyboardArrowDown sx={{ color: '#BDBDBD', fontSize: 16 }} />}
         </Box>
       </Box>
     </Box>
   );
 
+  if (isMobile) {
+    return (
+      <Drawer
+        variant="temporary"
+        open={open}
+        onClose={onToggle}
+        ModalProps={{
+          keepMounted: true,
+          BackdropProps: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            }
+          }
+        }}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 2,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            border: 'none',
+            borderRight: '1px solid #e0e0e0',
+            backgroundColor: 'white',
+            zIndex: (theme) => theme.zIndex.drawer + 2,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+    );
+  }
+
+  // Desktop: Box fijo permanente con ancho dinámico
   return (
-    <Drawer
-      variant="permanent"
+    <Box
       sx={{
         width: drawerWidth,
         flexShrink: 0,
+        height: '100vh',
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        boxSizing: 'border-box',
+        borderRight: '1px solid #e0e0e0',
+        backgroundColor: 'white',
+        overflowX: 'hidden',
+        overflowY: 'auto',
+        zIndex: 1200,
         transition: 'width 0.3s ease',
-        '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          border: 'none',
-          backgroundColor: '#F8F8F8',
-          transition: 'width 0.3s ease',
-          overflowX: 'hidden',
-        },
       }}
     >
       {drawerContent}
-    </Drawer>
+    </Box>
   );
 };
 

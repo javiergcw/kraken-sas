@@ -320,24 +320,24 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   return (
-    <Box sx={{ px: 4, py: 2, backgroundColor: 'white', minHeight: 'calc(100vh - 64px)' }}>
+    <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, py: 2, backgroundColor: 'white', minHeight: 'calc(100vh - 64px)' }}>
       {/* Header */}
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <IconButton 
-            sx={{ mr: 1, color: '#757575' }}
+            sx={{ mr: 1, color: '#757575', p: { xs: 0.5, sm: 1 } }}
             onClick={handleBack}
           >
-            <ArrowBackIcon />
+            <ArrowBackIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
           </IconButton>
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1.5 }}>
         {/* Left Column - Form Fields */}
-        <Box sx={{ flex: 0.6 }}>
-          <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1, mb: 1, backgroundColor: 'white' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 1 }}>
+        <Box sx={{ flex: { xs: '1', md: '0.6' }, order: { xs: 1, md: 1 } }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, border: '1px solid #e0e0e0', borderRadius: 1, mb: 1, backgroundColor: 'white' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 1, fontSize: { xs: '14px', sm: '16px' } }}>
               Datos del producto
             </Typography>
 
@@ -404,7 +404,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </Box>
 
               {/* Categoría y Subcategoría */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
                     Categoría
@@ -461,8 +461,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </Box>
 
               {/* Precio */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Box sx={{ flex: 0.2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                <Box sx={{ flex: { xs: 1, sm: 0.2 } }}>
                   <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
                     Tipo de moneda
                   </Typography>
@@ -485,7 +485,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ flex: 0.8 }}>
+                <Box sx={{ flex: { xs: 1, sm: 0.8 } }}>
                   <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
                     Precio unitario
                   </Typography>
@@ -509,7 +509,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </Box>
 
               {/* Stock */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ height: 32, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Checkbox
@@ -553,8 +553,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
           </Box>
 
           {/* Características Section */}
-          <Box sx={{ p: 1.5, border: '1px solid #e0e0e0', borderRadius: 1, backgroundColor: 'white' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', mb: 1.5 }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, border: '1px solid #e0e0e0', borderRadius: 1, backgroundColor: 'white' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', mb: 1.5, fontSize: { xs: '14px', sm: '16px' } }}>
               Características
             </Typography>
 
@@ -724,9 +724,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
         </Box>
 
         {/* Right Column - Multimedia */}
-        <Box sx={{ flex: 0.4 }}>
-          <Box sx={{ backgroundColor: 'white', borderRadius: 1, p: 2, border: '1px solid #e0e0e0' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', mb: 2 }}>
+        <Box sx={{ flex: { xs: '1', md: '0.4' }, order: { xs: 2, md: 2 } }}>
+          <Box sx={{ backgroundColor: 'white', borderRadius: 1, p: { xs: 1.5, sm: 2 }, border: '1px solid #e0e0e0' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: { xs: '14px', sm: '16px' } }}>
               Multimedia
             </Typography>
             
@@ -1217,16 +1217,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 'medium', mb: 0.25 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1.5, sm: 2 } }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <Typography variant="body2" sx={{ fontSize: { xs: '12px', sm: '13px' }, fontWeight: 'medium', mb: 0.25 }}>
                 Producto no guardado
               </Typography>
-              <Typography variant="caption" sx={{ fontSize: '12px', color: '#757575' }}>
+              <Typography variant="caption" sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#757575' }}>
                 Tienes cambios pendientes por guardar.
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
+            <Box sx={{ display: 'flex', gap: 1, ml: { xs: 0, sm: 'auto' }, justifyContent: { xs: 'stretch', sm: 'flex-end' } }}>
               <Button
                 size="small"
                 variant="outlined"
@@ -1234,11 +1234,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 sx={{
                   borderColor: '#e0e0e0',
                   color: '#424242',
-                  fontSize: '12px',
-                  px: 2,
+                  fontSize: { xs: '11px', sm: '12px' },
+                  px: { xs: 1.5, sm: 2 },
                   py: 0.5,
                   textTransform: 'capitalize',
                   boxShadow: 'none',
+                  flex: { xs: 1, sm: '0 0 auto' },
                   '&:hover': {
                     borderColor: '#bdbdbd',
                     backgroundColor: '#f5f5f5',
@@ -1253,11 +1254,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 onClick={handleSaveChanges}
                 sx={{
                   backgroundColor: '#424242',
-                  fontSize: '12px',
-                  px: 2,
+                  fontSize: { xs: '11px', sm: '12px' },
+                  px: { xs: 1.5, sm: 2 },
                   py: 0.5,
                   textTransform: 'capitalize',
                   boxShadow: 'none',
+                  flex: { xs: 1, sm: '0 0 auto' },
                   '&:hover': {
                     backgroundColor: '#303030',
                     boxShadow: 'none',

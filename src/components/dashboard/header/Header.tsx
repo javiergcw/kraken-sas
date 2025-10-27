@@ -4,6 +4,8 @@ import React from 'react';
 import {
   Box,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -15,7 +17,11 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const handleMenuClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     onMenuClick();
   };
@@ -25,13 +31,16 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        p: 1,
+        py: 0,
+        px: 1.5,
         backgroundColor: 'white',
         borderBottom: '1px solid #E0E0E0',
         minHeight: 48,
+        position: 'relative',
+        zIndex: 1100,
       }}
-      onClick={(e) => e.stopPropagation()}
     >
+      {/* Botón de menú visible siempre */}
       <IconButton
         onClick={handleMenuClick}
         sx={{
@@ -43,6 +52,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           '&:hover': {
             backgroundColor: '#E0E0E0',
           },
+          '&:active': {
+            backgroundColor: '#D0D0D0',
+          },
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
         <MenuIcon sx={{ fontSize: 18 }} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -19,6 +19,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CategoriaDialog from "./CategoriaDialog";
 import CategoriaEditDialog from "./CategoriaEditDialog";
+import CategoriasListSkeleton from "./CategoriasListSkeleton";
 
 interface Subcategoria {
   id: string;
@@ -82,6 +83,16 @@ export default function CategoriasList() {
   const [editingData, setEditingData] = useState<any>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{id: string; nombre: string; isSubcat: boolean} | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Simular carga de datos (puedes reemplazar esto con una llamada API real)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleNuevo = () => {
     setIsSubcategoria(false);
@@ -243,6 +254,119 @@ export default function CategoriasList() {
     setOpenDialog(true);
   };
 
+  // Mostrar skeleton mientras carga
+  if (loading) {
+    return <CategoriasListSkeleton />;
+  }
+
+  // Si no hay categorías, mostrar estado vacío
+  if (categorias.length === 0) {
+    return (
+      <Box sx={{ 
+        px: { xs: 2, sm: 3, md: 6 }, 
+        py: 2, 
+        backgroundColor: 'white', 
+        height: 'calc(100vh - 64px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          textAlign: 'center',
+          maxWidth: { xs: '320px', sm: '380px' },
+          px: { xs: 2, sm: 3 }
+        }}>
+          {/* Icono */}
+          <Box sx={{ mb: 2 }}>
+            <FolderIcon 
+              sx={{ 
+                fontSize: { xs: 60, sm: 70 }, 
+                color: '#fdd835',
+                opacity: 0.6
+              }} 
+            />
+          </Box>
+
+          {/* Título */}
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontWeight: 'bold', 
+              color: '#424242',
+              mb: 1.5,
+              fontSize: { xs: '20px', sm: '22px' }
+            }}
+          >
+            No hay categorías
+          </Typography>
+
+          {/* Descripción */}
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: '#757575',
+              mb: 3,
+              fontSize: '15px',
+              lineHeight: 1.4
+            }}
+          >
+            Comienza organizando tus productos creando categorías y subcategorías
+          </Typography>
+
+          {/* Botón Añadir categoría */}
+          <Button
+            variant="contained"
+            onClick={handleNuevo}
+            sx={{
+              backgroundColor: '#424242',
+              fontSize: '15px',
+              px: 3.5,
+              py: 1.2,
+              borderRadius: 2,
+              textTransform: 'capitalize',
+              fontWeight: 'medium',
+              boxShadow: 'none',
+              '&:hover': { 
+                backgroundColor: '#303030',
+                boxShadow: 'none'
+              },
+            }}
+          >
+            Añadir categoría
+          </Button>
+
+          {/* Enlace de ayuda */}
+          <Box sx={{ mt: 3 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#757575',
+                fontSize: '13px',
+                cursor: 'pointer',
+                '&:hover': {
+                  color: '#424242',
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              ¿Necesitas ayuda?
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Dialog para crear nueva categoría */}
+        <CategoriaDialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          onSave={handleSave}
+          isSubcategoria={isSubcategoria}
+          categorias={categorias.map(c => ({ id: c.id, nombre: c.nombre }))}
+        />
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {/* Header */}
@@ -252,9 +376,11 @@ export default function CategoriasList() {
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          gap: { xs: 2, sm: 0 },
         }}
       >
-        <Typography variant="h6" fontWeight="600" sx={{ fontSize: "18px" }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#424242', fontSize: { xs: '18px', sm: '20px' } }}>
           Categorías
         </Typography>
         <Button
@@ -268,7 +394,7 @@ export default function CategoriasList() {
             borderRadius: 1,
             py: 0.5,
             px: 1.5,
-            fontSize: "13px",
+            fontSize: { xs: "12px", sm: "13px" },
             minHeight: "32px",
           }}
         >
@@ -296,21 +422,24 @@ export default function CategoriasList() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 py: 1.25,
-                px: 2,
+                px: { xs: 1.5, sm: 2 },
                 "&:hover": { bgcolor: "#fafafa" },
+                flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                gap: { xs: 1, sm: 0 },
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: { xs: '1 1 100%', sm: '1 1 auto' } }}>
                 {categoria.imagen ? (
                   <Box 
                     sx={{ 
-                      width: 32, 
-                      height: 32, 
+                      width: { xs: 28, sm: 32 }, 
+                      height: { xs: 28, sm: 32 }, 
                       borderRadius: 1, 
                       overflow: "hidden",
                       display: "flex", 
                       alignItems: "center", 
-                      justifyContent: "center" 
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
                     <img 
@@ -322,38 +451,39 @@ export default function CategoriasList() {
                 ) : (
                   <Box 
                     sx={{ 
-                      width: 32, 
-                      height: 32, 
+                      width: { xs: 28, sm: 32 }, 
+                      height: { xs: 28, sm: 32 }, 
                       borderRadius: 1, 
                       bgcolor: "#f5f5f5", 
                       display: "flex", 
                       alignItems: "center", 
-                      justifyContent: "center" 
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    <FolderIcon sx={{ color: "#fdd835", fontSize: 22 }} />
+                    <FolderIcon sx={{ color: "#fdd835", fontSize: { xs: 18, sm: 22 } }} />
                   </Box>
                 )}
-                <Box sx={{ lineHeight: 1 }}>
-                  <Typography variant="body2" fontWeight="500" sx={{ fontSize: "14px", color: "#333", lineHeight: 1.2, mb: 0 }}>
+                <Box sx={{ lineHeight: 1, minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight="500" sx={{ fontSize: { xs: "13px", sm: "14px" }, color: "#333", lineHeight: 1.2, mb: 0 }}>
                     {categoria.nombre}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "12px", lineHeight: 1.2 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "11px", sm: "12px" }, lineHeight: 1.2, display: { xs: 'block', sm: 'block' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {categoria.slug}
                   </Typography>
                 </Box>
               </Box>
 
-              <Box sx={{ display: "flex", gap: 0.5 }}>
+              <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
                 <Button
                   size="small"
-                  startIcon={<AddIcon sx={{ fontSize: 15 }} />}
+                  startIcon={<AddIcon sx={{ fontSize: { xs: 14, sm: 15 }, display: { xs: 'none', sm: 'flex' } }} />}
                   onClick={() => handleAddSubcategoria(categoria.id)}
                   sx={{ 
                     textTransform: "none", 
-                    fontSize: "13px",
+                    fontSize: { xs: "11px", sm: "13px" },
                     py: 0.5,
-                    px: 1.5,
+                    px: { xs: 1, sm: 1.5 },
                     minWidth: "auto",
                     color: "#666",
                     border: "1px solid #e0e0e0",
@@ -364,42 +494,34 @@ export default function CategoriasList() {
                 >
                   Subcategoría
                 </Button>
-                <Button
+                <IconButton
                   size="small"
                   onClick={() => handleEditar(categoria.id, false)}
                   sx={{ 
-                    textTransform: "none", 
                     color: "#666",
-                    fontSize: "13px",
-                    py: 0.5,
-                    px: 1.5,
-                    minWidth: "auto",
+                    p: { xs: 0.5, sm: 1 },
                     border: "1px solid #e0e0e0",
                     borderRadius: 0.5,
                     bgcolor: "white",
                     "&:hover": { bgcolor: "#f5f5f5", borderColor: "#d0d0d0" },
                   }}
                 >
-                  Editar
-                </Button>
-                <Button
+                  <EditIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                </IconButton>
+                <IconButton
                   size="small"
                   onClick={() => handleEliminar(categoria.id, categoria.nombre, false)}
                   sx={{ 
-                    textTransform: "none", 
                     color: "#f44336",
-                    fontSize: "13px",
-                    py: 0.5,
-                    px: 1.5,
-                    minWidth: "auto",
+                    p: { xs: 0.5, sm: 1 },
                     border: "1px solid #e0e0e0",
                     borderRadius: 0.5,
                     bgcolor: "white",
                     "&:hover": { bgcolor: "#fef5f5", borderColor: "#d0d0d0" },
                   }}
                 >
-                  Eliminar
-                </Button>
+                  <DeleteIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                </IconButton>
               </Box>
             </Box>
 
@@ -414,23 +536,24 @@ export default function CategoriasList() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       py: 1.25,
-                      px: 2,
-                      pl: 5,
+                      px: { xs: 1.5, sm: 2 },
+                      pl: { xs: 3, sm: 5 },
                       borderTop: "1px solid #f5f5f5",
                       "&:hover": { bgcolor: "#fafafa" },
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, minWidth: 0, flex: 1 }}>
                       {sub.imagen ? (
                         <Box 
                           sx={{ 
-                            width: 28, 
-                            height: 28, 
+                            width: { xs: 24, sm: 28 }, 
+                            height: { xs: 24, sm: 28 }, 
                             borderRadius: 1, 
                             overflow: "hidden",
                             display: "flex", 
                             alignItems: "center", 
-                            justifyContent: "center" 
+                            justifyContent: "center",
+                            flexShrink: 0,
                           }}
                         >
                           <img 
@@ -442,65 +565,58 @@ export default function CategoriasList() {
                       ) : (
                         <Box 
                           sx={{ 
-                            width: 28, 
-                            height: 28, 
+                            width: { xs: 24, sm: 28 }, 
+                            height: { xs: 24, sm: 28 }, 
                             borderRadius: 1, 
                             bgcolor: "#f5f5f5", 
                             display: "flex", 
                             alignItems: "center", 
-                            justifyContent: "center" 
+                            justifyContent: "center",
+                            flexShrink: 0,
                           }}
                         >
-                          <FolderIcon sx={{ color: "#fdd835", fontSize: 20 }} />
+                          <FolderIcon sx={{ color: "#fdd835", fontSize: { xs: 16, sm: 20 } }} />
                         </Box>
                       )}
-                      <Box sx={{ lineHeight: 1 }}>
-                        <Typography variant="body2" fontWeight="500" sx={{ fontSize: "13px", color: "#333", lineHeight: 1.2, mb: 0 }}>
+                      <Box sx={{ lineHeight: 1, minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight="500" sx={{ fontSize: { xs: "12px", sm: "13px" }, color: "#333", lineHeight: 1.2, mb: 0 }}>
                           {sub.nombre}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "11.5px", lineHeight: 1.2 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "10.5px", sm: "11.5px" }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                           {sub.slug}
                         </Typography>
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: "flex", gap: 0.5 }}>
-                      <Button
+                    <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
+                      <IconButton
                         size="small"
                         onClick={() => handleEditar(sub.id, true)}
                         sx={{ 
-                          textTransform: "none", 
                           color: "#666",
-                          fontSize: "13px",
-                          py: 0.5,
-                          px: 1.5,
-                          minWidth: "auto",
+                          p: { xs: 0.5, sm: 1 },
                           border: "1px solid #e0e0e0",
                           borderRadius: 0.5,
                           bgcolor: "white",
                           "&:hover": { bgcolor: "#f5f5f5", borderColor: "#d0d0d0" },
                         }}
                       >
-                        Editar
-                      </Button>
-                      <Button
+                        <EditIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
+                      </IconButton>
+                      <IconButton
                         size="small"
                         onClick={() => handleEliminar(sub.id, sub.nombre, true)}
                         sx={{ 
-                          textTransform: "none", 
                           color: "#f44336",
-                          fontSize: "13px",
-                          py: 0.5,
-                          px: 1.5,
-                          minWidth: "auto",
+                          p: { xs: 0.5, sm: 1 },
                           border: "1px solid #e0e0e0",
                           borderRadius: 0.5,
                           bgcolor: "white",
                           "&:hover": { bgcolor: "#fef5f5", borderColor: "#d0d0d0" },
                         }}
                       >
-                        Eliminar
-                      </Button>
+                        <DeleteIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
+                      </IconButton>
                     </Box>
                   </Box>
                 ))}
