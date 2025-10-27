@@ -144,7 +144,7 @@ export default function DocumentManager({
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 w-full text-center">
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-lg p-6 w-full text-center">
                         <Upload size={32} className="mb-2 text-gray-500" />
                         <p className="text-sm text-gray-600">
                             Acepta documentos con extensiones docx, doc, xls, xlsx, ppt, pptx, txt

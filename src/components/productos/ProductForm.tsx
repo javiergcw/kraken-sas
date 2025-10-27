@@ -162,7 +162,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleBack = () => {
-    router.push('/dashboard/productos');
+    router.push('/productos');
   };
 
   const handleOpenMediaModal = (title: string) => {
@@ -307,7 +307,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     setShowSaveNotification(false);
     
     // Redirigir a la lista de productos después de guardar
-    router.push('/dashboard/productos');
+    router.push('/productos');
   };
 
   const handleDiscardChanges = () => {

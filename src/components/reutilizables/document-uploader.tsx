@@ -126,7 +126,7 @@ export default function DocumentUploaderSimple({
             </div>
 
             <label
-                className={`cursor-pointer block bg-gray-100 p-6 text-center rounded-md border border-dashed ${dragOver ? "border-blue-500" : "border-gray-300"}`}
+                className={`cursor-pointer block bg-gray-100 p-6 text-center rounded-md border border-dashed ${dragOver ? "border-blue-500" : "border-gray-200"}`}
                 onDragOver={(e) => {
                     e.preventDefault()
                     setDragOver(true)
@@ -148,7 +148,7 @@ export default function DocumentUploaderSimple({
                 <span className="text-sm text-gray-600 block">Arrastrar y soltar documento aquí</span>
             </label>
 
-            <ScrollArea className="max-h-64 p-4 border rounded-md">
+            <ScrollArea className="max-h-64 p-4 border border-gray-200 rounded-md">
                 {filteredDocuments.length > 0 ? (
                     <div className="space-y-2">
                         {filteredDocuments.map((doc) => (

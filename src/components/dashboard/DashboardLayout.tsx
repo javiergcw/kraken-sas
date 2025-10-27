@@ -11,6 +11,8 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  // Mostrar header siempre, excepto que se pase explícitamente children === null
+  const showHeader = children !== null;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mounted, setMounted] = useState(false);
@@ -70,10 +72,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           height: '100%',
           overflow: 'hidden',
           marginLeft: isMobile ? 0 : (sidebarOpen ? '240px' : '60px'),
-          transition: 'margin-left 0.3s ease',
+        transition: 'margin-left 0.3s ease',
         }}>
-          <Header onMenuClick={handleMenuClick} />
-          <Box sx={{ 
+          {showHeader && <Header onMenuClick={handleMenuClick} />}
+          <Box sx={{
             flex: 1,
             overflow: 'auto',
             backgroundColor: 'white'
@@ -121,8 +123,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           zIndex: 1,
         }}
       >
-        {/* Header */}
-        <Header onMenuClick={handleMenuClick} />
+          {/* Header - solo mostrar si hay children (páginas específicas) */}
+        {showHeader && <Header onMenuClick={handleMenuClick} />}
 
         {/* Área de Contenido con Scroll */}
         <Box

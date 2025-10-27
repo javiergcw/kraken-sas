@@ -371,7 +371,7 @@ export default function ImageUploader({
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                         {localSelectedImages.map((img, index) => (
                             <div key={img.id} className="relative group">
-                                <div className="relative rounded-lg overflow-hidden ring-2 ring-blue-500 ring-offset-1 shadow-sm hover:shadow-md transition-all duration-200">
+                                <div className="relative rounded-lg overflow-hidden ring-2 ring-blue-500 ring-offset-1 transition-all duration-200">
                                     <img
                                         src={img.src || "/placeholder.svg"}
                                         alt={img.name}
@@ -429,7 +429,7 @@ export default function ImageUploader({
             <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto">
                 <label
                     className={`cursor-pointer block bg-white p-2 text-center rounded-lg border-2 border-dashed transition-colors duration-200 ${
-                        dragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                        dragOver ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
                     }`}
                     onDragOver={(e) => {
                         e.preventDefault()
@@ -470,8 +470,8 @@ export default function ImageUploader({
                                     <div 
                                         className={`relative rounded-lg overflow-hidden transition-all duration-200 cursor-pointer ${
                                             selectedImageIds.has(img.id) 
-                                                ? 'ring-2 ring-blue-500 ring-offset-1 shadow-md' 
-                                                : 'hover:shadow-sm'
+                                                ? 'ring-2 ring-blue-500 ring-offset-1' 
+                                                : ''
                                         } ${deletingImages.has(img.id) ? 'opacity-50' : ''}`}
                                         onClick={() => handleImageSelect(img)}
                                     >
@@ -484,7 +484,7 @@ export default function ImageUploader({
                                         />
                                         {selectedImageIds.has(img.id) && (
                                             <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                                                <div className="bg-white rounded-full p-1 shadow-sm">
+                                                <div className="bg-white rounded-full p-1">
                                                     <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                                     </svg>

@@ -185,14 +185,14 @@ export default function ContractsPage() {
 
 
   return (
-    <>
+    <div className="px-15 py-5">
       {isEmpty ? (
         <AppleEmptyState
           icon={FileText}
           title="No hay contratos"
           description="Comienza creando contratos para gestionar tus acuerdos comerciales"
           buttonText="Añadir contrato"
-          onButtonClick={() => router.push('/dashboard/contract/create')}
+          onButtonClick={() => router.push('/contract/create')}
           helpText="¿Necesitas ayuda?"
           onHelpClick={() => console.log("Guía")}
         />
@@ -202,7 +202,7 @@ export default function ContractsPage() {
             nametable="Contratos"
             headers={headers}
             data={contracts.map((contract) => [
-              <div className="w-10 h-10 flex items-center justify-center border rounded-lg bg-blue-50">
+              <div className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded bg-blue-50">
                 <FileText size={20} strokeWidth={1.25} className="text-blue-600" />
               </div>,
               contract.name,
@@ -211,11 +211,11 @@ export default function ContractsPage() {
                 : contract.description,
               getStatusBadge(contract.active),
               formatDate(contract.created_at),
-              <div className="inline-flex border rounded-lg overflow-hidden">
-                <Button variant="outline" className="px-2 shadow-none rounded-none border-r" onClick={() => handleView(contract)}>
+              <div className="inline-flex border border-gray-200 rounded overflow-hidden">
+                <Button variant="outline" className="px-2 shadow-none rounded-none border-r border-gray-200 bg-white hover:bg-gray-50" onClick={() => handleView(contract)}>
                   <View className="cursor-pointer h-4 w-4" />
                 </Button>
-                <Button variant="outline" className="px-2 shadow-none rounded-none border-r" onClick={() => router.push(`/dashboard/contract/edit/${contract.id}`)}>
+                <Button variant="outline" className="px-2 shadow-none rounded-none border-r border-gray-200 bg-white hover:bg-gray-50" onClick={() => router.push(`/contract/edit/${contract.id}`)}>
                   <Pencil className="cursor-pointer h-4 w-4" />
                 </Button>
                 <Button className="px-2 bg-red-500 hover:bg-red-400 shadow-none rounded-none" onClick={() => handleDelete(contract)}>
@@ -223,7 +223,7 @@ export default function ContractsPage() {
                 </Button>
               </div>
             ])}
-            onAdd={() => router.push('/dashboard/contract/create')}
+            onAdd={() => router.push('/contract/create')}
             showAddButton={true}
           />
 
@@ -333,7 +333,7 @@ export default function ContractsPage() {
           </Dialog>
         </>
       )}
-    </>
+    </div>
   );
 }
 

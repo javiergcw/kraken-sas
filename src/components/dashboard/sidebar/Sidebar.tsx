@@ -24,6 +24,8 @@ import {
   SettingsOutlined,
   KeyboardArrowDown,
   WorkOutline,
+  AssignmentIndOutlined,
+  CampaignOutlined,
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -37,9 +39,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const pathname = usePathname();
   
   // Determinar qué sección debe estar abierta según la ruta actual
-  const isMarketingRoute = pathname.startsWith('/dashboard/marketing');
-  const isHerramientasRoute = pathname.startsWith('/dashboard/herramientas');
-  const isProyectosRoute = pathname.startsWith('/dashboard/contract');
+  const isMarketingRoute = pathname.startsWith('/marketing');
+  const isHerramientasRoute = pathname.startsWith('/herramientas');
+  const isProyectosRoute = pathname.startsWith('/contract');
   
   const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute && !isProyectosRoute);
   const [marketingOpen, setMarketingOpen] = useState(isMarketingRoute);
@@ -48,17 +50,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
 
   // Actualizar el estado cuando cambia la ruta
   useEffect(() => {
-    if (pathname.startsWith('/dashboard/marketing')) {
+    if (pathname.startsWith('/marketing')) {
       setMarketingOpen(true);
       setPrincipalOpen(false);
       setHerramientasOpen(false);
       setProyectosOpen(false);
-    } else if (pathname.startsWith('/dashboard/herramientas')) {
+    } else if (pathname.startsWith('/herramientas')) {
       setHerramientasOpen(true);
       setPrincipalOpen(false);
       setMarketingOpen(false);
       setProyectosOpen(false);
-    } else if (pathname.startsWith('/dashboard/contract')) {
+    } else if (pathname.startsWith('/contract')) {
       setProyectosOpen(true);
       setPrincipalOpen(false);
       setMarketingOpen(false);
@@ -81,46 +83,46 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const menuItems = [
     {
       title: 'Principal',
-      icon: <HomeOutlined />,
+      icon: <HomeOutlined sx={{ fontSize: 18 }} />,
       expanded: principalOpen,
       onToggle: () => setPrincipalOpen(!principalOpen),
       active: !isMarketingRoute && !isHerramientasRoute && !isProyectosRoute,
       children: [
         { title: 'Dashboard', path: '/dashboard', active: pathname === '/dashboard' },
-        { title: 'Productos', path: '/dashboard/productos', active: pathname.startsWith('/dashboard/productos') },
-        { title: 'Categorías', path: '/dashboard/categorias', active: pathname.startsWith('/dashboard/categorias') },
-        { title: 'Historial de ventas', path: '/dashboard/historial', active: pathname.startsWith('/dashboard/historial') },
-        { title: 'Reservas', path: '/dashboard/reservation', active: pathname.startsWith('/dashboard/reservation') },
+        { title: 'Productos', path: '/productos', active: pathname.startsWith('/productos') },
+        { title: 'Categorías', path: '/categorias', active: pathname.startsWith('/categorias') },
+        { title: 'Historial de ventas', path: '/historial', active: pathname.startsWith('/historial') },
+        { title: 'Reservas', path: '/reservation', active: pathname.startsWith('/reservation') },
       ],
     },
     {
       title: 'Prospectos',
-      icon: <WorkOutline />,
+      icon: <AssignmentIndOutlined sx={{ fontSize: 18 }} />,
       expanded: proyectosOpen,
       onToggle: () => setProyectosOpen(!proyectosOpen),
       active: isProyectosRoute,
       children: [
-        { title: 'Contratos', path: '/dashboard/contract', active: pathname.startsWith('/dashboard/contract') },
+        { title: 'Contratos', path: '/contract', active: pathname.startsWith('/contract') },
       ],
     },
     {
       title: 'Marketing | publicidad',
-      icon: <MenuBookOutlined />,
+      icon: <CampaignOutlined sx={{ fontSize: 18 }} />,
       expanded: marketingOpen,
       onToggle: () => setMarketingOpen(!marketingOpen),
       active: isMarketingRoute,
       children: [
-        { title: 'Banner', path: '/dashboard/marketing/banner', active: pathname.startsWith('/dashboard/marketing/banner') },
+        { title: 'Banner', path: '/marketing/banner', active: pathname.startsWith('/marketing/banner') },
       ],
     },
     {
       title: 'Herramientas',
-      icon: <SettingsOutlined />,
+      icon: <SettingsOutlined sx={{ fontSize: 18 }} />,
       expanded: herramientasOpen,
       onToggle: () => setHerramientasOpen(!herramientasOpen),
       active: isHerramientasRoute,
       children: [
-        { title: 'Configuración', path: '/dashboard/herramientas/configuracion', active: pathname.startsWith('/dashboard/herramientas/configuracion') },
+        { title: 'Configuración', path: '/herramientas/configuracion', active: pathname.startsWith('/herramientas/configuracion') },
       ],
     },
   ];

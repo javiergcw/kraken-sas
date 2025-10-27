@@ -59,7 +59,7 @@ function EditableCell({
               <textarea
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md text-lg min-h-[60px] resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-md text-lg min-h-[60px] resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                 placeholder={placeholder}
                 autoFocus
                 rows={3}
@@ -69,7 +69,7 @@ function EditableCell({
                 type={type}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md text-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-md text-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                 placeholder={placeholder}
                 autoFocus
               />
@@ -340,7 +340,7 @@ export default function SheetPage() {
                     Cambiar fecha
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-white !bg-white border-none shadow-none" align="start">
                   <Calendar
                     mode="single"
                     selected={fechaSeleccionada}
@@ -352,7 +352,7 @@ export default function SheetPage() {
                     }}
                     initialFocus
                     locale={es}
-                    className="rounded-md border"
+                    className="rounded-md border bg-white"
                   />
                 </PopoverContent>
               </Popover>
@@ -396,146 +396,146 @@ export default function SheetPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 min-w-[1200px]">
-              {/* Tabla 1: Identificación */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">No</th>
-                      <th className="p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">BUZOS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {buzos.length > 0 ? (
-                      buzos.map((buzo, index) => (
-                        <tr key={buzo.id} className="border-b border-gray-200">
-                          <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{index + 1}</td>
-                          <td className="p-1 sm:p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.nombre} 
-                              label="Nombre del Buzo"
-                              className="w-24 sm:w-32 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm"
-                            />
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={2} className="p-4 text-center text-gray-500">
-                          No hay buzos registrados para esta fecha
+          <div className="space-y-4">
+            {/* Tabla 1: Identificación */}
+            <div className="border border-gray-200 rounded overflow-hidden bg-white">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
+                    <th className="p-2 text-left font-semibold text-xs">BUZOS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {buzos.length > 0 ? (
+                    buzos.map((buzo, index) => (
+                      <tr key={buzo.id} className="border-b border-gray-200">
+                        <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
+                        <td className="p-2">
+                          <EditableCell 
+                            type="text" 
+                            defaultValue={buzo.nombre} 
+                            label="Nombre del Buzo"
+                            className="w-full px-2 py-1 font-medium text-xs border-0 bg-transparent"
+                          />
                         </td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2} className="p-4 text-center text-gray-500">
+                        No hay buzos registrados para esta fecha
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              {/* Tabla 2: Equipos */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+            {/* Tabla 2: Equipos */}
+            <div className="overflow-x-auto">
+              <div className="border border-gray-200 rounded overflow-hidden bg-white inline-block min-w-full">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Tanque</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Maleta</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Reg</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Chal</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Cint</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Pesas</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Msc</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Snk</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Alt</th>
-                      <th className="p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Traje</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Chal</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Cint</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Pesas</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Msc</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Snk</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Alt</th>
+                      <th className="p-2 text-center font-semibold text-xs">Traje</th>
                     </tr>
                   </thead>
                   <tbody>
                     {buzos.length > 0 ? (
                       buzos.map((buzo, index) => (
                         <tr key={buzo.id} className="border-b border-gray-200">
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="number" 
                               defaultValue={buzo.tanque} 
                               label="Tanque"
-                              className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-center text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="number" 
                               defaultValue={buzo.maleta} 
                               label="Maleta"
-                              className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-center text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.regulador} 
                               label="Regulador"
-                              className="w-20 sm:w-24 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.chaleco} 
                               placeholder="-"
                               label="Chaleco"
-                              className="w-16 sm:w-20 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.cinturon} 
                               placeholder="-"
                               label="Cinturón"
-                              className="w-10 sm:w-12 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.pesas} 
                               placeholder="-"
                               label="Pesas"
-                              className="w-10 sm:w-12 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.mascara} 
                               placeholder="-"
                               label="Máscara"
-                              className="w-10 sm:w-12 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.snorkel} 
                               placeholder="-"
                               label="Snorkel"
-                              className="w-10 sm:w-12 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.aletas} 
                               placeholder="-"
                               label="Aletas"
-                              className="w-10 sm:w-12 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="p-1 sm:p-2">
+                          <td className="p-2">
                             <SizeSelector 
                               defaultValue={buzo.traje} 
-                              className="w-10 sm:w-12 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs"
                             />
                           </td>
                         </tr>
@@ -550,50 +550,52 @@ export default function SheetPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              {/* Tabla 3: Actividad y Facturación */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+            {/* Tabla 3: Actividad y Facturación */}
+            <div className="overflow-x-auto">
+              <div className="border border-gray-200 rounded overflow-hidden bg-white inline-block min-w-full">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Actividad</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
-                      <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Valor</th>
-                      <th className="p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Factura</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Actividad</th>
+                      <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Observaciones</th>
+                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Valor</th>
+                      <th className="p-2 text-center font-semibold text-xs">Factura</th>
                     </tr>
                   </thead>
                   <tbody>
                     {buzos.length > 0 ? (
                       buzos.map((buzo, index) => (
                         <tr key={buzo.id} className="border-b border-gray-200">
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <ActivitySelector 
                               defaultValue={buzo.actividad} 
-                              className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.observaciones} 
                               label="Observaciones"
-                              className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
                             />
                           </td>
-                          <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.valor} 
                               label="Valor"
-                              className="w-16 sm:w-20 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent text-center"
                             />
                           </td>
-                          <td className="p-1 sm:p-2">
+                          <td className="p-2">
                             <EditableCell 
                               type="text" 
                               defaultValue={buzo.factura} 
                               label="Factura"
-                              className="w-16 sm:w-20 px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                              className="w-full px-2 py-1 text-xs border-0 bg-transparent text-center"
                             />
                           </td>
                         </tr>

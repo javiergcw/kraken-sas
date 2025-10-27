@@ -248,7 +248,7 @@ const ProductsPage: React.FC = () => {
           {/* Botón Añadir producto */}
           <Button
             variant="contained"
-            onClick={() => router.push('/dashboard/productos/create')}
+            onClick={() => router.push('/productos/create')}
             sx={{
               backgroundColor: '#424242',
               fontSize: { xs: '15px', sm: '16px' },
@@ -316,7 +316,7 @@ const ProductsPage: React.FC = () => {
               variant="contained"
               startIcon={<AddIcon sx={{ fontSize: { xs: 18, sm: 20 }, display: { xs: 'none', sm: 'flex' } }} />}
               size="small"
-              onClick={() => router.push('/dashboard/productos/create')}
+              onClick={() => router.push('/productos/create')}
               sx={{
                 backgroundColor: '#424242',
                 fontSize: { xs: '13px', sm: '14px' },
@@ -445,7 +445,7 @@ const ProductsPage: React.FC = () => {
                     </IconButton>
                     <IconButton 
                       size="small"
-                      onClick={() => router.push(`/dashboard/productos/edit/${product.id}`)}
+                      onClick={() => router.push(`/productos/edit/${product.id}`)}
                       sx={{ 
                         border: '1px solid #e0e0e0',
                         borderRadius: 0,

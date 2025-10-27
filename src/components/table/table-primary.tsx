@@ -239,7 +239,7 @@ export default function PrimaryTable({
         <div className="space-y-4">
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div 
-                    className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-all hover-scale"
+                    className="px-4 py-3 bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-all"
                     onClick={() => setIsCollapsed(!isCollapsed)}
                 >
                     <div className="flex items-center justify-between">
@@ -250,12 +250,12 @@ export default function PrimaryTable({
                                 ) : (
                                     <ChevronDown size={18} className="text-gray-500 transition-all" />
                                 )}
-                                <span className="text-base font-medium text-gray-800 capitalize">
+                                <span className="text-base font-semibold text-gray-900 capitalize">
                                     {nametable}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium transition-all hover-glow">
+                                <span className="px-3 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium transition-all">
                                     {data.length} {data.length === 1 ? 'registro' : 'registros'}
                                 </span>
                                 <div className={`flex items-center gap-1.5 transition-all ${isCollapsed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'}`}>
@@ -272,24 +272,16 @@ export default function PrimaryTable({
                                             return (
                                                 <div 
                                                     key={index} 
-                                                    className={`w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg bg-white overflow-hidden hover-scale hover-glow ${isCollapsed ? 'animate-slide-in' : 'animate-slide-out'}`}
-                                                    style={{
-                                                        transitionDelay: `${index * 30}ms`
-                                                    }}
+                                                    className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg bg-white overflow-hidden transition-all"
                                                 >
                                                     {cellProps.children}
-            </div>
+                                                </div>
                                             );
                                         }
                                         return null;
                                     })}
                                     {data.length > 4 && (
-                                        <div 
-                                            className={`w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm font-medium hover-scale hover-glow ${isCollapsed ? 'animate-slide-in' : 'animate-slide-out'}`}
-                                            style={{
-                                                transitionDelay: '120ms'
-                                            }}
-                        >
+                                        <div className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm font-medium transition-all">
                                             +{data.length - 4}
                                         </div>
                                     )}
@@ -299,8 +291,8 @@ export default function PrimaryTable({
                     </div>
                 </div>
                 {!isCollapsed && (
-                    <div className="border-t border-gray-200">
-                        <div className="flex flex-col gap-4 p-6 border-b border-gray-100">
+                    <div>
+                        <div className="flex flex-col gap-4 p-4 bg-gray-50 border-b border-gray-200">
                             {/* Barra de búsqueda y filtros */}
                             <div className="flex items-center justify-between">
                                 <div className="flex-1 max-w-md">
@@ -308,7 +300,7 @@ export default function PrimaryTable({
                                         <div className="relative group">
                                             <Input 
                                                 placeholder="Buscar en todos los campos..." 
-                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-gray-200 rounded-xl transition-all duration-300 ease-in-out focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:bg-gray-100/50"
+                                                className="w-full pl-10 pr-4 py-2 bg-white border-gray-200 rounded-lg transition-all duration-200 ease-in-out focus:bg-white focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 hover:border-gray-200"
                                                 value={searchTerm}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
                                             />
@@ -330,9 +322,9 @@ export default function PrimaryTable({
                                             <DropdownMenuTrigger asChild>
                                                 <Button
                                                     variant="outline"
-                                                    className="px-4 py-2 rounded-xl transition-all duration-200 ease-out hover:bg-gray-100 hover:shadow-sm active:scale-[0.98] animate-fade-in"
+                                                    className="px-3 py-2 bg-white border border-gray-200 rounded-lg transition-all duration-200 ease-out hover:bg-gray-100 active:scale-[0.98]"
                                                 >
-                                                    <Filter size={18} className="mr-2" />
+                                                    <Filter size={16} className="mr-2" />
                                                     Filtros
                     </Button>
                                             </DropdownMenuTrigger>
@@ -360,18 +352,18 @@ export default function PrimaryTable({
                                     {(showAddButton || onAdd) && (
                                         <Button
                                             onClick={onAdd}
-                                            className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 pl-2 rounded-xl transition-all duration-200 ease-out hover:shadow-sm active:scale-[0.98] animate-fade-in"
+                                            className="bg-gray-900 hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-all duration-200 ease-out active:scale-[0.98]"
                                         >
-                                            <Plus size={18}  />
+                                            <Plus size={16} className="mr-1.5" />
                                             Nuevo
                     </Button>
                                     )}
                                     <Button
                                         variant="outline"
                                         onClick={handleExportToExcel}
-                                        className="px-4 py-2 rounded-xl transition-all duration-200 ease-out hover:bg-gray-100 hover:shadow-sm active:scale-[0.98] animate-fade-in"
+                                        className="px-3 py-2 bg-white border border-gray-200 rounded-lg transition-all duration-200 ease-out hover:bg-gray-100 active:scale-[0.98]"
                                     >
-                                        <Download size={18} className="mr-2" />
+                                        <Download size={16} className="mr-2" />
                                         Exportar
                     </Button>
                 </div>
@@ -382,7 +374,7 @@ export default function PrimaryTable({
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-sm text-gray-500">Filtros activos:</span>
                                     {activeFilter && (
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm">
                                             {activeFilter}
                                             <button 
                                                 onClick={() => setActiveFilter(null)}
@@ -408,7 +400,7 @@ export default function PrimaryTable({
                                 </div>
                             )}
                         </div>
-                        <div className="w-full">
+                        <div className="w-full bg-white">
                             <Table>
                     <TableHeader>
                         <TableRow>
@@ -417,7 +409,7 @@ export default function PrimaryTable({
                                                 key={index}
                                                 className={`
                                                     ${enableSort ? "cursor-pointer hover:bg-gray-50" : ""}
-                                                    transition-all duration-300 ease-in-out
+                                                    bg-gray-50
                                                 `}
                                                 onClick={() => handleSort(index)}
                                             >
@@ -442,17 +434,14 @@ export default function PrimaryTable({
                                     {paginatedData.map((row, rowIndex) => (
                                         <TableRow 
                                             key={rowIndex} 
-                                            className="hover:bg-gray-50 hover-scale animate-slide-in-row"
-                                            style={{
-                                                transitionDelay: `${rowIndex * 30}ms`
-                                            }}
+                                            className="hover:bg-gray-50"
                                         >
                                 {row.map((cell, cellIndex) => (
                                                 <TableCell 
                                                     key={cellIndex} 
                                                     className={`
-                                                        ${cellIndex === 0 ? "w-[50px] text-center py-1 pl-6" : "py-0"}
-                                                        ${cellIndex === 1 && onEdit ? "cursor-pointer hover:text-blue-600 transition-all hover-glow" : ""}
+                                                        ${cellIndex === 0 ? "w-[50px] text-center py-2 pl-6" : "py-3"}
+                                                        ${cellIndex === 1 && onEdit ? "cursor-pointer hover:text-purple-600 transition-colors" : ""}
                                                     `}
                                                     onClick={() => {
                                                         if (cellIndex === 1 && onEdit) {
@@ -469,7 +458,7 @@ export default function PrimaryTable({
                 </Table>
             </div>
                         {enablePagination && calculatedTotalPages > 1 && (
-                            <div className="flex items-center justify-between px-6 py-3 border-t">
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
                                 <div className="text-sm text-gray-600">
                                     Mostrando {((validCurrentPage - 1) * itemsPerPage) + 1} - {Math.min(validCurrentPage * itemsPerPage, sortedData.length)} de {sortedData.length} registros
                                 </div>
@@ -479,7 +468,7 @@ export default function PrimaryTable({
                                         size="sm"
                                         onClick={() => handlePageChange(validCurrentPage - 1)}
                                         disabled={validCurrentPage === 1}
-                                        className="hover-scale animate-fade-in"
+                                        className="rounded-lg bg-white border border-gray-200"
                                     >
                                         Anterior
                                     </Button>
@@ -500,7 +489,7 @@ export default function PrimaryTable({
                                                             variant={page === validCurrentPage ? "default" : "outline"}
                                                             size="sm"
                                                             onClick={() => handlePageChange(page)}
-                                                            className="hover-scale animate-fade-in"
+                                                            className={page === validCurrentPage ? "rounded-lg" : "rounded-lg bg-white border border-gray-200"}
                                                         >
                                                             {page}
                                                         </Button>
@@ -513,7 +502,7 @@ export default function PrimaryTable({
                                         size="sm"
                                         onClick={() => handlePageChange(validCurrentPage + 1)}
                                         disabled={validCurrentPage === calculatedTotalPages}
-                                        className="hover-scale animate-fade-in"
+                                        className="rounded-lg bg-white border border-gray-200"
                                     >
                                         Siguiente
                                     </Button>
@@ -524,47 +513,5 @@ export default function PrimaryTable({
                 )}
             </div>
         </div>
-        <style jsx>{`
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateX(-20px) scale(0.9);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0) scale(1);
-                }
-            }
-            @keyframes slideOut {
-                from {
-                    opacity: 1;
-                    transform: translateX(0) scale(1);
-                }
-                to {
-                    opacity: 0;
-                    transform: translateX(20px) scale(0.9);
-                }
-            }
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            @keyframes slideInRow {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        `}</style>
     </>);
 }

@@ -209,7 +209,7 @@ export default function BigMultimediaFavorite({ onImagesChange, initialImages = 
                                         onClick={() => selectedForSwap !== null && handleSwapSelect(index)}
                                     >
                                         <div className={`relative rounded-lg overflow-hidden border-2 ${selectedForSwap === index ? 'border-blue-500' : 'border-gray-200'
-                                            } shadow-sm hover:shadow-md transition-all duration-300`}>
+                                            } transition-all duration-300`}>
                                             {loadingImages[image.id] && (
                                                 <div className="absolute inset-0 z-10">
                                                     <Skeleton className="w-full h-32" />
@@ -240,7 +240,7 @@ export default function BigMultimediaFavorite({ onImagesChange, initialImages = 
                                                 }`}></div>
                                             {selectedForSwap !== null && selectedForSwap !== index && (
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <ArrowUpDown className="h-12 w-12 text-white drop-shadow-lg animate-pulse" />
+                                                    <ArrowUpDown className="h-12 w-12 text-white animate-pulse" />
                                                 </div>
                                             )}
                                             {selectedForSwap === null && (
@@ -370,7 +370,7 @@ export default function BigMultimediaFavorite({ onImagesChange, initialImages = 
                         )}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 w-full text-center flex-1">
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-lg p-6 w-full text-center flex-1">
                         <Upload size={32} className="mb-2 text-gray-500" />
                         <p className="text-sm text-gray-600">Acepta imágenes con extensiones jpg, jpeg, png, svg</p>
                         <p className="text-xs text-gray-500 mt-1">Puedes agregar hasta {MAX_IMAGES} imágenes</p>
