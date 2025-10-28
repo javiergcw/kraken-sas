@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import DashboardGuard from '../../components/core/guards/DashboardGuard';
 
 export const metadata: Metadata = {
   title: 'Dashboard - OCEANOSCUBA',
@@ -12,8 +13,10 @@ export default function RootDashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardLayout>
-      {children}
-    </DashboardLayout>
+    <DashboardGuard>
+      <DashboardLayout>
+        {children}
+      </DashboardLayout>
+    </DashboardGuard>
   );
 }

@@ -1,19 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { healthCheckController, authController } from "@/components/core";
+import { tokenService } from "@/utils/token.service";
 
 export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [version, setVersion] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Si ya hay token, redirigir al dashboard
+    if (tokenService.hasToken() && tokenService.hasCompany()) {
+      router.push("/dashboard");
+      return;
+    }
+
+    // Obtener la versión del sistema mediante el controlador
+    const fetchVersion = async () => {
+      const systemVersion = await healthCheckController.getVersion();
+      setVersion(systemVersion);
+    };
+
+    fetchVersion();
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí puedes agregar la lógica de autenticación
-    // Por ahora, redirigimos al dashboard
-    router.push("/dashboard");
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await authController.login({ email, password });
+      
+      if (response && response.success) {
+        // Verificar si tiene compañía asignada
+        if (response.data.User.company_id === null) {
+          setError("No tienes una compañía asignada. Comunícate con el desarrollador.");
+          authController.logout(); // Limpiar el token ya que no puede acceder
+          return;
+        }
+
+        // Redirigir al dashboard si el login es exitoso y tiene compañía
+        router.push("/dashboard");
+      } else {
+        setError("Credenciales incorrectas. Por favor, verifica tu email y contraseña.");
+      }
+    } catch (error: any) {
+      console.error("Error en login:", error);
+      
+      // Mensajes de error más específicos
+      if (error?.status === 404) {
+        setError("Endpoint no encontrado. Verifica la URL del servidor.");
+      } else if (error?.status === 401 || error?.status === 403) {
+        setError("Credenciales incorrectas. Por favor, verifica tu email y contraseña.");
+      } else if (error?.status === 400) {
+        // Errores de validación o formato
+        const errorMessage = error?.data?.message || "Datos inválidos. Por favor, verifica la información.";
+        setError(errorMessage);
+      } else if (error?.message) {
+        setError(error.message);
+      } else {
+        setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -42,6 +99,13 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Mensaje de error */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded">
+              {error}
+            </div>
+          )}
+
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-2">
             {/* Campo Email */}
@@ -50,8 +114,9 @@ export default function Home() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="habitat@gmail.com"
-                className="w-full px-3 py-1.5 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-transparent"
+                placeholder="admin@scubaworld.com"
+                disabled={isLoading}
+                className="w-full px-3 py-1.5 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -63,7 +128,8 @@ export default function Home() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3 py-1.5 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-transparent"
+                disabled={isLoading}
+                className="w-full px-3 py-1.5 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -71,9 +137,10 @@ export default function Home() {
             {/* Botón Iniciar sesión */}
             <button
               type="submit"
-              className="w-full py-1.5 text-sm bg-gray-900 text-white rounded font-medium hover:bg-gray-800 transition-colors"
+              disabled={isLoading}
+              className="w-full py-1.5 text-sm bg-gray-900 text-white rounded font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Iniciar sesión
+              {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </button>
 
             {/* Botón Iniciar con Email */}
@@ -100,9 +167,11 @@ export default function Home() {
           </div>
 
           {/* Versión */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-400">V 1.0.1</p>
-          </div>
+          {version && (
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-400">V {version}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
