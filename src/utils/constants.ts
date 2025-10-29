@@ -1,15 +1,13 @@
 /**
  * Constantes de la aplicación
+ * @deprecated Usar src/routes/api.config.ts en su lugar
  */
 
-// URL base para las API routes de Next.js (proxy local)
-export const API_BASE_URL = '/api';
-
-export const API_ENDPOINTS = {
-  HEALTH: '/health',
-  AUTH: {
-    LOGIN: '/auth/login',
-    ME: '/auth/me',
-  },
-} as const;
+// Re-exportar desde la nueva ubicación para mantener compatibilidad
+export { 
+  API_BASE_URL, 
+  API_ENDPOINTS,
+  EXTERNAL_API_URL,
+  EXTERNAL_ROUTES 
+} from '@/routes/api.config';
 

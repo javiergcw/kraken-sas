@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { EXTERNAL_ROUTES } from '@/routes/api.config';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const response = await fetch('https://api.oceanoscuba.com.co/api/v1/auth/login', {
+    const response = await fetch(EXTERNAL_ROUTES.AUTH.LOGIN, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -12,7 +13,16 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    // Leer el texto de la respuesta primero
+    const responseText = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      // Si no es JSON, devolver como texto
+      data = { error: 'Respuesta no válida', message: responseText };
+    }
 
     return NextResponse.json(data, {
       status: response.status,
@@ -24,7 +34,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Error al hacer la petición', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Error al hacer la petición', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

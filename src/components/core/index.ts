@@ -2,21 +2,27 @@
  * Exportaciones centrales del módulo core
  */
 
-// DTOs
-export * from './dto/HealthCheckDto';
-export * from './dto/LoginDto';
-export * from './dto/UserDto';
+// Health Check - módulo completo
+export * from './health';
 
-// Servicios
-export * from './services/HealthCheckService';
-export * from './services/AuthService';
+// Autenticación - módulo completo
+export * from './auth';
 
-// Casos de uso
-export * from './use-cases/CheckHealthUseCase';
-export * from './use-cases/LoginUseCase';
-export * from './use-cases/GetMeUseCase';
+// Usuario - módulo completo
+export * from './user';
 
-// Controladores
-export * from './controllers/HealthCheckController';
-export * from './controllers/AuthController';
+// Categorías - módulo completo
+export * from './categories';
+
+// Subcategorías - módulo completo
+export * from './subcategories';
+
+// Productos - módulo completo
+export * from './products';
+
+// Zonas - módulo completo
+export * from './zones';
+
+// Banners - módulo completo
+export * from './banners';
 

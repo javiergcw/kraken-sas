@@ -47,13 +47,13 @@ class HttpService {
     // Construir la URL base
     const baseUrl = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
     
-    // Si la baseURL es relativa, construir directamente la ruta
+    // Para URLs relativas (rutas API de Next.js), construir directamente
     let urlString: string;
     if (baseUrl.startsWith('/')) {
-      // URL relativa
+      // URL relativa - usar directamente
       urlString = `${baseUrl}${cleanEndpoint}`;
     } else {
-      // URL absoluta
+      // URL absoluta - usar URL constructor
       const url = new URL(cleanEndpoint, baseUrl);
       urlString = url.toString();
     }
@@ -66,7 +66,8 @@ class HttpService {
           searchParams.append(key, String(value));
         }
       });
-      urlString += `?${searchParams.toString()}`;
+      const separator = urlString.includes('?') ? '&' : '?';
+      urlString += `${separator}${searchParams.toString()}`;
     }
 
     return urlString;
@@ -88,10 +89,6 @@ class HttpService {
 
     const url = this.buildURL(endpoint, params);
     
-    // Log para debugging (remover en producción)
-    console.log('🔗 Request URL:', url);
-    console.log('📤 Method:', method);
-
     // Solo agregar Content-Type para métodos que tienen body
     const methodsWithBody: Array<'POST' | 'PUT' | 'PATCH' | 'DELETE'> = ['POST', 'PUT', 'PATCH', 'DELETE'];
     const hasBody = body && methodsWithBody.includes(method as any);
@@ -147,12 +144,9 @@ class HttpService {
       }
 
       if (!response.ok) {
-        console.error('❌ HTTP Error:', response.status, response.statusText);
-        console.error('📥 Response data:', data);
         throw new HttpError(response.status, response.statusText, data);
       }
 
-      console.log('✅ Success:', response.status, response.statusText);
       return {
         data,
         status: response.status,
@@ -165,7 +159,6 @@ class HttpService {
       }
       
       // Error de red o desconocido
-      console.error('🚨 Network error:', error);
       throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

@@ -48,25 +48,24 @@ import {
 } from '@mui/icons-material';
 import BannerDialog, { BannerFormData } from '@/components/marketing/BannerDialog';
 import BannerPageSkeleton from './BannerPageSkeleton';
+import { zoneController, bannerController } from '@/components/core';
+import { ZoneDto } from '@/components/core/zones/dto/ZoneResponse.dto';
+import { BannerDto } from '@/components/core/banners/dto/BannerResponse.dto';
 
 interface Banner {
-  id: number;
-  titulo: string;
-  subtitulo?: string;
-  redireccion: string;
-  estado: 'Activo' | 'Inactivo';
-  imagen: string;
-  fechaInicio: string;
-  fechaFinal: string;
-  zona?: string;
-  urlWeb?: string;
-  urlMovil?: string;
-  urlPopup?: string;
+  id: string;
+  title: string;
+  image_url: string;
+  link_url: string;
+  active: boolean;
+  zone_id: string;
+  created_at: string;
 }
 
 interface ZonaBanner {
   id: string;
-  nombre: string;
+  codigo: string; // name del DTO
+  nombre: string; // description del DTO
   banners: Banner[];
   expanded: boolean;
 }
@@ -76,15 +75,15 @@ const BannerPage: React.FC = () => {
   const [zonaSearchTerm, setZonaSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
+  const [selectedBanner, setSelectedBanner] = useState<BannerDto | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null);
+  const [bannerToDelete, setBannerToDelete] = useState<BannerDto | null>(null);
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
   const [filtroEstado, setFiltroEstado] = useState<'Todos' | 'Activo' | 'Inactivo'>('Todos');
   const filterOpen = Boolean(filterAnchorEl);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [editingBanner, setEditingBanner] = useState<BannerDto | null>(null);
   const [viewZonaModalOpen, setViewZonaModalOpen] = useState(false);
   const [selectedZona, setSelectedZona] = useState<ZonaBanner | null>(null);
   const [showEditWarning, setShowEditWarning] = useState(false);
@@ -92,15 +91,56 @@ const BannerPage: React.FC = () => {
   const [createZonaDialogOpen, setCreateZonaDialogOpen] = useState(false);
   const [zonaFormData, setZonaFormData] = useState({ codigo: '', nombre: '' });
   const [loading, setLoading] = useState(true);
+  const [zonas, setZonas] = useState<ZonaBanner[]>([]);
+  const [banners, setBanners] = useState<BannerDto[]>([]);
 
-  // Simular carga de datos (puedes reemplazar esto con una llamada API real)
+  // Cargar datos
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1200);
-    
-    return () => clearTimeout(timer);
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Cargar zonas
+      const zonesResponse = await zoneController.getAll();
+      if (zonesResponse?.success && zonesResponse.data) {
+        const zonesData = zonesResponse.data;
+        
+        // Cargar banners
+        const bannersResponse = await bannerController.getAll();
+        if (bannersResponse?.success && bannersResponse.data) {
+          setBanners(bannersResponse.data);
+          
+          // Agrupar banners por zona
+          const zonasWithBanners: ZonaBanner[] = zonesData.map(zone => ({
+            id: zone.id,
+            codigo: zone.name, // name del DTO es el código
+            nombre: zone.description, // description del DTO es el nombre
+            expanded: false,
+            banners: bannersResponse.data.filter(banner => banner.zone_id === zone.id),
+          }));
+          
+          setZonas(zonasWithBanners);
+        } else {
+          // Si no hay banners, solo mostrar zonas
+          const zonasList: ZonaBanner[] = zonesData.map(zone => ({
+            id: zone.id,
+            codigo: zone.name,
+            nombre: zone.description,
+            expanded: false,
+            banners: [],
+          }));
+          setZonas(zonasList);
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setFilterAnchorEl(event.currentTarget);
@@ -142,229 +182,72 @@ const BannerPage: React.FC = () => {
     setZonaFormData({ codigo: '', nombre: '' });
   };
 
-  const handleCreateZona = () => {
+  const handleCreateZona = async () => {
     if (zonaFormData.codigo.trim() && zonaFormData.nombre.trim()) {
-      const newZona: ZonaBanner = {
-        id: Date.now().toString(),
-        nombre: zonaFormData.nombre,
-        banners: [],
-        expanded: false,
-      };
-      setZonas([...zonas, newZona]);
-      handleCloseCreateZona();
+      try {
+        const response = await zoneController.create({
+          name: zonaFormData.codigo, // name es el código
+          description: zonaFormData.nombre, // description es el nombre
+        });
+        
+        if (response?.success) {
+          await loadData(); // Recargar datos
+          handleCloseCreateZona();
+        }
+      } catch (error) {
+        console.error('Error al crear zona:', error);
+      }
     }
   };
 
-  const handleEditBanner = (banner: Banner) => {
-    // Convertir fechas al formato ISO para el input date
-    const fechaInicioISO = banner.fechaInicio.split('/').reverse().join('-');
-    const fechaFinalISO = banner.fechaFinal.split('/').reverse().join('-');
-    
-    // Encontrar la zona del banner
-    const zonaDelBanner = zonas.find(z => z.banners.some(b => b.id === banner.id));
-    
+  const handleEditBanner = (banner: BannerDto) => {
     setEditingBanner(banner);
     setIsEditMode(true);
     setCreateDialogOpen(true);
   };
 
-  const handleCreateBanner = (data: BannerFormData) => {
-    // Encontrar la zona seleccionada
-    const zonaIndex = zonas.findIndex(z => z.id === data.zonaId);
-    if (zonaIndex === -1) return;
+  const handleCreateBanner = async (data: BannerFormData) => {
+    try {
+      if (isEditMode && editingBanner) {
+        // Modo edición: actualizar banner existente
+        const response = await bannerController.update(editingBanner.id, {
+          zone_id: data.zonaId,
+          title: data.titulo,
+          image_url: data.urlWeb || '',
+          link_url: data.redireccion || '#',
+          active: data.estado === 'Activo',
+        });
+        
+        if (response?.success) {
+          await loadData(); // Recargar datos
+        }
+      } else {
+        // Modo crear: nuevo banner
+        const response = await bannerController.create({
+          zone_id: data.zonaId,
+          title: data.titulo,
+          image_url: data.urlWeb || '',
+          link_url: data.redireccion || '#',
+          active: data.estado === 'Activo',
+        });
+        
+        if (response?.success) {
+          await loadData(); // Recargar datos
+        }
+      }
 
-    if (isEditMode && editingBanner) {
-      // Modo edición: actualizar banner existente
-      const updatedBanner: Banner = {
-        ...editingBanner,
-        titulo: data.titulo,
-        subtitulo: data.subtitulo,
-        redireccion: data.redireccion,
-        estado: data.estado,
-        imagen: data.urlWeb || editingBanner.imagen,
-        fechaInicio: data.fechaInicio.includes('-') ? new Date(data.fechaInicio).toLocaleDateString('es-ES') : data.fechaInicio,
-        fechaFinal: data.fechaFinal.includes('-') ? new Date(data.fechaFinal).toLocaleDateString('es-ES') : data.fechaFinal,
-        zona: zonas.find(z => z.id === data.zonaId)?.nombre,
-        urlWeb: data.urlWeb,
-        urlMovil: data.urlMovil,
-        urlPopup: data.urlPopup,
-      };
-
-      // Actualizar el banner en las zonas
-      setZonas(prevZonas =>
-        prevZonas.map(zona => ({
-          ...zona,
-          banners: zona.banners.map(banner =>
-            banner.id === editingBanner.id ? updatedBanner : banner
-          ).filter(banner => {
-            // Remover de zona anterior si cambió
-            if (banner.id === editingBanner.id && zona.id !== data.zonaId) {
-              return false;
-            }
-            return true;
-          }),
-        })).map(zona => {
-          // Agregar a nueva zona si cambió
-          if (zona.id === data.zonaId && !zona.banners.some(b => b.id === editingBanner.id)) {
-            return { ...zona, banners: [...zona.banners, updatedBanner] };
-          }
-          return zona;
-        })
-      );
-    } else {
-      // Modo crear: nuevo banner
-      const newBanner: Banner = {
-        id: Date.now(),
-        titulo: data.titulo,
-        subtitulo: data.subtitulo,
-        redireccion: data.redireccion,
-        estado: data.estado,
-        imagen: data.urlWeb || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=100&h=60&fit=crop',
-        fechaInicio: new Date(data.fechaInicio).toLocaleDateString('es-ES'),
-        fechaFinal: new Date(data.fechaFinal).toLocaleDateString('es-ES'),
-        zona: zonas.find(z => z.id === data.zonaId)?.nombre,
-        urlWeb: data.urlWeb,
-        urlMovil: data.urlMovil,
-        urlPopup: data.urlPopup,
-      };
-
-      // Agregar el banner a la zona correspondiente
-      setZonas(prevZonas =>
-        prevZonas.map(zona =>
-          zona.id === data.zonaId
-            ? { ...zona, banners: [...zona.banners, newBanner] }
-            : zona
-        )
-      );
+      setCreateDialogOpen(false);
+      setIsEditMode(false);
+      setEditingBanner(null);
+    } catch (error) {
+      console.error('Error al guardar banner:', error);
     }
-
-    setCreateDialogOpen(false);
-    setIsEditMode(false);
-    setEditingBanner(null);
   };
 
-  // Datos de ejemplo organizados por zonas
-  const [zonas, setZonas] = useState<ZonaBanner[]>([
-    {
-      id: '1',
-      nombre: 'Zona De Banners',
-      expanded: true,
-      banners: [
-        {
-          id: 1,
-          titulo: 'SUMÉRGETE EN LA AVENTURA Y DESCUBRE LA MAGIA',
-          subtitulo: 'DESCUBRE EL BUCEO EN SANTA MARTA',
-          redireccion: '/courses',
-          estado: 'Activo',
-          imagen: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=100&h=60&fit=crop',
-          fechaInicio: '17/4/2025',
-          fechaFinal: '7/1/2027',
-          zona: 'Zona de banners',
-          urlWeb: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop',
-        },
-        {
-          id: 2,
-          titulo: 'LLEVA TU BUCEO AL SIGUIENTE NIVEL',
-          subtitulo: 'CERTIFICACIÓN PADI ADVANCED',
-          redireccion: '/courses/advanced',
-          estado: 'Activo',
-          imagen: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=60&fit=crop',
-          fechaInicio: '17/4/2025',
-          fechaFinal: '1/4/2027',
-          zona: 'Zona de banners',
-          urlWeb: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&h=400&fit=crop',
-        },
-      ],
-    },
-    {
-      id: '2',
-      nombre: '¿Cómo Bucear?',
-      expanded: false,
-      banners: [
-        {
-          id: 3,
-          titulo: 'DESCUBRE EL MUNDO SUBMARINO',
-          subtitulo: 'GUÍA COMPLETA PARA PRINCIPIANTES',
-          redireccion: '/guide',
-          estado: 'Activo',
-          imagen: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=100&h=60&fit=crop',
-          fechaInicio: '1/5/2025',
-          fechaFinal: '31/12/2027',
-          zona: '¿Cómo Bucear?',
-          urlWeb: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=600&h=400&fit=crop',
-        },
-      ],
-    },
-    {
-      id: '3',
-      nombre: 'Testimonios',
-      expanded: false,
-      banners: [
-        {
-          id: 4,
-          titulo: 'LA MEJOR EXPERIENCIA DE MI VIDA',
-          subtitulo: 'MARÍA GONZÁLEZ - BUCEADORA CERTIFICADA',
-          redireccion: '/testimonios',
-          estado: 'Activo',
-          imagen: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=60&fit=crop',
-          fechaInicio: '1/1/2025',
-          fechaFinal: '31/12/2027',
-          zona: 'Testimonios',
-          urlWeb: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&h=400&fit=crop',
-        },
-        {
-          id: 5,
-          titulo: 'INCREÍBLE AVENTURA SUBMARINA',
-          subtitulo: 'JUAN PÉREZ - INSTRUCTOR PADI',
-          redireccion: '/testimonios',
-          estado: 'Activo',
-          imagen: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=60&fit=crop',
-          fechaInicio: '1/1/2025',
-          fechaFinal: '31/12/2027',
-          zona: 'Testimonios',
-          urlWeb: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=400&fit=crop',
-        },
-        {
-          id: 6,
-          titulo: 'UNA EXPERIENCIA TRANSFORMADORA',
-          subtitulo: 'SOFÍA MARTÍNEZ - ESTUDIANTE',
-          redireccion: '/testimonios',
-          estado: 'Inactivo',
-          imagen: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=60&fit=crop',
-          fechaInicio: '15/2/2025',
-          fechaFinal: '15/8/2027',
-          zona: 'Testimonios',
-          urlWeb: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&h=400&fit=crop',
-        },
-        {
-          id: 7,
-          titulo: 'PASIÓN POR EL MAR',
-          subtitulo: 'CARLOS RAMÍREZ - FOTÓGRAFO SUBMARINO',
-          redireccion: '/testimonios',
-          estado: 'Activo',
-          imagen: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=60&fit=crop',
-          fechaInicio: '1/1/2025',
-          fechaFinal: '31/12/2027',
-          zona: 'Testimonios',
-          urlWeb: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=400&fit=crop',
-          urlMovil: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop',
-          urlPopup: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop',
-        },
-      ],
-    },
-  ]);
+  // Helper para obtener estado de banner
+  const getBannerEstado = (active: boolean): 'Activo' | 'Inactivo' => {
+    return active ? 'Activo' : 'Inactivo';
+  };
 
   const handleToggleZona = (zonaId: string) => {
     setZonas(zonas.map(zona => 
@@ -372,7 +255,7 @@ const BannerPage: React.FC = () => {
     ));
   };
 
-  const handleViewBanner = (banner: Banner) => {
+  const handleViewBanner = (banner: BannerDto) => {
     setSelectedBanner(banner);
     setViewModalOpen(true);
   };
@@ -382,7 +265,7 @@ const BannerPage: React.FC = () => {
     setSelectedBanner(null);
   };
 
-  const handleDeleteBanner = (banner: Banner) => {
+  const handleDeleteBanner = (banner: BannerDto) => {
     setBannerToDelete(banner);
     setDeleteModalOpen(true);
   };
@@ -392,14 +275,18 @@ const BannerPage: React.FC = () => {
     setBannerToDelete(null);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (bannerToDelete) {
-      setZonas(zonas.map(zona => ({
-        ...zona,
-        banners: zona.banners.filter(b => b.id !== bannerToDelete.id)
-      })));
+      try {
+        const response = await bannerController.delete(bannerToDelete.id);
+        if (response?.success) {
+          await loadData(); // Recargar datos
+          handleCloseDeleteModal();
+        }
+      } catch (error) {
+        console.error('Error al eliminar banner:', error);
+      }
     }
-    handleCloseDeleteModal();
   };
 
   // Filtrar zonas y banners según el término de búsqueda y filtros
@@ -408,14 +295,12 @@ const BannerPage: React.FC = () => {
     banners: zona.banners.filter(banner => {
       // Filtro de búsqueda
       const matchesSearch = searchTerm === '' || 
-        banner.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        banner.redireccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        banner.estado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        banner.fechaInicio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        banner.fechaFinal.toLowerCase().includes(searchTerm.toLowerCase());
+        banner.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        banner.link_url.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getBannerEstado(banner.active).toLowerCase().includes(searchTerm.toLowerCase());
       
       // Filtro de estado
-      const matchesEstado = filtroEstado === 'Todos' || banner.estado === filtroEstado;
+      const matchesEstado = filtroEstado === 'Todos' || getBannerEstado(banner.active) === filtroEstado;
       
       return matchesSearch && matchesEstado;
     })
@@ -872,8 +757,6 @@ const BannerPage: React.FC = () => {
                         <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
                           <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '13px' }}>Título</TableCell>
                           <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '13px' }}>Redirección</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '13px' }}>Fecha de inicio</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '13px' }}>Fecha final</TableCell>
                           <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '13px' }}>Estado</TableCell>
                           <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 1, fontSize: '13px', textAlign: 'center' }}>Acciones</TableCell>
                         </TableRow>
@@ -885,8 +768,8 @@ const BannerPage: React.FC = () => {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                 <Box
                                   component="img"
-                                  src={banner.imagen}
-                                  alt={banner.titulo}
+                                  src={banner.image_url}
+                                  alt={banner.title}
                                   sx={{
                                     width: 50,
                                     height: 32,
@@ -895,32 +778,22 @@ const BannerPage: React.FC = () => {
                                   }}
                                 />
                                 <Typography variant="body2" sx={{ fontSize: '13px', color: '#424242' }}>
-                                  {banner.titulo}
+                                  {banner.title}
                                 </Typography>
                               </Box>
                             </TableCell>
                             <TableCell sx={{ py: 1 }}>
                               <Typography variant="body2" sx={{ fontSize: '13px', color: '#757575' }}>
-                                {banner.redireccion}
-                              </Typography>
-                            </TableCell>
-                            <TableCell sx={{ py: 1 }}>
-                              <Typography variant="body2" sx={{ fontSize: '13px', color: '#424242' }}>
-                                {banner.fechaInicio}
-                              </Typography>
-                            </TableCell>
-                            <TableCell sx={{ py: 1 }}>
-                              <Typography variant="body2" sx={{ fontSize: '13px', color: '#424242' }}>
-                                {banner.fechaFinal}
+                                {banner.link_url}
                               </Typography>
                             </TableCell>
                             <TableCell sx={{ py: 1 }}>
                               <Chip
-                                label={banner.estado}
+                                label={getBannerEstado(banner.active)}
                                 size="small"
                                 sx={{
-                                  backgroundColor: banner.estado === 'Activo' ? '#e8f5e9' : '#ffebee',
-                                  color: banner.estado === 'Activo' ? '#4caf50' : '#f44336',
+                                  backgroundColor: banner.active ? '#e8f5e9' : '#ffebee',
+                                  color: banner.active ? '#4caf50' : '#f44336',
                                   fontWeight: 'medium',
                                   fontSize: '11px',
                                   height: 22,
@@ -1103,9 +976,8 @@ const BannerPage: React.FC = () => {
               <TableBody>
                 {zonas.filter((zona) => {
                   if (zonaSearchTerm === '') return true;
-                  const codigo = zona.id === '1' ? 'primary-zone' : zona.id === '2' ? 'como_bucear' : 'testimonio';
                   return (
-                    codigo.toLowerCase().includes(zonaSearchTerm.toLowerCase()) ||
+                    zona.codigo.toLowerCase().includes(zonaSearchTerm.toLowerCase()) ||
                     zona.nombre.toLowerCase().includes(zonaSearchTerm.toLowerCase())
                   );
                 }).map((zona) => (
@@ -1124,7 +996,7 @@ const BannerPage: React.FC = () => {
                           <FmdGoodOutlinedIcon sx={{ fontSize: 18, color: '#757575' }} />
                         </Box>
                         <Typography variant="body2" sx={{ fontSize: '13px', color: '#424242', fontFamily: 'monospace' }}>
-                          {zona.id === '1' ? 'primary-zone' : zona.id === '2' ? 'como_bucear' : 'testimonio'}
+                          {zona.codigo}
                         </Typography>
                       </Box>
                     </TableCell>
@@ -1218,7 +1090,7 @@ const BannerPage: React.FC = () => {
             color: '#424242',
             fontSize: '16px',
           }}>
-            {selectedBanner?.titulo}
+            {selectedBanner?.title}
           </DialogTitle>
           <IconButton
             onClick={handleCloseViewModal}
@@ -1240,150 +1112,56 @@ const BannerPage: React.FC = () => {
         <DialogContent sx={{ px: 3, pb: 3, pt: 2 }}>
           {selectedBanner && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Primera fila: Título y Fecha de inicio */}
-              <Box sx={{ display: 'flex', gap: 4 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
-                    Título:{' '}
-                  </Typography>
-                  <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                    {selectedBanner.titulo}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
-                    Fecha de inicio:{' '}
-                  </Typography>
-                  <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                    {selectedBanner.fechaInicio}
-                  </Typography>
-                </Box>
+              <Box>
+                <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
+                  Título:{' '}
+                </Typography>
+                <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
+                  {selectedBanner.title}
+                </Typography>
               </Box>
 
-              {/* Segunda fila: Subtítulo y Fecha final */}
-              <Box sx={{ display: 'flex', gap: 4 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
-                    Subtítulo:{' '}
-                  </Typography>
-                  <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                    {selectedBanner.subtitulo || '-'}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
-                    Fecha final:{' '}
-                  </Typography>
-                  <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                    {selectedBanner.fechaFinal}
-                  </Typography>
-                </Box>
+              <Box>
+                <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
+                  Redirección:{' '}
+                </Typography>
+                <Typography 
+                  component="a" 
+                  href={selectedBanner.link_url}
+                  sx={{ 
+                    color: '#1976d2', 
+                    fontSize: '14px',
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' }
+                  }}
+                >
+                  {selectedBanner.link_url}
+                </Typography>
               </Box>
 
-              {/* Tercera fila: Zona y Redirección */}
-              <Box sx={{ display: 'flex', gap: 4 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
-                    Zona:{' '}
-                  </Typography>
-                  <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                    {selectedBanner.zona || '-'}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
-                    Redirección:{' '}
-                  </Typography>
-                  <Typography 
-                    component="a" 
-                    href={selectedBanner.redireccion}
-                    sx={{ 
-                      color: '#1976d2', 
-                      fontSize: '14px',
-                      textDecoration: 'none',
-                      '&:hover': { textDecoration: 'underline' }
-                    }}
-                  >
-                    {selectedBanner.redireccion}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Cuarta fila: Estado */}
               <Box>
                 <Typography component="span" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px' }}>
                   Estado:{' '}
                 </Typography>
                 <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                  {selectedBanner.estado}
-                </Typography>
-              </Box>
-
-              {/* URLs */}
-              <Box>
-                <Typography component="div" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px', mb: 0.5 }}>
-                  URL Web:
-                </Typography>
-                <Typography 
-                  component="a" 
-                  href={selectedBanner.urlWeb}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ 
-                    color: '#1976d2', 
-                    fontSize: '14px',
-                    textDecoration: 'none',
-                    display: 'block',
-                    wordBreak: 'break-all',
-                    '&:hover': { textDecoration: 'underline' }
-                  }}
-                >
-                  {selectedBanner.urlWeb || '-'}
+                  {getBannerEstado(selectedBanner.active)}
                 </Typography>
               </Box>
 
               <Box>
                 <Typography component="div" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px', mb: 0.5 }}>
-                  URL Móvil:
+                  Imagen:
                 </Typography>
-                <Typography 
-                  component="a" 
-                  href={selectedBanner.urlMovil}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ 
-                    color: '#1976d2', 
-                    fontSize: '14px',
-                    textDecoration: 'none',
-                    display: 'block',
-                    wordBreak: 'break-all',
-                    '&:hover': { textDecoration: 'underline' }
+                <Box
+                  component="img"
+                  src={selectedBanner.image_url}
+                  alt={selectedBanner.title}
+                  sx={{
+                    maxWidth: '100%',
+                    borderRadius: 1,
+                    mb: 1,
                   }}
-                >
-                  {selectedBanner.urlMovil || '-'}
-                </Typography>
-              </Box>
-
-              <Box>
-                <Typography component="div" sx={{ fontWeight: 'bold', color: '#000', fontSize: '14px', mb: 0.5 }}>
-                  URL Popup:
-                </Typography>
-                <Typography 
-                  component="a" 
-                  href={selectedBanner.urlPopup}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ 
-                    color: '#1976d2', 
-                    fontSize: '14px',
-                    textDecoration: 'none',
-                    display: 'block',
-                    wordBreak: 'break-all',
-                    '&:hover': { textDecoration: 'underline' }
-                  }}
-                >
-                  {selectedBanner.urlPopup || '-'}
-                </Typography>
+                />
               </Box>
             </Box>
           )}
@@ -1439,7 +1217,7 @@ const BannerPage: React.FC = () => {
           <Typography variant="body2" sx={{ color: '#424242', fontSize: '13px', lineHeight: 1.4 }}>
             ¿Estás seguro de que deseas eliminar el banner{' '}
             <Typography component="span" sx={{ fontWeight: 'bold', color: '#f44336', fontSize: '13px' }}>
-              {bannerToDelete?.titulo}
+              {bannerToDelete?.title}
             </Typography>
             ?
           </Typography>
@@ -1538,7 +1316,7 @@ const BannerPage: React.FC = () => {
                   Código:{' '}
                 </Typography>
                 <Typography component="span" sx={{ color: '#424242', fontSize: '14px' }}>
-                  {selectedZona.id === '1' ? 'primary-zone' : selectedZona.id === '2' ? 'como_bucear' : 'testimonio'}
+                  {selectedZona.codigo}
                 </Typography>
               </Box>
 
@@ -1786,16 +1564,11 @@ const BannerPage: React.FC = () => {
         initialData={
           isEditMode && editingBanner
             ? {
-                titulo: editingBanner.titulo,
-                redireccion: editingBanner.redireccion,
-                subtitulo: editingBanner.subtitulo || '',
-                fechaInicio: editingBanner.fechaInicio.split('/').reverse().join('-'),
-                fechaFinal: editingBanner.fechaFinal.split('/').reverse().join('-'),
-                zonaId: zonas.find(z => z.banners.some(b => b.id === editingBanner.id))?.id || '',
-                estado: editingBanner.estado,
-                urlWeb: editingBanner.urlWeb || '',
-                urlMovil: editingBanner.urlMovil || '',
-                urlPopup: editingBanner.urlPopup || '',
+                titulo: editingBanner.title,
+                redireccion: editingBanner.link_url,
+                zonaId: editingBanner.zone_id,
+                estado: getBannerEstado(editingBanner.active),
+                urlWeb: editingBanner.image_url || '',
               }
             : undefined
         }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { EXTERNAL_ROUTES } from '@/routes/api.config';
 
 export async function GET(req: NextRequest) {
   try {
-    const response = await fetch('https://api.oceanoscuba.com.co/health', {
+    const response = await fetch(EXTERNAL_ROUTES.HEALTH, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

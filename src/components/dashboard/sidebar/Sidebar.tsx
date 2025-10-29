@@ -30,7 +30,7 @@ import {
   CampaignOutlined,
   LogoutOutlined,
 } from '@mui/icons-material';
-import { authController } from '@/components/core';
+import { authController, userController } from '@/components/core';
 
 interface SidebarProps {
   open: boolean;
@@ -64,10 +64,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await authController.getMe();
+        const response = await userController.getMe();
         if (response && response.success) {
           setUserEmail(response.data.email);
-          setCompanyId(response.data.company_id);
+          setCompanyId(response.data.company_id || '');
         }
       } catch (error) {
         console.error('Error al obtener información del usuario:', error);

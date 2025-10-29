@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -20,13 +22,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CategoriaDialog from "./CategoriaDialog";
 import CategoriaEditDialog from "./CategoriaEditDialog";
 import CategoriasListSkeleton from "./CategoriasListSkeleton";
+import { categoryController, subcategoryController } from "@/components/core";
 
 interface Subcategoria {
   id: string;
   nombre: string;
-  slug: string;
   descripcion?: string;
-  imagen?: string;
   categoriaId?: string;
   estado?: string;
   prioridad?: number;
@@ -35,47 +36,14 @@ interface Subcategoria {
 interface Categoria {
   id: string;
   nombre: string;
-  slug: string;
   descripcion?: string;
   subcategorias?: Subcategoria[];
-  imagen?: string;
   estado?: string;
   prioridad?: number;
 }
 
-const initialCategorias: Categoria[] = [
-  {
-    id: "1",
-    nombre: "Otros",
-    slug: "Otros",
-    subcategorias: [
-      { id: "1-1", nombre: "Otros servicios", slug: "Otros servicios" },
-      { id: "1-2", nombre: "Especialidades Ambientales", slug: "Especialidades ambientales" },
-    ],
-  },
-  {
-    id: "2",
-    nombre: "Aventuras",
-    slug: "Aventuras",
-    subcategorias: [
-      { id: "2-1", nombre: "#SomosOcsano", slug: "Somos ocsano" },
-      { id: "2-2", nombre: "Principales", slug: "principales" },
-    ],
-  },
-  {
-    id: "3",
-    nombre: "Otros servicios",
-    slug: "Mis cursos, formaciones y otros servicios",
-    subcategorias: [
-      { id: "3-1", nombre: "¿Aún no eres buzo? Inicia aquí", slug: "¿Aún no eres buzo?" },
-      { id: "3-2", nombre: "¡Formación PADI a otro nivel!", slug: "¡Formación PADI a otro nivel!" },
-      { id: "3-3", nombre: "¿Ya eres buzo?", slug: "¿Ya eres buzo?" },
-    ],
-  },
-];
-
 export default function CategoriasList() {
-  const [categorias, setCategorias] = useState<Categoria[]>(initialCategorias);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isSubcategoria, setIsSubcategoria] = useState(false);
@@ -84,15 +52,66 @@ export default function CategoriasList() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{id: string; nombre: string; isSubcat: boolean} | null>(null);
   const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState<{open: boolean; message: string; severity: 'success' | 'error'}>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  // Simular carga de datos (puedes reemplazar esto con una llamada API real)
+  // Cargar categorías y subcategorías desde la API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      
+      // Cargar categorías
+      const categoriesResponse = await categoryController.getAll();
+      
+      // Cargar subcategorías
+      const subcategoriesResponse = await subcategoryController.getAll();
+      
+      if (categoriesResponse?.success && categoriesResponse.data) {
+        // Mapear categorías de la API al formato del componente
+        const mappedCategories: Categoria[] = categoriesResponse.data.map(cat => ({
+          id: cat.id,
+          nombre: cat.name,
+          descripcion: cat.description,
+        }));
+
+        // Si hay subcategorías, agruparlas por categoría
+        if (subcategoriesResponse?.success && subcategoriesResponse.data) {
+          const subcategories = subcategoriesResponse.data.map(sub => ({
+            id: sub.id,
+            nombre: sub.name,
+            descripcion: sub.description,
+            categoriaId: sub.category_id,
+          }));
+
+          // Agrupar subcategorías por categoría
+          mappedCategories.forEach(cat => {
+            cat.subcategorias = subcategories.filter(sub => sub.categoriaId === cat.id);
+          });
+        }
+
+        setCategorias(mappedCategories);
+      } else {
+        setCategorias([]);
+      }
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al cargar las categorías',
+        severity: 'error'
+      });
+      setCategorias([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleNuevo = () => {
     setIsSubcategoria(false);
@@ -100,96 +119,156 @@ export default function CategoriasList() {
     setOpenDialog(true);
   };
 
-  const handleSave = (data: { 
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setIsSubcategoria(false);
+    setCurrentCategoriaId(null);
+  };
+
+  const handleSave = async (data: { 
     nombre: string; 
-    slug: string; 
     descripcion: string; 
-    imagen?: string;
     categoriaId?: string;
   }) => {
-    if (isSubcategoria && currentCategoriaId) {
-      // Agregar subcategoría
-      setCategorias(prevCategorias => 
-        prevCategorias.map(cat => 
-          cat.id === currentCategoriaId 
-            ? {
-                ...cat,
-                subcategorias: [
-                  ...(cat.subcategorias || []),
-                  {
-                    id: Date.now().toString(),
-                    nombre: data.nombre,
-                    slug: data.slug,
-                    descripcion: data.descripcion,
-                    imagen: data.imagen,
-                    categoriaId: currentCategoriaId,
-                  }
-                ]
-              }
-            : cat
-        )
-      );
-    } else {
-      // Agregar categoría nueva
-      const nuevaCategoria: Categoria = {
-        id: Date.now().toString(),
-        nombre: data.nombre,
-        slug: data.slug,
-        descripcion: data.descripcion,
-        imagen: data.imagen,
-        subcategorias: [],
-      };
-      setCategorias(prev => [...prev, nuevaCategoria]);
+    try {
+      if (isSubcategoria) {
+        // Validar que haya una categoría asignada
+        if (!currentCategoriaId) {
+          setSnackbar({
+            open: true,
+            message: 'Error: Debe seleccionar una categoría para la subcategoría',
+            severity: 'error'
+          });
+          return;
+        }
+        // Crear subcategoría
+        const response = await subcategoryController.create({
+          category_id: currentCategoriaId,
+          name: data.nombre,
+          description: data.descripcion,
+        });
+
+        if (response?.success) {
+          setSnackbar({
+            open: true,
+            message: 'Subcategoría creada exitosamente',
+            severity: 'success'
+          });
+          handleCloseDialog(); // Cerrar diálogo y limpiar estado
+          await loadCategories(); // Recargar datos
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error al crear la subcategoría',
+            severity: 'error'
+          });
+        }
+      } else {
+        // Crear categoría
+        const response = await categoryController.create({
+          name: data.nombre,
+          description: data.descripcion,
+        });
+
+        if (response?.success) {
+          setSnackbar({
+            open: true,
+            message: 'Categoría creada exitosamente',
+            severity: 'success'
+          });
+          handleCloseDialog(); // Cerrar diálogo y limpiar estado
+          await loadCategories(); // Recargar datos
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error al crear la categoría',
+            severity: 'error'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error al guardar:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al guardar. Por favor, intenta de nuevo',
+        severity: 'error'
+      });
     }
   };
 
-  const handleSaveEdit = (data: { 
+  const handleSaveEdit = async (data: { 
     id: string;
     nombre: string; 
-    slug: string; 
     descripcion: string; 
-    imagen?: string;
     categoriaId?: string;
     estado: string;
     prioridad: number;
   }) => {
-    // Editar categoría o subcategoría
-    if (isSubcategoria) {
-      setCategorias(prevCategorias => 
-        prevCategorias.map(cat => ({
-          ...cat,
-          subcategorias: cat.subcategorias?.map(sub => 
-            sub.id === data.id 
-              ? {
-                  ...sub,
-                  nombre: data.nombre,
-                  slug: data.slug,
-                  descripcion: data.descripcion,
-                  imagen: data.imagen,
-                  categoriaId: data.categoriaId,
-                  estado: data.estado,
-                  prioridad: data.prioridad,
-                }
-              : sub
-          )
-        }))
-      );
-    } else {
-      setCategorias(prevCategorias => 
-        prevCategorias.map(cat => 
-          cat.id === data.id 
-            ? {
-                ...cat,
-                nombre: data.nombre,
-                slug: data.slug,
-                descripcion: data.descripcion,
-                imagen: data.imagen,
-                estado: data.estado,
-                prioridad: data.prioridad,
-              }
-            : cat
-        )
-      );
+    try {
+      if (isSubcategoria) {
+        // Actualizar subcategoría
+        if (!data.categoriaId) {
+          setSnackbar({
+            open: true,
+            message: 'Error: No se encontró la categoría',
+            severity: 'error'
+          });
+          return;
+        }
+
+        const response = await subcategoryController.update(data.id, {
+          category_id: data.categoriaId,
+          name: data.nombre,
+          description: data.descripcion,
+        });
+
+        if (response?.success) {
+          setSnackbar({
+            open: true,
+            message: 'Subcategoría actualizada exitosamente',
+            severity: 'success'
+          });
+          setOpenEditDialog(false); // Cerrar diálogo
+          setEditingData(null);
+          await loadCategories(); // Recargar datos
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error al actualizar la subcategoría',
+            severity: 'error'
+          });
+        }
+      } else {
+        // Actualizar categoría
+        const response = await categoryController.update(data.id, {
+          name: data.nombre,
+          description: data.descripcion,
+        });
+
+        if (response?.success) {
+          setSnackbar({
+            open: true,
+            message: 'Categoría actualizada exitosamente',
+            severity: 'success'
+          });
+          setOpenEditDialog(false); // Cerrar diálogo
+          setEditingData(null);
+          await loadCategories(); // Recargar datos
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error al actualizar la categoría',
+            severity: 'error'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error al actualizar:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al actualizar. Por favor, intenta de nuevo',
+        severity: 'error'
+      });
     }
   };
 
@@ -201,13 +280,25 @@ export default function CategoriasList() {
       for (const cat of categorias) {
         const sub = cat.subcategorias?.find(s => s.id === id);
         if (sub) {
-          dataToEdit = { ...sub, categoriaId: cat.id };
+          dataToEdit = { 
+            ...sub, 
+            categoriaId: cat.id,
+            estado: sub.estado || 'Activo',
+            prioridad: sub.prioridad || 10,
+          };
           break;
         }
       }
     } else {
       // Buscar categoría
-      dataToEdit = categorias.find(c => c.id === id);
+      const cat = categorias.find(c => c.id === id);
+      if (cat) {
+        dataToEdit = {
+          ...cat,
+          estado: cat.estado || 'Activo',
+          prioridad: cat.prioridad || 10,
+        };
+      }
     }
 
     if (dataToEdit) {
@@ -227,25 +318,57 @@ export default function CategoriasList() {
     setItemToDelete(null);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
 
-    if (itemToDelete.isSubcat) {
-      // Eliminar subcategoría
-      setCategorias(prevCategorias =>
-        prevCategorias.map(cat => ({
-          ...cat,
-          subcategorias: cat.subcategorias?.filter(sub => sub.id !== itemToDelete.id)
-        }))
-      );
-    } else {
-      // Eliminar categoría
-      setCategorias(prevCategorias =>
-        prevCategorias.filter(cat => cat.id !== itemToDelete.id)
-      );
-    }
+    try {
+      if (itemToDelete.isSubcat) {
+        // Eliminar subcategoría
+        const response = await subcategoryController.delete(itemToDelete.id);
 
-    handleCloseDeleteModal();
+        if (response?.success) {
+          setSnackbar({
+            open: true,
+            message: 'Subcategoría eliminada exitosamente',
+            severity: 'success'
+          });
+          await loadCategories(); // Recargar datos
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error al eliminar la subcategoría',
+            severity: 'error'
+          });
+        }
+      } else {
+        // Eliminar categoría
+        const response = await categoryController.delete(itemToDelete.id);
+
+        if (response?.success) {
+          setSnackbar({
+            open: true,
+            message: 'Categoría eliminada exitosamente',
+            severity: 'success'
+          });
+          await loadCategories(); // Recargar datos
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'Error al eliminar la categoría',
+            severity: 'error'
+          });
+        }
+      }
+
+      handleCloseDeleteModal();
+    } catch (error) {
+      console.error('Error al eliminar:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al eliminar. Por favor, intenta de nuevo',
+        severity: 'error'
+      });
+    }
   };
 
   const handleAddSubcategoria = (categoriaId: string) => {
@@ -358,10 +481,11 @@ export default function CategoriasList() {
         {/* Dialog para crear nueva categoría */}
         <CategoriaDialog
           open={openDialog}
-          onClose={() => setOpenDialog(false)}
+          onClose={handleCloseDialog}
           onSave={handleSave}
           isSubcategoria={isSubcategoria}
           categorias={categorias.map(c => ({ id: c.id, nombre: c.nombre }))}
+          categoriaIdFija={isSubcategoria && currentCategoriaId ? currentCategoriaId : undefined}
         />
       </Box>
     );
@@ -429,48 +553,29 @@ export default function CategoriasList() {
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: { xs: '1 1 100%', sm: '1 1 auto' } }}>
-                {categoria.imagen ? (
-                  <Box 
-                    sx={{ 
-                      width: { xs: 28, sm: 32 }, 
-                      height: { xs: 28, sm: 32 }, 
-                      borderRadius: 1, 
-                      overflow: "hidden",
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <img 
-                      src={categoria.imagen} 
-                      alt={categoria.nombre}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </Box>
-                ) : (
-                  <Box 
-                    sx={{ 
-                      width: { xs: 28, sm: 32 }, 
-                      height: { xs: 28, sm: 32 }, 
-                      borderRadius: 1, 
-                      bgcolor: "#f5f5f5", 
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <FolderIcon sx={{ color: "#fdd835", fontSize: { xs: 18, sm: 22 } }} />
-                  </Box>
-                )}
+                <Box 
+                  sx={{ 
+                    width: { xs: 28, sm: 32 }, 
+                    height: { xs: 28, sm: 32 }, 
+                    borderRadius: 1, 
+                    bgcolor: "#f5f5f5", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <FolderIcon sx={{ color: "#fdd835", fontSize: { xs: 18, sm: 22 } }} />
+                </Box>
                 <Box sx={{ lineHeight: 1, minWidth: 0 }}>
                   <Typography variant="body2" fontWeight="500" sx={{ fontSize: { xs: "13px", sm: "14px" }, color: "#333", lineHeight: 1.2, mb: 0 }}>
                     {categoria.nombre}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "11px", sm: "12px" }, lineHeight: 1.2, display: { xs: 'block', sm: 'block' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {categoria.slug}
-                  </Typography>
+                  {categoria.descripcion && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "11px", sm: "12px" }, lineHeight: 1.2, display: { xs: 'block', sm: 'block' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {categoria.descripcion}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
 
@@ -543,48 +648,29 @@ export default function CategoriasList() {
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, minWidth: 0, flex: 1 }}>
-                      {sub.imagen ? (
-                        <Box 
-                          sx={{ 
-                            width: { xs: 24, sm: 28 }, 
-                            height: { xs: 24, sm: 28 }, 
-                            borderRadius: 1, 
-                            overflow: "hidden",
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <img 
-                            src={sub.imagen} 
-                            alt={sub.nombre}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        </Box>
-                      ) : (
-                        <Box 
-                          sx={{ 
-                            width: { xs: 24, sm: 28 }, 
-                            height: { xs: 24, sm: 28 }, 
-                            borderRadius: 1, 
-                            bgcolor: "#f5f5f5", 
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <FolderIcon sx={{ color: "#fdd835", fontSize: { xs: 16, sm: 20 } }} />
-                        </Box>
-                      )}
+                      <Box 
+                        sx={{ 
+                          width: { xs: 24, sm: 28 }, 
+                          height: { xs: 24, sm: 28 }, 
+                          borderRadius: 1, 
+                          bgcolor: "#f5f5f5", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <FolderIcon sx={{ color: "#fdd835", fontSize: { xs: 16, sm: 20 } }} />
+                      </Box>
                       <Box sx={{ lineHeight: 1, minWidth: 0 }}>
                         <Typography variant="body2" fontWeight="500" sx={{ fontSize: { xs: "12px", sm: "13px" }, color: "#333", lineHeight: 1.2, mb: 0 }}>
                           {sub.nombre}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "10.5px", sm: "11.5px" }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                          {sub.slug}
-                        </Typography>
+                        {sub.descripcion && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "10.5px", sm: "11.5px" }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                            {sub.descripcion}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
 
@@ -629,10 +715,11 @@ export default function CategoriasList() {
       {/* Dialog para crear nueva categoría/subcategoría */}
       <CategoriaDialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={handleCloseDialog}
         onSave={handleSave}
         isSubcategoria={isSubcategoria}
         categorias={categorias.map(c => ({ id: c.id, nombre: c.nombre }))}
+        categoriaIdFija={isSubcategoria && currentCategoriaId ? currentCategoriaId : undefined}
       />
 
       {/* Dialog para editar categoría/subcategoría */}
@@ -665,10 +752,11 @@ export default function CategoriasList() {
           pb: 0.5,
           px: 1.5,
           pt: 1,
+          fontWeight: 'bold',
+          color: '#424242',
+          fontSize: '16px'
         }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '16px' }}>
-            Eliminar {itemToDelete?.isSubcat ? 'Subcategoría' : 'Categoría'}
-          </Typography>
+          Eliminar {itemToDelete?.isSubcat ? 'Subcategoría' : 'Categoría'}
         </DialogTitle>
 
         <DialogContent sx={{ px: 1.5, py: 1 }}>
@@ -724,6 +812,22 @@ export default function CategoriasList() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

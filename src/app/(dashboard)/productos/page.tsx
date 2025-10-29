@@ -38,15 +38,8 @@ import {
   CenterFocusStrongOutlined as CenterFocusStrongOutlinedIcon,
 } from '@mui/icons-material';
 import ProductosPageSkeleton from './ProductosPageSkeleton';
-
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  subcategory: string;
-  price: string;
-  image: string;
-}
+import { productController, categoryController, subcategoryController } from '@/components/core';
+import { ProductDto } from '@/components/core/products/dto/ProductResponse.dto';
 
 const ProductsPage: React.FC = () => {
   const router = useRouter();
@@ -54,100 +47,85 @@ const ProductsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductDto | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<ProductDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<ProductDto[]>([]);
+  const [categories, setCategories] = useState<{id: string; name: string}[]>([]);
+  const [subcategories, setSubcategories] = useState<{id: string; name: string; category_id: string}[]>([]);
 
-  // Simular carga de datos (puedes reemplazar esto con una llamada API real)
+  // Cargar productos, categorías y subcategorías
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    loadData();
   }, []);
 
-  // Datos de ejemplo de productos
-  const products: Product[] = [
-    {
-      id: 1,
-      name: 'Discover Scuba Diving - Minicurso',
-      category: 'Aventuras',
-      subcategory: 'Principales',
-      price: '$410.000',
-      image: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 2,
-      name: 'PADI Divemaster',
-      category: 'Otros servicios',
-      subcategory: '¡Formación PADI a otro nivel!',
-      price: '$0',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 3,
-      name: 'PADI Advanced Open Water Diver',
-      category: 'Otros servicios',
-      subcategory: '¿Ya eres buzo?',
-      price: '$1.560.000',
-      image: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 4,
-      name: 'Emergency First Response (EFR)',
-      category: 'Otros servicios',
-      subcategory: '¡Formación PADI a otro nivel!',
-      price: '$450.000',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 5,
-      name: 'Control de Especie Invasora: Pez León',
-      category: 'Otros servicios',
-      subcategory: '¿Ya eres buzo?',
-      price: '$750.000',
-      image: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 6,
-      name: 'Dive Like a GIRL- Especialidad Distintiva',
-      category: 'Otros servicios',
-      subcategory: '¡Formación PADI a otro nivel!',
-      price: '$620.000',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 7,
-      name: 'Curso Reactivate / Refresh',
-      category: 'Aventuras',
-      subcategory: '#SomosOceano',
-      price: '$350.000',
-      image: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 8,
-      name: 'PADI Rescue Diver + EFR',
-      category: 'Otros servicios',
-      subcategory: '¡Formación PADI a otro nivel!',
-      price: '$1.990.000',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
-    },
-    {
-      id: 9,
-      name: 'PADI Rescue Diver + EFR',
-      category: 'Otros servicios',
-      subcategory: '¡Formación PADI a otro nivel!',
-      price: '$1.990.000',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=100&h=100&fit=crop&crop=face',
-    },
-  ];
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Cargar productos
+      const productsResponse = await productController.getAll();
+      if (productsResponse?.success && productsResponse.data) {
+        setProducts(productsResponse.data);
+      }
+      
+      // Cargar categorías
+      const categoriesResponse = await categoryController.getAll();
+      if (categoriesResponse?.success && categoriesResponse.data) {
+        setCategories(categoriesResponse.data.map(cat => ({ id: cat.id, name: cat.name })));
+      }
+      
+      // Cargar subcategorías
+      const subcategoriesResponse = await subcategoryController.getAll();
+      if (subcategoriesResponse?.success && subcategoriesResponse.data) {
+        setSubcategories(subcategoriesResponse.data.map(sub => ({ 
+          id: sub.id, 
+          name: sub.name, 
+          category_id: sub.category_id 
+        })));
+      }
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper para obtener nombre de categoría
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Sin categoría';
+  };
+
+  // Helper para obtener nombre de subcategoría
+  const getSubcategoryName = (subcategoryId: string) => {
+    const subcategory = subcategories.find(sub => sub.id === subcategoryId);
+    return subcategory?.name || 'Sin subcategoría';
+  };
+
+  // Helper para formatear precio
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  // Helper para formatear precio en USD
+  const formatPriceUSD = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(price);
+  };
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.subcategory.toLowerCase().includes(searchTerm.toLowerCase())
+    getCategoryName(product.category_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getSubcategoryName(product.subcategory_id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -159,7 +137,7 @@ const ProductsPage: React.FC = () => {
     setCurrentPage(page);
   };
 
-  const handleViewProduct = (product: Product) => {
+  const handleViewProduct = (product: ProductDto) => {
     setSelectedProduct(product);
     setViewModalOpen(true);
   };
@@ -169,7 +147,7 @@ const ProductsPage: React.FC = () => {
     setSelectedProduct(null);
   };
 
-  const handleDeleteProduct = (product: Product) => {
+  const handleDeleteProduct = (product: ProductDto) => {
     setProductToDelete(product);
     setDeleteModalOpen(true);
   };
@@ -179,10 +157,19 @@ const ProductsPage: React.FC = () => {
     setProductToDelete(null);
   };
 
-  const handleConfirmDelete = () => {
-    // Aquí iría la lógica para eliminar el producto
-    console.log('Eliminando producto:', productToDelete);
-    handleCloseDeleteModal();
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      const response = await productController.delete(productToDelete.id);
+      if (response?.success) {
+        // Recargar productos
+        await loadData();
+        handleCloseDeleteModal();
+      }
+    } catch (error) {
+      console.error('Error al eliminar producto:', error);
+    }
   };
 
   // Mostrar skeleton mientras carga
@@ -390,7 +377,7 @@ const ProductsPage: React.FC = () => {
                 <TableCell sx={{ py: 0.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Avatar
-                      src={product.image}
+                      src={product.photo || '/placeholder.svg'}
                       alt={product.name}
                       sx={{ width: 32, height: 32, borderRadius: 1 }}
                       variant="square"
@@ -402,7 +389,7 @@ const ProductsPage: React.FC = () => {
                 </TableCell>
                 <TableCell sx={{ py: 0.5 }}>
                   <Chip
-                    label={product.category}
+                    label={getCategoryName(product.category_id)}
                     size="small"
                     sx={{
                       backgroundColor: '#e3f2fd',
@@ -415,12 +402,12 @@ const ProductsPage: React.FC = () => {
                 </TableCell>
                 <TableCell sx={{ py: 0.5 }}>
                   <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
-                    {product.subcategory}
+                    {getSubcategoryName(product.subcategory_id)}
                   </Typography>
                 </TableCell>
                 <TableCell sx={{ py: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>
-                    {product.price}
+                    {formatPrice(product.price)}
                   </Typography>
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
@@ -596,10 +583,11 @@ const ProductsPage: React.FC = () => {
           pb: 1,
           px: 2,
           pt: 2,
+          fontWeight: 'bold',
+          color: '#424242',
+          fontSize: '18px',
         }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
-            {selectedProduct?.name}
-          </Typography>
+          {selectedProduct?.name}
           <IconButton
             onClick={handleCloseViewModal}
             size="small"
@@ -620,7 +608,7 @@ const ProductsPage: React.FC = () => {
               {/* Imagen del producto */}
               <Box
                 component="img"
-                src={selectedProduct.image}
+                src={selectedProduct.photo || '/placeholder.svg'}
                 alt={selectedProduct.name}
                 sx={{
                   width: '100%',
@@ -632,20 +620,20 @@ const ProductsPage: React.FC = () => {
               />
 
               {/* Información del producto */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                    Precio: {selectedProduct.price}
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
+                    {selectedProduct.name}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                    Categoría: {selectedProduct.category}
+                  <Typography variant="body2" sx={{ color: '#757575', lineHeight: 1.6 }}>
+                    {selectedProduct.short_description || selectedProduct.long_description || 'Sin descripción'}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                    Subcategoría: {selectedProduct.subcategory}
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242' }}>
+                    {formatPriceUSD(selectedProduct.price)}
                   </Typography>
                 </Box>
               </Box>
@@ -672,10 +660,11 @@ const ProductsPage: React.FC = () => {
           pb: 0.5,
           px: 1.5,
           pt: 1,
+          fontWeight: 'bold',
+          color: '#424242',
+          fontSize: '16px',
         }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '16px' }}>
-            Eliminar Producto
-          </Typography>
+          Eliminar Producto
         </DialogTitle>
 
         <DialogContent sx={{ px: 1.5, py: 1 }}>

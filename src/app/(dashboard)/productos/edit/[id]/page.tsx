@@ -1,7 +1,11 @@
 'use client';
 
-import React, { use } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import ProductForm from '@/components/productos/ProductForm';
+import { productController } from '@/components/core';
+import { ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
+import { ProductFormData } from '@/components/productos/ProductForm';
+import ProductosPageSkeleton from '../../ProductosPageSkeleton';
 
 interface EditProductPageProps {
   params: Promise<{ id: string }>;
@@ -9,73 +13,60 @@ interface EditProductPageProps {
 
 const EditProductPage: React.FC<EditProductPageProps> = ({ params }) => {
   const { id } = use(params);
+  const [loading, setLoading] = useState(true);
+  const [initialData, setInitialData] = useState<ProductFormData | undefined>(undefined);
 
-  // Aquí irían los datos del producto desde la API
-  // Por ahora usamos datos de ejemplo
-  const initialData = {
-    name: 'Discover Scuba Diving - Minicurso',
-    sku: 'discover-scuba-diving--minicurso',
-    description: '🤿Si quieres vivir la experiencia de bucear por un día, el mini curso es perfecto para ti. Es una sesión de un día de buceo, que incluye dos inmersiones en diferentes puntos del parque Tayrona.',
-    category: 'aventuras',
-    subcategory: 'principales',
-    price: '410000',
-    hasStock: true,
-    quantity: 10,
+  useEffect(() => {
+    loadProduct();
+  }, [id]);
+
+  const loadProduct = async () => {
+    try {
+      setLoading(true);
+      const response = await productController.getById(id);
+      if (response?.success && response.data) {
+        const product = response.data;
+        setInitialData({
+          category_id: product.category_id,
+          subcategory_id: product.subcategory_id,
+          name: product.name,
+          short_description: product.short_description,
+          long_description: product.long_description,
+          photo: product.photo,
+          price: product.price,
+          dives_only: product.dives_only,
+          days_course: product.days_course,
+        });
+      }
+    } catch (error) {
+      console.error('Error al cargar producto:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const initialImages = [
-    'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=100&h=100&fit=crop&crop=face',
-  ];
-
-  const initialCharacteristics = [
-    {
-      id: 'parent_1',
-      type: 'parent' as const,
-      select: 'talla',
-      name: 'Tallas disponibles',
-      order: 1,
-    },
-    {
-      id: 'child_1',
-      type: 'child' as const,
-      parentId: 'parent_1',
-      select: 'talla',
-      name: 'Talla S',
-      value: 'S',
-      order: 0,
-    },
-    {
-      id: 'child_2',
-      type: 'child' as const,
-      parentId: 'parent_1',
-      select: 'talla',
-      name: 'Talla M',
-      value: 'M',
-      order: 0,
-    },
-  ];
-
-  const handleSubmit = (data: any) => {
-    console.log('Editando producto con ID:', id);
-    console.log('Datos del formulario:', data);
-    
-    // Aquí iría la lógica para enviar los datos actualizados a la API
-    // Por ejemplo:
-    // await fetch(`/api/productos/${id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(data),
-    // });
-    
-    // Simular guardado exitoso
-    console.log('✅ Producto actualizado exitosamente');
+  const handleSubmit = async (data: ProductUpdateRequestDto) => {
+    try {
+      const response = await productController.update(id, data);
+      if (response?.success) {
+        return response.data;
+      }
+      throw new Error(response?.message || 'Error al actualizar producto');
+    } catch (error) {
+      console.error('Error al actualizar producto:', error);
+      throw error;
+    }
   };
+
+  if (loading) {
+    return <ProductosPageSkeleton />;
+  }
 
   return (
     <ProductForm
       mode="edit"
+      productId={id}
       initialData={initialData}
-      initialImages={initialImages}
-      initialCharacteristics={initialCharacteristics}
       onSubmit={handleSubmit}
     />
   );

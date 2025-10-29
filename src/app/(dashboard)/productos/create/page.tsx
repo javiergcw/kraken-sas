@@ -2,11 +2,21 @@
 
 import React from 'react';
 import ProductForm from '@/components/productos/ProductForm';
+import { productController } from '@/components/core';
+import { ProductCreateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
 
 const CreateProductPage: React.FC = () => {
-  const handleSubmit = (data: any) => {
-    console.log('Creando producto:', data);
-    // Aquí iría la lógica para enviar los datos a la API
+  const handleSubmit = async (data: ProductCreateRequestDto) => {
+    try {
+      const response = await productController.create(data);
+      if (response?.success) {
+        return response.data;
+      }
+      throw new Error(response?.message || 'Error al crear producto');
+    } catch (error) {
+      console.error('Error al crear producto:', error);
+      throw error;
+    }
   };
 
   return (

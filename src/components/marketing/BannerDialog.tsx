@@ -34,32 +34,22 @@ interface BannerDialogProps {
 export interface BannerFormData {
   titulo: string;
   redireccion: string;
-  subtitulo: string;
-  fechaInicio: string;
-  fechaFinal: string;
   zonaId: string;
   estado: 'Activo' | 'Inactivo';
   urlWeb: string;
-  urlMovil: string;
-  urlPopup: string;
 }
 
 const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zonas, initialData, isEditing = false }) => {
   const [formData, setFormData] = useState<BannerFormData>({
     titulo: '',
     redireccion: '',
-    subtitulo: '',
-    fechaInicio: new Date().toISOString().split('T')[0],
-    fechaFinal: new Date().toISOString().split('T')[0],
     zonaId: '',
     estado: 'Activo',
     urlWeb: '',
-    urlMovil: '',
-    urlPopup: '',
   });
 
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
-  const [currentImageField, setCurrentImageField] = useState<'urlWeb' | 'urlMovil' | 'urlPopup' | null>(null);
+  const [currentImageField, setCurrentImageField] = useState<'urlWeb' | null>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   // Llenar el formulario con datos iniciales cuando se está editando
@@ -71,14 +61,9 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
       setFormData({
         titulo: '',
         redireccion: '',
-        subtitulo: '',
-        fechaInicio: new Date().toISOString().split('T')[0],
-        fechaFinal: new Date().toISOString().split('T')[0],
         zonaId: '',
         estado: 'Activo',
         urlWeb: '',
-        urlMovil: '',
-        urlPopup: '',
       });
     }
   }, [open, initialData]);
@@ -90,13 +75,9 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
     return (
       formData.titulo !== initialData.titulo ||
       formData.redireccion !== initialData.redireccion ||
-      formData.subtitulo !== initialData.subtitulo ||
-      formData.fechaInicio !== initialData.fechaInicio ||
-      formData.fechaFinal !== initialData.fechaFinal ||
       formData.estado !== initialData.estado ||
       formData.urlWeb !== initialData.urlWeb ||
-      formData.urlMovil !== initialData.urlMovil ||
-      formData.urlPopup !== initialData.urlPopup
+      formData.zonaId !== initialData.zonaId
     );
   };
 
@@ -113,19 +94,14 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
     setFormData({
       titulo: '',
       redireccion: '',
-      subtitulo: '',
-      fechaInicio: new Date().toISOString().split('T')[0],
-      fechaFinal: new Date().toISOString().split('T')[0],
       zonaId: '',
       estado: 'Activo',
       urlWeb: '',
-      urlMovil: '',
-      urlPopup: '',
     });
     onClose();
   };
 
-  const handleImageUpload = (field: 'urlWeb' | 'urlMovil' | 'urlPopup') => {
+  const handleImageUpload = (field: 'urlWeb') => {
     setCurrentImageField(field);
     setImagePickerOpen(true);
   };
@@ -214,73 +190,29 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
             />
           </Box>
 
-          {/* Subtítulo y Fecha de inicio */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              fullWidth
-              label="Subtítulo"
-              placeholder="Subtítulo"
-              value={formData.subtitulo}
-              onChange={(e) => handleChange('subtitulo', e.target.value)}
-              size="small"
+          {/* Zona */}
+          <FormControl fullWidth size="small">
+            <InputLabel sx={{ fontSize: '14px' }}>Zona</InputLabel>
+            <Select
+              value={formData.zonaId}
+              onChange={(e) => handleChange('zonaId', e.target.value)}
+              label="Zona"
+              disabled={isEditing}
               sx={{
-                '& .MuiInputLabel-root': { fontSize: '14px' },
-                '& .MuiInputBase-input': { fontSize: '14px' },
+                fontSize: '14px',
+                backgroundColor: isEditing ? '#f5f5f5' : 'transparent',
               }}
-            />
-            <TextField
-              fullWidth
-              type="date"
-              label="Fecha de inicio"
-              value={formData.fechaInicio}
-              onChange={(e) => handleChange('fechaInicio', e.target.value)}
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                '& .MuiInputLabel-root': { fontSize: '14px' },
-                '& .MuiInputBase-input': { fontSize: '14px' },
-              }}
-            />
-          </Box>
-
-          {/* Zona y Fecha final */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel sx={{ fontSize: '14px' }}>Zona</InputLabel>
-              <Select
-                value={formData.zonaId}
-                onChange={(e) => handleChange('zonaId', e.target.value)}
-                label="Zona"
-                disabled={isEditing}
-                sx={{
-                  fontSize: '14px',
-                  backgroundColor: isEditing ? '#f5f5f5' : 'transparent',
-                }}
-              >
-                <MenuItem value="" sx={{ fontSize: '14px' }}>
-                  <em>Seleccione una zona</em>
+            >
+              <MenuItem value="" sx={{ fontSize: '14px' }}>
+                <em>Seleccione una zona</em>
+              </MenuItem>
+              {zonas.map((zona) => (
+                <MenuItem key={zona.id} value={zona.id} sx={{ fontSize: '14px' }}>
+                  {zona.nombre}
                 </MenuItem>
-                {zonas.map((zona) => (
-                  <MenuItem key={zona.id} value={zona.id} sx={{ fontSize: '14px' }}>
-                    {zona.nombre}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              fullWidth
-              type="date"
-              label="Fecha final"
-              value={formData.fechaFinal}
-              onChange={(e) => handleChange('fechaFinal', e.target.value)}
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                '& .MuiInputLabel-root': { fontSize: '14px' },
-                '& .MuiInputBase-input': { fontSize: '14px' },
-              }}
-            />
-          </Box>
+              ))}
+            </Select>
+          </FormControl>
 
           {/* Estado */}
           <FormControl fullWidth size="small">
@@ -309,7 +241,7 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
                   component="img"
                   src={formData.urlWeb}
                   alt="Preview Web"
-                  onDoubleClick={() => handleImageUpload('urlWeb')}
+                  onClick={() => handleImageUpload('urlWeb')}
                   sx={{
                     width: 80,
                     height: 80,
@@ -368,145 +300,6 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
             )}
           </Box>
 
-          {/* URL Móvil */}
-          <Box>
-            <Typography variant="body2" sx={{ mb: 1, fontSize: '13px', color: '#757575', fontWeight: '500' }}>
-              URL Móvil
-            </Typography>
-            {formData.urlMovil ? (
-              <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                <Box
-                  component="img"
-                  src={formData.urlMovil}
-                  alt="Preview Móvil"
-                  onDoubleClick={() => handleImageUpload('urlMovil')}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    objectFit: 'cover',
-                    borderRadius: 1,
-                    border: '2px solid #e0e0e0',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      borderColor: '#1976d2',
-                      transform: 'scale(1.02)',
-                    },
-                  }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => handleChange('urlMovil', '')}
-                  sx={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    width: 20,
-                    height: 20,
-                    '&:hover': {
-                      backgroundColor: '#d32f2f',
-                    },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Box>
-            ) : (
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<AddPhotoIcon />}
-                onClick={() => handleImageUpload('urlMovil')}
-                sx={{
-                  borderColor: '#e0e0e0',
-                  color: '#757575',
-                  textTransform: 'none',
-                  fontSize: '13px',
-                  justifyContent: 'flex-start',
-                  py: 1.5,
-                  borderStyle: 'dashed',
-                  '&:hover': {
-                    borderColor: '#bdbdbd',
-                    backgroundColor: '#fafafa',
-                  },
-                }}
-              >
-                Añadir imagen
-              </Button>
-            )}
-          </Box>
-
-          {/* URL Popup */}
-          <Box>
-            <Typography variant="body2" sx={{ mb: 1, fontSize: '13px', color: '#757575', fontWeight: '500' }}>
-              URL Popup
-            </Typography>
-            {formData.urlPopup ? (
-              <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                <Box
-                  component="img"
-                  src={formData.urlPopup}
-                  alt="Preview Popup"
-                  onDoubleClick={() => handleImageUpload('urlPopup')}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    objectFit: 'cover',
-                    borderRadius: 1,
-                    border: '2px solid #e0e0e0',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      borderColor: '#1976d2',
-                      transform: 'scale(1.02)',
-                    },
-                  }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => handleChange('urlPopup', '')}
-                  sx={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    width: 20,
-                    height: 20,
-                    '&:hover': {
-                      backgroundColor: '#d32f2f',
-                    },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Box>
-            ) : (
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<AddPhotoIcon />}
-                onClick={() => handleImageUpload('urlPopup')}
-                sx={{
-                  borderColor: '#e0e0e0',
-                  color: '#757575',
-                  textTransform: 'none',
-                  fontSize: '13px',
-                  justifyContent: 'flex-start',
-                  py: 1.5,
-                  borderStyle: 'dashed',
-                  '&:hover': {
-                    borderColor: '#bdbdbd',
-                    backgroundColor: '#fafafa',
-                  },
-                }}
-              >
-                Añadir imagen
-              </Button>
-            )}
-          </Box>
         </Box>
       </DialogContent>
 

@@ -40,53 +40,46 @@ import {
   ArrowUpwardOutlined as ArrowUpwardIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import { categoryController, subcategoryController } from '@/components/core';
+import { ProductCreateRequestDto, ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
 
-interface ProductFormData {
+export interface ProductFormData {
+  category_id: string;
+  subcategory_id: string;
   name: string;
-  sku: string;
-  description: string;
-  category: string;
-  subcategory: string;
-  price: string;
-  hasStock: boolean;
-  quantity: number;
+  short_description: string;
+  long_description: string;
+  photo: string;
+  price: number;
+  dives_only: number;
+  days_course: number;
 }
 
-interface Characteristic {
-  id: string;
-  type: 'parent' | 'child';
-  parentId?: string;
-  select: string;
-  name: string;
-  value?: string;
-  order: number;
-}
 
 interface ProductFormProps {
   mode: 'create' | 'edit';
   initialData?: ProductFormData;
-  initialImages?: string[];
-  initialCharacteristics?: Characteristic[];
+  productId?: string;
   onSubmit?: (data: ProductFormData) => void;
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ 
   mode, 
-  initialData, 
-  initialImages = [],
-  initialCharacteristics = [],
+  initialData,
+  productId,
   onSubmit 
 }) => {
   const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>(initialData || {
+    category_id: '',
+    subcategory_id: '',
     name: '',
-    sku: '',
-    description: '',
-    category: '',
-    subcategory: '',
-    price: '',
-    hasStock: false,
-    quantity: 0,
+    short_description: '',
+    long_description: '',
+    photo: '',
+    price: 0,
+    dives_only: 0,
+    days_course: 0,
   });
 
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
@@ -95,64 +88,94 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
   const [viewType, setViewType] = useState('grid');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [selectedImages, setSelectedImages] = useState<string[]>(initialImages);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [characteristics, setCharacteristics] = useState<Characteristic[]>(initialCharacteristics);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [characteristicToDelete, setCharacteristicToDelete] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSaveNotification, setShowSaveNotification] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Estados para categorías y subcategorías
+  const [categories, setCategories] = useState<{id: string; name: string}[]>([]);
+  const [allSubcategories, setAllSubcategories] = useState<{id: string; name: string; category_id: string}[]>([]);
+  const [filteredSubcategories, setFilteredSubcategories] = useState<{id: string; name: string; category_id: string}[]>([]);
   
   // Estado inicial para comparar cambios
-  const [initialFormState, setInitialFormState] = useState<{
-    formData: ProductFormData;
-    images: string[];
-    characteristics: Characteristic[];
-  }>({
-    formData: initialData || {
+  const [initialFormState, setInitialFormState] = useState<ProductFormData>(
+    initialData || {
+      category_id: '',
+      subcategory_id: '',
       name: '',
-      sku: '',
-      description: '',
-      category: '',
-      subcategory: '',
-      price: '',
-      hasStock: false,
-      quantity: 0,
-    },
-    images: initialImages,
-    characteristics: initialCharacteristics,
-  });
+      short_description: '',
+      long_description: '',
+      photo: '',
+      price: 0,
+      dives_only: 0,
+      days_course: 0,
+    }
+  );
+
+  // Cargar categorías y subcategorías
+  useEffect(() => {
+    loadCategoriesAndSubcategories();
+  }, []);
+
+  // Filtrar subcategorías cuando cambia la categoría seleccionada
+  useEffect(() => {
+    if (formData.category_id) {
+      const filtered = allSubcategories.filter(sub => sub.category_id === formData.category_id);
+      setFilteredSubcategories(filtered);
+      // Limpiar subcategoría si no pertenece a la categoría seleccionada
+      if (formData.subcategory_id && !filtered.find(sub => sub.id === formData.subcategory_id)) {
+        setFormData(prev => ({ ...prev, subcategory_id: '' }));
+      }
+    } else {
+      setFilteredSubcategories([]);
+      setFormData(prev => ({ ...prev, subcategory_id: '' }));
+    }
+  }, [formData.category_id, allSubcategories]);
 
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+      setInitialFormState(initialData);
     }
   }, [initialData]);
-
-  useEffect(() => {
-    if (initialImages.length > 0) {
-      setSelectedImages(initialImages);
-    }
-  }, [initialImages]);
-
-  useEffect(() => {
-    if (initialCharacteristics.length > 0) {
-      setCharacteristics(initialCharacteristics);
-    }
-  }, [initialCharacteristics]);
 
   // Detectar cambios en el formulario
   useEffect(() => {
     if (mode === 'edit') {
-      const formDataChanged = JSON.stringify(formData) !== JSON.stringify(initialFormState.formData);
-      const imagesChanged = JSON.stringify(selectedImages) !== JSON.stringify(initialFormState.images);
-      const characteristicsChanged = JSON.stringify(characteristics) !== JSON.stringify(initialFormState.characteristics);
-      
-      const hasChanges = formDataChanged || imagesChanged || characteristicsChanged;
+      const formDataChanged = JSON.stringify(formData) !== JSON.stringify(initialFormState);
+      const hasChanges = formDataChanged;
       setHasUnsavedChanges(hasChanges);
       setShowSaveNotification(hasChanges);
     }
-  }, [formData, selectedImages, characteristics, mode, initialFormState]);
+  }, [formData, mode, initialFormState]);
+
+  const loadCategoriesAndSubcategories = async () => {
+    try {
+      // Cargar categorías
+      const categoriesResponse = await categoryController.getAll();
+      if (categoriesResponse?.success && categoriesResponse.data) {
+        setCategories(categoriesResponse.data.map(cat => ({ id: cat.id, name: cat.name })));
+      }
+      
+      // Cargar subcategorías
+      const subcategoriesResponse = await subcategoryController.getAll();
+      if (subcategoriesResponse?.success && subcategoriesResponse.data) {
+        const subs = subcategoriesResponse.data.map(sub => ({ 
+          id: sub.id, 
+          name: sub.name, 
+          category_id: sub.category_id 
+        }));
+        setAllSubcategories(subs);
+        // Si hay una categoría seleccionada, filtrar subcategorías
+        if (formData.category_id) {
+          setFilteredSubcategories(subs.filter(sub => sub.category_id === formData.category_id));
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar categorías y subcategorías:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -219,102 +242,29 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleImageSelect = (imageUrl: string) => {
-    // No hacer nada con click simple
+    setFormData(prev => ({ ...prev, photo: imageUrl }));
+    handleCloseMediaModal();
   };
 
-  const handleImageDoubleClick = (imageUrl: string) => {
-    setSelectedImages([imageUrl]); // Solo una imagen permitida
-    handleCloseMediaModal(); // Cerrar el modal automáticamente
-  };
-
-  const addParentCharacteristic = () => {
-    const parentCount = characteristics.filter(char => char.type === 'parent').length;
-    const newParent: Characteristic = {
-      id: `parent_${Date.now()}`,
-      type: 'parent',
-      select: '',
-      name: '',
-      order: parentCount + 1,
-    };
-    setCharacteristics(prev => [...prev, newParent]);
-  };
-
-  const addChildCharacteristic = (parentId: string) => {
-    const newChild: Characteristic = {
-      id: `child_${Date.now()}`,
-      type: 'child',
-      parentId,
-      select: '',
-      name: '',
-      value: '',
-      order: 0,
-    };
-    
-    const parentIndex = characteristics.findIndex(char => char.id === parentId);
-    setCharacteristics(prev => {
-      const newCharacteristics = [...prev];
-      newCharacteristics.splice(parentIndex + 1, 0, newChild);
-      return newCharacteristics;
-    });
-  };
-
-  const updateCharacteristic = (id: string, field: string, value: any) => {
-    setCharacteristics(prev => 
-      prev.map(char => 
-        char.id === id ? { ...char, [field]: value } : char
-      )
-    );
-  };
-
-  const deleteCharacteristic = (id: string) => {
-    setCharacteristicToDelete(id);
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (characteristicToDelete) {
-      const charToDelete = characteristics.find(char => char.id === characteristicToDelete);
-      const isParent = charToDelete?.type === 'parent';
-      
-      setCharacteristics(prev => {
-        if (isParent) {
-          return prev.filter(char => char.id !== characteristicToDelete && char.parentId !== characteristicToDelete);
-        } else {
-          return prev.filter(char => char.id !== characteristicToDelete);
-        }
-      });
+  const handleSaveChanges = async () => {
+    try {
+      setLoading(true);
+      if (onSubmit) {
+        await onSubmit(formData);
+      }
+      setInitialFormState(formData);
+      setHasUnsavedChanges(false);
+      setShowSaveNotification(false);
+      router.push('/productos');
+    } catch (error) {
+      console.error('Error al guardar producto:', error);
+    } finally {
+      setLoading(false);
     }
-    setDeleteModalOpen(false);
-    setCharacteristicToDelete(null);
-  };
-
-  const cancelDelete = () => {
-    setDeleteModalOpen(false);
-    setCharacteristicToDelete(null);
-  };
-
-  const handleSaveChanges = () => {
-    if (onSubmit) {
-      onSubmit(formData);
-    }
-    // Actualizar el estado inicial después de guardar
-    setInitialFormState({
-      formData: formData,
-      images: selectedImages,
-      characteristics: characteristics,
-    });
-    setHasUnsavedChanges(false);
-    setShowSaveNotification(false);
-    
-    // Redirigir a la lista de productos después de guardar
-    router.push('/productos');
   };
 
   const handleDiscardChanges = () => {
-    // Restaurar valores iniciales
-    setFormData(initialFormState.formData);
-    setSelectedImages(initialFormState.images);
-    setCharacteristics(initialFormState.characteristics);
+    setFormData(initialFormState);
     setHasUnsavedChanges(false);
     setShowSaveNotification(false);
   };
@@ -323,13 +273,31 @@ const ProductForm: React.FC<ProductFormProps> = ({
     <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, py: 2, backgroundColor: 'white', minHeight: 'calc(100vh - 64px)' }}>
       {/* Header */}
       <Box sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
           <IconButton 
-            sx={{ mr: 1, color: '#757575', p: { xs: 0.5, sm: 1 } }}
+            sx={{ color: '#757575', p: { xs: 0.5, sm: 1 } }}
             onClick={handleBack}
           >
             <ArrowBackIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
           </IconButton>
+          {mode === 'create' && (
+            <Button
+              variant="contained"
+              onClick={handleSaveChanges}
+              disabled={loading}
+              sx={{
+                backgroundColor: '#424242',
+                textTransform: 'capitalize',
+                boxShadow: 'none',
+                '&:hover': {
+                  backgroundColor: '#303030',
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              Guardar producto
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -362,16 +330,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 />
               </Box>
 
-              {/* SKU */}
+              {/* Descripción corta */}
               <Box>
                 <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
-                  SKU
+                  Descripción corta
                 </Typography>
                 <TextField
                   fullWidth
-                  placeholder="Ingrese un SKU para el producto"
-                  value={formData.sku}
-                  onChange={(e) => handleInputChange('sku', e.target.value)}
+                  placeholder="Ingrese una descripción corta para el producto"
+                  value={formData.short_description}
+                  onChange={(e) => handleInputChange('short_description', e.target.value)}
                   size="small"
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -382,18 +350,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 />
               </Box>
 
-              {/* Descripción */}
+              {/* Descripción larga */}
               <Box>
                 <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
-                  Descripción
+                  Descripción larga
                 </Typography>
                 <TextField
                   fullWidth
                   multiline
-                  rows={2}
-                  placeholder="Ingrese una descripción para el producto"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  rows={3}
+                  placeholder="Ingrese una descripción detallada para el producto"
+                  value={formData.long_description}
+                  onChange={(e) => handleInputChange('long_description', e.target.value)}
                   size="small"
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -411,8 +379,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
-                      value={formData.category}
-                      onChange={(e) => handleInputChange('category', e.target.value)}
+                      value={formData.category_id}
+                      onChange={(e) => handleInputChange('category_id', e.target.value)}
                       displayEmpty
                       sx={{
                         height: 32,
@@ -425,9 +393,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       <MenuItem value="" disabled>
                         Selecciona una categoría
                       </MenuItem>
-                      <MenuItem value="aventuras">Aventuras</MenuItem>
-                      <MenuItem value="otros-servicios">Otros servicios</MenuItem>
-                      <MenuItem value="formacion">Formación</MenuItem>
+                      {categories.map((cat) => (
+                        <MenuItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Box>
@@ -437,9 +407,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
-                      value={formData.subcategory}
-                      onChange={(e) => handleInputChange('subcategory', e.target.value)}
+                      value={formData.subcategory_id}
+                      onChange={(e) => handleInputChange('subcategory_id', e.target.value)}
                       displayEmpty
+                      disabled={!formData.category_id || filteredSubcategories.length === 0}
                       sx={{
                         height: 32,
                         fontSize: '12px',
@@ -449,12 +420,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       }}
                     >
                       <MenuItem value="" disabled>
-                        Selecciona una subcategoría
+                        {!formData.category_id ? 'Primero selecciona una categoría' : 'Selecciona una subcategoría'}
                       </MenuItem>
-                      <MenuItem value="principales">Principales</MenuItem>
-                      <MenuItem value="formacion-padi">¡Formación PADI a otro nivel!</MenuItem>
-                      <MenuItem value="ya-eres-buzo">¿Ya eres buzo?</MenuItem>
-                      <MenuItem value="somos-oceano">#SomosOceano</MenuItem>
+                      {filteredSubcategories.map((sub) => (
+                        <MenuItem key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Box>
@@ -481,7 +453,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     }}
                   >
                     <Typography variant="caption" sx={{ color: '#757575', fontWeight: 'medium' }}>
-                      COP
+                      USD
                     </Typography>
                   </Box>
                 </Box>
@@ -491,9 +463,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   </Typography>
                   <TextField
                     fullWidth
+                    type="number"
                     placeholder="Ingresa el precio del producto"
-                    value={formData.price}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
+                    value={formData.price || ''}
+                    onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
                     size="small"
                     InputProps={{
                       startAdornment: <Typography sx={{ mr: 1, fontSize: '12px' }}>$</Typography>,
@@ -508,219 +481,52 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </Box>
               </Box>
 
-              {/* Stock */}
+              {/* Inmersiones y Días del curso */}
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Box sx={{ height: 32, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Checkbox
-                      checked={formData.hasStock}
-                      onChange={(e) => handleInputChange('hasStock', e.target.checked)}
-                      size="small"
-                      sx={{
-                        color: '#424242',
-                        '&.Mui-checked': {
-                          color: '#424242',
-                        },
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ color: '#424242', fontWeight: 'medium' }}>
-                      Tiene stock
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ flex: 1 }}>
                   <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
-                    Cantidad
+                    Inmersiones
                   </Typography>
                   <TextField
                     fullWidth
                     type="number"
-                    value={formData.quantity}
-                    onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 0)}
+                    placeholder="Número de inmersiones"
+                    value={formData.dives_only || ''}
+                    onChange={(e) => handleInputChange('dives_only', parseInt(e.target.value) || 0)}
                     size="small"
-                    sx={{ 
+                    sx={{
                       '& .MuiOutlinedInput-root': {
                         height: 32,
                         fontSize: '12px',
                       },
                     }}
                     inputProps={{ min: 0 }}
-                    disabled={!formData.hasStock}
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
+                    Días del curso
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    placeholder="Días de duración"
+                    value={formData.days_course || ''}
+                    onChange={(e) => handleInputChange('days_course', parseInt(e.target.value) || 0)}
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        height: 32,
+                        fontSize: '12px',
+                      },
+                    }}
+                    inputProps={{ min: 0 }}
                   />
                 </Box>
               </Box>
             </Box>
           </Box>
 
-          {/* Características Section */}
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, border: '1px solid #e0e0e0', borderRadius: 1, backgroundColor: 'white' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', mb: 1.5, fontSize: { xs: '14px', sm: '16px' } }}>
-              Características
-            </Typography>
-
-            {/* Characteristics List */}
-            {characteristics.map((char) => (
-              <Box key={char.id} sx={{ 
-                mb: 1, 
-                p: 1, 
-                border: '1px solid #e0e0e0', 
-                borderRadius: 1, 
-                backgroundColor: char.type === 'parent' ? '#fafafa' : '#f0f0f0',
-                ml: char.type === 'child' ? 2 : 0,
-                borderLeft: char.type === 'child' ? '3px solid #1976d2' : '1px solid #e0e0e0',
-              }}>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {/* Select Dropdown */}
-                  <Box sx={{ flex: 1, minWidth: '100px' }}>
-                    <FormControl fullWidth size="small">
-                      <Select
-                        value={char.select}
-                        onChange={(e) => updateCharacteristic(char.id, 'select', e.target.value)}
-                        displayEmpty
-                        sx={{
-                          height: 32,
-                          fontSize: '12px',
-                          '& .MuiSelect-select': {
-                            padding: '6px 12px',
-                          },
-                        }}
-                      >
-                        <MenuItem value="" disabled>
-                          Seleccionar
-                        </MenuItem>
-                        <MenuItem value="talla">Talla</MenuItem>
-                        <MenuItem value="color">Color</MenuItem>
-                        <MenuItem value="material">Material</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Box>
-
-                  {/* Name Input */}
-                  <Box sx={{ flex: 1, minWidth: '100px' }}>
-                    <TextField
-                      fullWidth
-                      placeholder="Nombre"
-                      value={char.name}
-                      onChange={(e) => updateCharacteristic(char.id, 'name', e.target.value)}
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          height: 32,
-                          fontSize: '12px',
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  {/* Value Input (only for children) */}
-                  {char.type === 'child' && (
-                    <Box sx={{ flex: 1, minWidth: '100px' }}>
-                      <TextField
-                        fullWidth
-                        placeholder="Valor"
-                        value={char.value || ''}
-                        onChange={(e) => updateCharacteristic(char.id, 'value', e.target.value)}
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            height: 32,
-                            fontSize: '12px',
-                          },
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  {/* Order Display */}
-                  <Box sx={{ flex: 0.2, minWidth: '40px' }}>
-                    <Box
-                      sx={{
-                        height: 32,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: '#f5f5f5',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0',
-                        fontSize: '12px',
-                        fontWeight: 'medium',
-                        color: '#757575',
-                      }}
-                    >
-                      {char.type === 'parent' ? char.order : '-'}
-                    </Box>
-                  </Box>
-
-                  {/* Add Child Button (only for parents) */}
-                  {char.type === 'parent' && (
-                    <IconButton
-                      size="small"
-                      onClick={() => addChildCharacteristic(char.id)}
-                      sx={{
-                        border: '1px solid #e0e0e0',
-                        borderRadius: 1,
-                        backgroundColor: 'white',
-                        width: 32,
-                        height: 32,
-                        '&:hover': {
-                          backgroundColor: '#f5f5f5',
-                        },
-                      }}
-                    >
-                      <AddIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  )}
-
-                  {/* Delete Button */}
-                  <IconButton
-                    size="small"
-                    onClick={() => deleteCharacteristic(char.id)}
-                    sx={{
-                      border: '1px solid #e0e0e0',
-                      borderRadius: 1,
-                      backgroundColor: '#f44336',
-                      color: 'white',
-                      width: 32,
-                      height: 32,
-                      '&:hover': {
-                        backgroundColor: '#d32f2f',
-                      },
-                    }}
-                  >
-                    <CloseIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Box>
-              </Box>
-            ))}
-
-            {/* Add Button at Bottom */}
-            <Box sx={{ mt: 1.5 }}>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                size="small"
-                onClick={addParentCharacteristic}
-                sx={{
-                  borderColor: '#e0e0e0',
-                  color: '#424242',
-                  fontSize: '14px',
-                  textTransform: 'capitalize',
-                  boxShadow: 'none',
-                }}
-              >
-                Agregar
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Footer Note - Solo en modo create */}
-          {mode === 'create' && (
-            <Box sx={{ mt: 1, p: 1, backgroundColor: 'white', borderRadius: 1 }}>
-              <Typography variant="body2" sx={{ color: '#757575', fontSize: '12px' }}>
-                * Las variaciones del producto se pueden agregar después de crear el producto. Una vez que el producto esté guardado, podrás gestionar sus variaciones desde la página de edición.
-              </Typography>
-            </Box>
-          )}
         </Box>
 
         {/* Right Column - Multimedia */}
@@ -730,74 +536,37 @@ const ProductForm: React.FC<ProductFormProps> = ({
               Multimedia
             </Typography>
             
-            {/* Selected Images Gallery */}
-            {selectedImages.length > 0 ? (
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 1, 
-                overflowX: 'auto',
-                pb: 1,
-                '&::-webkit-scrollbar': {
-                  height: 6,
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: '#f1f1f1',
-                  borderRadius: 3,
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: '#c1c1c1',
-                  borderRadius: 3,
-                  '&:hover': {
-                    backgroundColor: '#a8a8a8',
-                  },
-                },
-              }}>
-                {selectedImages.map((imageUrl, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      position: 'relative',
-                      minWidth: 80,
-                      height: 80,
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                      border: '1px solid #e0e0e0',
-                    }}
-                  >
-                    <img
-                      src={imageUrl}
-                      alt={`Imagen ${index + 1}`}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSelectedImages(prev => prev.filter((_, i) => i !== index));
-                      }}
-                      sx={{
-                        position: 'absolute',
-                        top: 2,
-                        right: 2,
-                        backgroundColor: '#f44336',
-                        color: 'white',
-                        width: 20,
-                        height: 20,
-                        '&:hover': {
-                          backgroundColor: '#d32f2f',
-                        },
-                        '& .MuiSvgIcon-root': {
-                          fontSize: 12,
-                        }
-                      }}
-                    >
-                      <CloseIcon />
-                    </IconButton>
-                  </Box>
-                ))}
+            {/* Selected Image */}
+            {formData.photo ? (
+              <Box sx={{ position: 'relative', mb: 2 }}>
+                <Box
+                  component="img"
+                  src={formData.photo}
+                  alt="Producto"
+                  sx={{
+                    width: '100%',
+                    maxHeight: 300,
+                    borderRadius: 1,
+                    objectFit: 'cover',
+                    border: '1px solid #e0e0e0',
+                  }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={() => setFormData(prev => ({ ...prev, photo: '' }))}
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#d32f2f',
+                    },
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
               </Box>
             ) : (
               <Box
@@ -1055,7 +824,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       },
                     }}
                     onClick={() => handleImageSelect(imageUrl)}
-                    onDoubleClick={() => handleImageDoubleClick(imageUrl)}
                   >
                     <img
                       src={imageUrl}
@@ -1116,70 +884,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
             />
           </MenuItem>
         </Menu>
-      </Dialog>
-
-      {/* Delete Confirmation Modal */}
-      <Dialog
-        open={deleteModalOpen}
-        onClose={cancelDelete}
-        maxWidth="sm"
-        fullWidth
-        sx={{
-          '& .MuiDialog-paper': {
-            borderRadius: 2,
-            maxWidth: '400px',
-            padding: '8px',
-          },
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          pb: 0,
-          px: 1.5,
-          pt: 1.5,
-        }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242' }}>
-            ¿Estás seguro?
-          </Typography>
-        </DialogTitle>
-
-        <DialogContent sx={{ px: 1.5, pb: 0.5 }}>
-          <Typography variant="body2" sx={{ color: '#424242', mb: 0.5, whiteSpace: 'nowrap' }}>
-            ¿Estás seguro que quieres borrar la característica "{characteristicToDelete && characteristics.find(char => char.id === characteristicToDelete)?.name || ''}"?
-          </Typography>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 1.5, pb: 1.5, gap: 1 }}>
-          <Button
-            variant="outlined"
-            onClick={cancelDelete}
-            sx={{
-              borderColor: '#e0e0e0',
-              color: '#424242',
-              textTransform: 'capitalize',
-              boxShadow: 'none',
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={confirmDelete}
-            sx={{
-              backgroundColor: '#f44336',
-              textTransform: 'capitalize',
-              boxShadow: 'none',
-              '&:hover': {
-                backgroundColor: '#d32f2f',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            Eliminar
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Save/Discard Notification */}

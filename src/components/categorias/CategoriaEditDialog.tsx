@@ -17,7 +17,6 @@ import {
   Slider,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 interface CategoriaEditDialogProps {
   open: boolean;
@@ -25,9 +24,7 @@ interface CategoriaEditDialogProps {
   onSave: (data: { 
     id: string;
     nombre: string; 
-    slug: string; 
     descripcion: string; 
-    imagen?: string;
     categoriaId?: string;
     estado: string;
     prioridad: number;
@@ -56,8 +53,6 @@ export default function CategoriaEditDialog({
 }: CategoriaEditDialogProps) {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [slug, setSlug] = useState("");
-  const [imagen, setImagen] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [estado, setEstado] = useState("Activo");
   const [prioridad, setPrioridad] = useState(10);
@@ -67,32 +62,21 @@ export default function CategoriaEditDialog({
     if (open && categoriaInicial) {
       setNombre(categoriaInicial.nombre || "");
       setDescripcion(categoriaInicial.descripcion || "");
-      setSlug(categoriaInicial.slug || "");
-      setImagen(categoriaInicial.imagen || "");
       setCategoriaId(categoriaInicial.categoriaId || "");
       setEstado(categoriaInicial.estado || "Activo");
       setPrioridad(categoriaInicial.prioridad || 10);
     }
   }, [open, categoriaInicial]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagen(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSave = () => {
+    if (!nombre.trim()) {
+      return; // No guardar si no hay nombre
+    }
+
     onSave({ 
       id: categoriaInicial.id,
-      nombre, 
-      slug, 
-      descripcion, 
-      imagen,
+      nombre: nombre.trim(), 
+      descripcion: descripcion.trim(), 
       categoriaId: isSubcategoria ? categoriaId : undefined,
       estado,
       prioridad,
@@ -167,23 +151,6 @@ export default function CategoriaEditDialog({
               />
             </Box>
 
-            {/* Slug */}
-            <Box>
-              <Typography variant="body2" sx={{ fontSize: "12px", fontWeight: 500, mb: 0.5 }}>
-                Slug
-              </Typography>
-              <TextField
-                fullWidth
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                variant="outlined"
-                size="small"
-                sx={{
-                  "& .MuiInputBase-input": { fontSize: "13px", py: 1 },
-                }}
-              />
-            </Box>
-
             {/* Categoría (solo para subcategorías) */}
             {isSubcategoria && (
               <Box>
@@ -214,111 +181,6 @@ export default function CategoriaEditDialog({
 
           {/* Columna Derecha */}
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 1.25, minWidth: 0 }}>
-            {/* Imagen */}
-            <Box>
-              <Typography variant="body2" sx={{ fontSize: "12px", fontWeight: 500, mb: 0.5 }}>
-                Imagen
-              </Typography>
-              
-              <Box sx={{ border: "1px solid #e0e0e0", borderRadius: 1, p: 1.25 }}>
-                <Typography variant="body2" sx={{ fontSize: "12px", fontWeight: 600, mb: 0.75 }}>
-                  Multimedia
-                </Typography>
-                
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 1.25,
-                    textAlign: "center",
-                    borderRadius: 1,
-                    borderStyle: "dashed",
-                    borderColor: "#d0d0d0",
-                    bgcolor: "white",
-                  }}
-                >
-                  {imagen ? (
-                    <Box sx={{ mb: 1.5 }}>
-                      <Box 
-                        sx={{ 
-                          width: 70, 
-                          height: 70, 
-                          margin: "0 auto",
-                          borderRadius: 1,
-                          overflow: "hidden",
-                          mb: 0.75
-                        }}
-                      >
-                        <img 
-                          src={imagen} 
-                          alt="Preview"
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      </Box>
-                      <Button
-                        size="small"
-                        onClick={() => setImagen("")}
-                        sx={{
-                          textTransform: "none",
-                          fontSize: "11px",
-                          color: "#f44336",
-                        }}
-                      >
-                        Eliminar imagen
-                      </Button>
-                    </Box>
-                  ) : (
-                    <>
-                      <UploadFileIcon sx={{ fontSize: 28, color: "#999", mb: 0.75 }} />
-                      <Typography variant="body2" sx={{ fontSize: "11px", color: "#666", mb: 1.5 }}>
-                        Acepta imágenes con extensiones jpg, jpeg, png, svg
-                      </Typography>
-                    </>
-                  )}
-
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-                    <input
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      id="upload-image-input-edit"
-                      type="file"
-                      onChange={handleImageUpload}
-                    />
-                    <label htmlFor="upload-image-input-edit" style={{ margin: 0 }}>
-                      <Button
-                        variant="contained"
-                        component="span"
-                        sx={{
-                          bgcolor: "#1a1a1a",
-                          "&:hover": { bgcolor: "#000", boxShadow: "none" },
-                          textTransform: "none",
-                          fontSize: "12px",
-                          py: 0.6,
-                          borderRadius: 1,
-                          boxShadow: "none",
-                          width: "100%",
-                        }}
-                      >
-                        {imagen ? "Cambiar imagen" : "Agregar nueva imagen"}
-                      </Button>
-                    </label>
-                    <Button
-                      variant="outlined"
-                      sx={{
-                        color: "#333",
-                        borderColor: "#d0d0d0",
-                        textTransform: "none",
-                        fontSize: "12px",
-                        py: 0.6,
-                        "&:hover": { borderColor: "#999", bgcolor: "#f5f5f5", boxShadow: "none" },
-                        boxShadow: "none",
-                      }}
-                    >
-                      Seleccionar existente
-                    </Button>
-                  </Box>
-                </Paper>
-              </Box>
-            </Box>
 
             {/* Estado */}
             <Box>
