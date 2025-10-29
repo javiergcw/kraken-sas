@@ -15,6 +15,8 @@ import {
   Collapse,
   Divider,
   Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   HomeOutlined,
@@ -26,7 +28,9 @@ import {
   WorkOutline,
   AssignmentIndOutlined,
   CampaignOutlined,
+  LogoutOutlined,
 } from '@mui/icons-material';
+import { authController } from '@/components/core';
 
 interface SidebarProps {
   open: boolean;
@@ -47,6 +51,57 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const [marketingOpen, setMarketingOpen] = useState(isMarketingRoute);
   const [herramientasOpen, setHerramientasOpen] = useState(isHerramientasRoute);
   const [proyectosOpen, setProyectosOpen] = useState(isProyectosRoute);
+  
+  // Estado para almacenar información del usuario
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [companyId, setCompanyId] = useState<string>('');
+  
+  // Estado para el menú de usuario
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const openMenu = Boolean(anchorEl);
+  
+  // Obtener información del usuario al cargar el componente
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await authController.getMe();
+        if (response && response.success) {
+          setUserEmail(response.data.email);
+          setCompanyId(response.data.company_id);
+        }
+      } catch (error) {
+        console.error('Error al obtener información del usuario:', error);
+      }
+    };
+    
+    fetchUserInfo();
+  }, []);
+  
+  // Función para obtener las iniciales del email
+  const getInitials = (email: string): string => {
+    if (!email) return 'U';
+    const parts = email.split('@')[0].split('.');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return email.substring(0, 2).toUpperCase();
+  };
+
+  // Funciones para el menú de usuario
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    authController.logout();
+    router.push('/');
+  };
 
   // Actualizar el estado cuando cambia la ruta
   useEffect(() => {
@@ -155,10 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
           {isExpanded && (
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px', lineHeight: 1.1 }}>
-                OCEANOSCUBA
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#757575', fontSize: '10px', lineHeight: 1.1, mt: 0.2 }}>
-                Santa marta.
+              ID: {companyId ? companyId.substring(0, 8) : '...'}
               </Typography>
             </Box>
           )}
@@ -295,27 +347,80 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       >
         {isExpanded && <Divider sx={{ mb: 1 }} />}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: isExpanded ? 'space-between' : 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, overflow: 'hidden' }}>
             <Typography
               variant="body2"
               sx={{
                 fontWeight: 'bold',
                 color: '#424242',
-                mr: isExpanded ? 0.75 : 0,
                 fontSize: '12px',
+                flexShrink: 0,
               }}
             >
-              AS
+              {getInitials(userEmail)}
             </Typography>
-            {isExpanded && (
-              <Typography variant="body2" sx={{ color: '#757575', fontSize: '10px' }}>
-                nanobonilla@hotmail.com
+             {isExpanded && (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#424242', 
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                }}
+              >
+                {userEmail || 'Cargando...'}
               </Typography>
             )}
           </Box>
-          {isExpanded && <KeyboardArrowDown sx={{ color: '#BDBDBD', fontSize: 16 }} />}
+          {isExpanded && (
+            <Box
+              onClick={handleMenuOpen}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.7,
+                },
+              }}
+            >
+              <KeyboardArrowDown sx={{ color: '#BDBDBD', fontSize: 16, flexShrink: 0 }} />
+            </Box>
+          )}
         </Box>
       </Box>
+
+      {/* Menú de usuario */}
+      <Menu
+        anchorEl={anchorEl}
+        open={openMenu}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            mt: -1,
+            minWidth: 180,
+          },
+        }}
+      >
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogoutOutlined fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Cerrar sesión" />
+        </MenuItem>
+      </Menu>
     </Box>
   );
 

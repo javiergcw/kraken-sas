@@ -2,12 +2,14 @@
  * Constantes de la aplicación
  */
 
-export const API_BASE_URL = 'https://api.oceanoscuba.com.co';
+// URL base para las API routes de Next.js (proxy local)
+export const API_BASE_URL = '/api';
 
 export const API_ENDPOINTS = {
   HEALTH: '/health',
   AUTH: {
-    LOGIN: '/api/v1/auth/login',
+    LOGIN: '/auth/login',
+    ME: '/auth/me',
   },
 } as const;
 

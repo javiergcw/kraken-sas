@@ -41,8 +41,8 @@ export default function Home() {
       if (response && response.success) {
         // Verificar si tiene compañía asignada
         if (response.data.User.company_id === null) {
-          setError("No tienes una compañía asignada. Comunícate con el desarrollador.");
-          authController.logout(); // Limpiar el token ya que no puede acceder
+          // Redirigir a la página de sin compañía
+          router.push("/sin-compania");
           return;
         }
 

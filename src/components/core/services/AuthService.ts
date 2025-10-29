@@ -5,6 +5,7 @@
 import { httpService } from '@/utils/http.service';
 import { API_ENDPOINTS } from '@/utils/constants';
 import { LoginRequestDto, LoginResponseDto } from '../dto/LoginDto';
+import { GetMeResponseDto } from '../dto/UserDto';
 
 export class AuthService {
   /**
@@ -26,6 +27,27 @@ export class AuthService {
       }
       throw new Error(
         `Error al realizar login: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      );
+    }
+  }
+
+  /**
+   * Obtiene la información del usuario autenticado
+   * @returns Promise con la información del usuario
+   */
+  async getMe(): Promise<GetMeResponseDto> {
+    try {
+      const response = await httpService.get<GetMeResponseDto>(
+        API_ENDPOINTS.AUTH.ME
+      );
+      return response;
+    } catch (error) {
+      // Re-lanzar el error original
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(
+        `Error al obtener información del usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`
       );
     }
   }

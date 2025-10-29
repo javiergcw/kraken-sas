@@ -3,8 +3,10 @@
  */
 
 import { loginUseCase } from '../use-cases/LoginUseCase';
+import { getMeUseCase } from '../use-cases/GetMeUseCase';
 import { tokenService } from '@/utils/token.service';
 import { LoginRequestDto, LoginResponseDto } from '../dto/LoginDto';
+import { GetMeResponseDto } from '../dto/UserDto';
 
 export class AuthController {
   /**
@@ -37,10 +39,24 @@ export class AuthController {
   }
 
   /**
-   * Obtiene los datos del usuario actual
+   * Obtiene los datos del usuario actual desde el token
    */
   getCurrentUser() {
     return tokenService.getUser();
+  }
+
+  /**
+   * Obtiene la información del usuario autenticado desde la API
+   * @returns Promise con la información del usuario o null en caso de error
+   */
+  async getMe(): Promise<GetMeResponseDto | null> {
+    try {
+      const response = await getMeUseCase.execute();
+      return response;
+    } catch (error) {
+      console.error('Error al obtener información del usuario:', error);
+      return null;
+    }
   }
 
   /**

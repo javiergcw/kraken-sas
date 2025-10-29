@@ -46,17 +46,30 @@ class HttpService {
     
     // Construir la URL base
     const baseUrl = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
-    const url = new URL(cleanEndpoint, baseUrl);
     
-    if (params) {
+    // Si la baseURL es relativa, construir directamente la ruta
+    let urlString: string;
+    if (baseUrl.startsWith('/')) {
+      // URL relativa
+      urlString = `${baseUrl}${cleanEndpoint}`;
+    } else {
+      // URL absoluta
+      const url = new URL(cleanEndpoint, baseUrl);
+      urlString = url.toString();
+    }
+    
+    // Agregar query params si existen
+    if (params && Object.keys(params).length > 0) {
+      const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value));
+          searchParams.append(key, String(value));
         }
       });
+      urlString += `?${searchParams.toString()}`;
     }
 
-    return url.toString();
+    return urlString;
   }
 
   /**
@@ -84,6 +97,8 @@ class HttpService {
     const hasBody = body && methodsWithBody.includes(method as any);
 
     const defaultHeaders: Record<string, string> = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
       ...headers,
     };
 
@@ -93,9 +108,9 @@ class HttpService {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    // Solo agregar Content-Type si hay body
-    if (hasBody && !defaultHeaders['Content-Type']) {
-      defaultHeaders['Content-Type'] = 'application/json';
+    // Solo mantener Content-Type si hay body, de lo contrario eliminarlo
+    if (!hasBody && defaultHeaders['Content-Type']) {
+      delete defaultHeaders['Content-Type'];
     }
 
     const config: RequestInit = {
