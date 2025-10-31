@@ -2,8 +2,13 @@
 
 import React from 'react';
 import { Box, Paper } from '@mui/material';
+import { useUser } from '@/contexts/UserContext';
 
 export default function DashboardPage() {
+  const { user, loading } = useUser();
+  const companyLogo = user?.company_logo || null;
+  const companyName = user?.company_name || '';
+
   return (
     <Box
       sx={{
@@ -18,34 +23,36 @@ export default function DashboardPage() {
       }}
     >
       {/* Logo Container */}
-      <Paper
-        elevation={0}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'transparent',
-          p: 4,
-          position: 'relative',
-          cursor: 'pointer',
-          '&:hover': {
-            transform: 'scale(1.02)',
-            transition: 'transform 0.2s ease-in-out',
-          },
-        }}
-      >
-        {/* Logo Image */}
-        <Box
-          component="img"
-          src="https://s3.makerstech.co/public/space_20250512055823/file_20250515125049.png"
-          alt="OCEANOSCUBA Logo"
+      {!loading && companyLogo && (
+        <Paper
+          elevation={0}
           sx={{
-            maxWidth: { xs: '300px', md: '400px', lg: '500px' },
-            height: 'auto',
-            objectFit: 'contain',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'transparent',
+            p: 4,
+            position: 'relative',
+            cursor: 'pointer',
+            '&:hover': {
+              transform: 'scale(1.02)',
+              transition: 'transform 0.2s ease-in-out',
+            },
           }}
-        />
-      </Paper>
+        >
+          {/* Logo Image */}
+          <Box
+            component="img"
+            src={companyLogo}
+            alt={companyName ? `${companyName} Logo` : 'Company Logo'}
+            sx={{
+              maxWidth: { xs: '300px', md: '400px', lg: '500px' },
+              height: 'auto',
+              objectFit: 'contain',
+            }}
+          />
+        </Paper>
+      )}
     </Box>
   );
 }

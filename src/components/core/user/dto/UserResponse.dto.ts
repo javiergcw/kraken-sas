@@ -7,6 +7,8 @@ export interface UserDataDto {
   email: string;
   role: string;
   company_id: string | null;
+  company_name?: string | null;
+  company_logo?: string | null;
 }
 
 export interface GetMeResponseDto {

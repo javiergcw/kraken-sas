@@ -30,7 +30,8 @@ import {
   CampaignOutlined,
   LogoutOutlined,
 } from '@mui/icons-material';
-import { authController, userController } from '@/components/core';
+import { authController } from '@/components/core';
+import { useUser } from '@/contexts/UserContext';
 
 interface SidebarProps {
   open: boolean;
@@ -52,30 +53,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const [herramientasOpen, setHerramientasOpen] = useState(isHerramientasRoute);
   const [proyectosOpen, setProyectosOpen] = useState(isProyectosRoute);
   
-  // Estado para almacenar información del usuario
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [companyId, setCompanyId] = useState<string>('');
+  // Obtener información del usuario desde el contexto
+  const { user } = useUser();
+  const userEmail = user?.email || '';
+  const companyName = user?.company_name || '';
   
   // Estado para el menú de usuario
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
-  
-  // Obtener información del usuario al cargar el componente
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const response = await userController.getMe();
-        if (response && response.success) {
-          setUserEmail(response.data.email);
-          setCompanyId(response.data.company_id || '');
-        }
-      } catch (error) {
-        console.error('Error al obtener información del usuario:', error);
-      }
-    };
-    
-    fetchUserInfo();
-  }, []);
   
   // Función para obtener las iniciales del email
   const getInitials = (email: string): string => {
@@ -210,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
           {isExpanded && (
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px', lineHeight: 1.1 }}>
-              ID: {companyId ? companyId.substring(0, 8) : '...'}
+              {companyName || '...'}
               </Typography>
             </Box>
           )}

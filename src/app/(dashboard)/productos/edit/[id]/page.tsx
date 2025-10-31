@@ -5,7 +5,7 @@ import ProductForm from '@/components/productos/ProductForm';
 import { productController } from '@/components/core';
 import { ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
 import { ProductFormData } from '@/components/productos/ProductForm';
-import ProductosPageSkeleton from '../../ProductosPageSkeleton';
+import ProductEditSkeleton from '../ProductEditSkeleton';
 
 interface EditProductPageProps {
   params: Promise<{ id: string }>;
@@ -59,7 +59,7 @@ const EditProductPage: React.FC<EditProductPageProps> = ({ params }) => {
   };
 
   if (loading) {
-    return <ProductosPageSkeleton />;
+    return <ProductEditSkeleton />;
   }
 
   return (
