@@ -32,6 +32,7 @@ interface BannerDialogProps {
 
 export interface BannerFormData {
   titulo: string;
+  subtitles: string;
   redireccion: string;
   zonaId: string;
   estado: 'Activo' | 'Inactivo';
@@ -41,6 +42,7 @@ export interface BannerFormData {
 const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zonas, initialData, isEditing = false }) => {
   const [formData, setFormData] = useState<BannerFormData>({
     titulo: '',
+    subtitles: '',
     redireccion: '',
     zonaId: '',
     estado: 'Activo',
@@ -56,6 +58,7 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
       // Reset form cuando es nuevo
       setFormData({
         titulo: '',
+        subtitles: '',
         redireccion: '',
         zonaId: '',
         estado: 'Activo',
@@ -70,6 +73,7 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
     
     return (
       formData.titulo !== initialData.titulo ||
+      formData.subtitles !== initialData.subtitles ||
       formData.redireccion !== initialData.redireccion ||
       formData.estado !== initialData.estado ||
       formData.urlWeb !== initialData.urlWeb ||
@@ -89,6 +93,7 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
   const handleClose = () => {
     setFormData({
       titulo: '',
+      subtitles: '',
       redireccion: '',
       zonaId: '',
       estado: 'Activo',
@@ -149,8 +154,7 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
 
       <DialogContent sx={{ px: 3, pb: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Título y Redirección */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Título */}
             <TextField
               fullWidth
               label="Título"
@@ -163,6 +167,24 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
                 '& .MuiInputBase-input': { fontSize: '14px' },
               }}
             />
+
+          {/* Subtítulos */}
+          <TextField
+            fullWidth
+            label="Subtítulos"
+            placeholder="Subtítulos"
+            value={formData.subtitles}
+            onChange={(e) => handleChange('subtitles', e.target.value)}
+            size="small"
+            multiline
+            rows={2}
+            sx={{
+              '& .MuiInputLabel-root': { fontSize: '14px' },
+              '& .MuiInputBase-input': { fontSize: '14px' },
+            }}
+          />
+
+          {/* Redirección */}
             <TextField
               fullWidth
               label="Redirección"
@@ -175,7 +197,6 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
                 '& .MuiInputBase-input': { fontSize: '14px' },
               }}
             />
-          </Box>
 
           {/* Zona */}
           <FormControl fullWidth size="small">

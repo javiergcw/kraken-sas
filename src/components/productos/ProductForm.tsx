@@ -21,6 +21,7 @@ import {
 import { categoryController, subcategoryController } from '@/components/core';
 import { ProductCreateRequestDto, ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
 import ProductMediaManager from './ProductMediaManager';
+import RichTextEditor from '@/components/reutilizables/RichTextEditor';
 
 export interface ProductFormData {
   category_id: string;
@@ -272,24 +273,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 />
               </Box>
 
-              {/* Descripción larga */}
+              {/* Descripción larga con editor de texto enriquecido */}
               <Box>
-                <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
                   Descripción larga
                 </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder="Ingrese una descripción detallada para el producto"
+                <RichTextEditor
                   value={formData.long_description}
-                  onChange={(e) => handleInputChange('long_description', e.target.value)}
-                  size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontSize: '12px',
-                    },
-                  }}
+                  onChange={(value) => handleInputChange('long_description', value)}
+                  placeholder="Ingrese una descripción detallada para el producto. Usa las herramientas de formato para darle estilo."
+                  minHeight={200}
                 />
               </Box>
 

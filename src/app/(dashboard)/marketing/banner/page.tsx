@@ -213,6 +213,7 @@ const BannerPage: React.FC = () => {
         const response = await bannerController.update(editingBanner.id, {
           zone_id: data.zonaId,
           title: data.titulo,
+          subtitles: data.subtitles || '',
           image_url: data.urlWeb || '',
           link_url: data.redireccion || '#',
           active: data.estado === 'Activo',
@@ -226,6 +227,7 @@ const BannerPage: React.FC = () => {
         const response = await bannerController.create({
           zone_id: data.zonaId,
           title: data.titulo,
+          subtitles: data.subtitles || '',
           image_url: data.urlWeb || '',
           link_url: data.redireccion || '#',
           active: data.estado === 'Activo',
@@ -1565,6 +1567,7 @@ const BannerPage: React.FC = () => {
           isEditMode && editingBanner
             ? {
                 titulo: editingBanner.title,
+                subtitles: editingBanner.subtitles || '',
                 redireccion: editingBanner.link_url,
                 zonaId: editingBanner.zone_id,
                 estado: getBannerEstado(editingBanner.active),
