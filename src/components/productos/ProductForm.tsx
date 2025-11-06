@@ -7,41 +7,20 @@ import {
   Typography,
   TextField,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
-  Checkbox,
-  FormControlLabel,
   Button,
-  Paper,
-  Grid,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Menu,
-  ListItemIcon,
-  ListItemText,
   Snackbar,
   Alert,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
-  CloudUpload as CloudUploadIcon,
-  Add as AddIcon,
-  Close as CloseIcon,
-  Search as SearchIcon,
-  ViewModule as GridIcon,
-  Sort as SortIcon,
-  ViewList as ListIcon,
-  KeyboardArrowDown as ArrowDownIcon,
-  ArrowDownwardOutlined as ArrowDownwardIcon,
-  ArrowUpwardOutlined as ArrowUpwardIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { categoryController, subcategoryController } from '@/components/core';
 import { ProductCreateRequestDto, ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
+import ProductMediaManager from './ProductMediaManager';
 
 export interface ProductFormData {
   category_id: string;
@@ -82,13 +61,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
     days_course: 0,
   });
 
-  const [mediaModalOpen, setMediaModalOpen] = useState(false);
-  const [mediaModalTitle, setMediaModalTitle] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
-  const [viewType, setViewType] = useState('grid');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSaveNotification, setShowSaveNotification] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -188,62 +160,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
     router.push('/productos');
   };
 
-  const handleOpenMediaModal = (title: string) => {
-    setMediaModalTitle(title);
-    setMediaModalOpen(true);
-  };
-
-  const handleCloseMediaModal = () => {
-    setMediaModalOpen(false);
-    setSearchTerm('');
-  };
-
-  const handleFileSelect = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/jpeg,image/jpg,image/png,image/svg+xml';
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        const newImages: string[] = [];
-        Array.from(files).forEach((file) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            if (event.target?.result) {
-              newImages.push(event.target.result as string);
-              if (newImages.length === files.length) {
-                setUploadedImages(prev => [...prev, ...newImages]);
-              }
-            }
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-    };
-    input.click();
-  };
-
-  const handleViewMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setViewMenuAnchor(event.currentTarget);
-  };
-
-  const handleViewMenuClose = () => {
-    setViewMenuAnchor(null);
-  };
-
-  const handleViewTypeChange = (type: string) => {
-    setViewType(type);
-    handleViewMenuClose();
-  };
-
-  const handleSortToggle = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-
   const handleImageSelect = (imageUrl: string) => {
     setFormData(prev => ({ ...prev, photo: imageUrl }));
-    handleCloseMediaModal();
+  };
+
+  const handleImageRemove = () => {
+    setFormData(prev => ({ ...prev, photo: '' }));
   };
 
   const handleSaveChanges = async () => {
@@ -536,355 +458,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
               Multimedia
             </Typography>
             
-            {/* Selected Image */}
-            {formData.photo ? (
-              <Box sx={{ position: 'relative', mb: 2 }}>
-                <Box
-                  component="img"
-                  src={formData.photo}
-                  alt="Producto"
-                  sx={{
-                    width: '100%',
-                    maxHeight: 300,
-                    borderRadius: 1,
-                    objectFit: 'cover',
-                    border: '1px solid #e0e0e0',
-                  }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => setFormData(prev => ({ ...prev, photo: '' }))}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: '#d32f2f',
-                    },
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  p: 2,
-                  border: '2px dashed #e0e0e0',
-                  borderRadius: 2,
-                  textAlign: 'center',
-                  backgroundColor: 'white',
-                }}
-              >
-                <CloudUploadIcon sx={{ fontSize: 48, color: '#bdbdbd', mb: 1.5 }} />
-
-                <Typography variant="body2" sx={{ color: '#757575', mb: 1.5, fontSize: '12px' }}>
-                  Acepta imágenes con extensiones jpg, jpeg, png, svg
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    fullWidth
-                    onClick={() => handleOpenMediaModal('Añade nueva imagen')}
-                    sx={{
-                      backgroundColor: '#424242',
-                      fontSize: '12px',
-                      py: 0.5,
-                      textTransform: 'capitalize',
-                      boxShadow: 'none',
-                      '&:hover': { backgroundColor: '#303030' },
-                    }}
-                  >
-                    Agregar nueva imagen
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    onClick={() => handleOpenMediaModal('Seleccionar imagen existente')}
-                    sx={{
-                      borderColor: '#e0e0e0',
-                      color: '#424242',
-                      fontSize: '12px',
-                      py: 0.5,
-                      textTransform: 'capitalize',
-                      boxShadow: 'none',
-                      '&:hover': { borderColor: '#bdbdbd' },
-                    }}
-                  >
-                    Seleccionar existente
-                  </Button>
-                </Box>
-              </Box>
-            )}
+            <ProductMediaManager
+              currentImage={formData.photo}
+              onImageSelect={handleImageSelect}
+              onImageRemove={handleImageRemove}
+            />
           </Box>
         </Box>
       </Box>
-
-
-      {/* Media Modal */}
-      <Dialog
-        open={mediaModalOpen}
-        onClose={handleCloseMediaModal}
-        maxWidth="md"
-        fullWidth
-        sx={{
-          '& .MuiDialog-paper': {
-            borderRadius: 2,
-            maxWidth: '600px',
-          },
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          pb: 1,
-          px: 3,
-          pt: 3,
-        }}>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242' }}>
-              {mediaModalTitle}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#757575', mt: 0.5 }}>
-              Escoge una imagen de la biblioteca.
-            </Typography>
-          </Box>
-          <IconButton onClick={handleCloseMediaModal} size="small" sx={{ color: '#757575' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ px: 3, pb: 2 }}>
-          {/* Search Bar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-             <TextField
-               fullWidth
-               placeholder="Buscar imagen..."
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               size="small"
-               sx={{
-                 '& .MuiOutlinedInput-root': {
-                   borderRadius: 1,
-                   fontSize: '14px',
-                   height: '28px',
-                 },
-               }}
-             />
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleSortToggle}
-              sx={{
-                borderColor: '#e0e0e0',
-                color: '#424242',
-                fontSize: '12px',
-                px: 1.5,
-                py: 0.5,
-                textTransform: 'capitalize',
-                minWidth: 'auto',
-                boxShadow: 'none',
-                '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                  borderColor: '#bdbdbd',
-                }
-              }}
-            >
-              {sortOrder === 'asc' ? 
-                <ArrowUpwardIcon sx={{ fontSize: 16 }} /> : 
-                <ArrowDownwardIcon sx={{ fontSize: 16 }} />
-              }
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleViewMenuOpen}
-              sx={{
-                borderColor: '#e0e0e0',
-                color: '#424242',
-                fontSize: '12px',
-                px: 1.5,
-                py: 0.5,
-                textTransform: 'capitalize',
-                minWidth: 'auto',
-                boxShadow: 'none',
-              }}
-            >
-              {viewType === 'grid' ? <GridIcon sx={{ fontSize: 16 }} /> : <ListIcon sx={{ fontSize: 16 }} />}
-            </Button>
-          </Box>
-
-          {/* Upload Area */}
-          <Box
-            sx={{
-              p: 3,
-              border: '2px dashed #e0e0e0',
-              borderRadius: 2,
-              textAlign: 'center',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              '&:hover': {
-                borderColor: '#bdbdbd',
-                backgroundColor: '#fafafa',
-              },
-            }}
-            onClick={handleFileSelect}
-          >
-            <CloudUploadIcon sx={{ fontSize: 40, color: '#bdbdbd', mb: 1 }} />
-            
-            <Button
-              variant="contained"
-              size="small"
-              sx={{
-                backgroundColor: '#424242',
-                textTransform: 'capitalize',
-                fontSize: '12px',
-                mb: 1,
-                px: 2,
-                py: 0.5,
-                boxShadow: 'none',
-                '&:hover': { 
-                  backgroundColor: '#303030',
-                  boxShadow: 'none',
-                },
-              }}
-            >
-              Añadir multimedia
-            </Button>
-            
-            <Typography variant="body2" sx={{ color: '#757575', fontSize: '12px' }}>
-              Arrastrar y soltar archivos aquí
-            </Typography>
-            
-            <Typography variant="caption" sx={{ color: '#9e9e9e', fontSize: '11px' }}>
-              Formatos permitidos: jpg, jpeg, png, svg
-            </Typography>
-          </Box>
-
-          {/* Horizontal Box */}
-          <Box sx={{ mt: 2 }}>
-            <Box
-              sx={{
-                width: '100%',
-                maxHeight: '200px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '20px',
-                backgroundColor: 'white',
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                px: 2,
-                py: 1,
-                gap: 1,
-                overflowY: 'auto',
-                '&:hover': {
-                  borderColor: '#bdbdbd',
-                },
-                '&::-webkit-scrollbar': {
-                  width: 6,
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: '#f1f1f1',
-                  borderRadius: 3,
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: '#c1c1c1',
-                  borderRadius: 3,
-                  '&:hover': {
-                    backgroundColor: '#a8a8a8',
-                  },
-                },
-              }}
-            >
-              {/* Selected Images Grid - 4 per row */}
-              {uploadedImages.length > 0 && (
-                uploadedImages.map((imageUrl, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      width: 'calc(25% - 8px)',
-                      height: '80px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      border: '1px solid #e0e0e0',
-                      flexShrink: 0,
-                      cursor: 'pointer',
-                      '&:hover': {
-                        borderColor: '#1976d2',
-                        transform: 'scale(1.05)',
-                      },
-                    }}
-                    onClick={() => handleImageSelect(imageUrl)}
-                  >
-                    <img
-                      src={imageUrl}
-                      alt={`Imagen ${index + 1}`}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  </Box>
-                ))
-              )}
-            </Box>
-          </Box>
-        </DialogContent>
-
-        {/* View Type Menu */}
-        <Menu
-          anchorEl={viewMenuAnchor}
-          open={Boolean(viewMenuAnchor)}
-          onClose={handleViewMenuClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-        >
-          <MenuItem onClick={() => handleViewTypeChange('grid')} sx={{ py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <GridIcon sx={{ fontSize: 18 }} />
-            </ListItemIcon>
-            <ListItemText 
-              primary="Cuadrícula" 
-              sx={{ 
-                '& .MuiListItemText-primary': { 
-                  fontSize: '14px',
-                  fontWeight: viewType === 'grid' ? 'medium' : 'normal'
-                } 
-              }} 
-            />
-          </MenuItem>
-          <MenuItem onClick={() => handleViewTypeChange('list')} sx={{ py: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <ListIcon sx={{ fontSize: 18 }} />
-            </ListItemIcon>
-            <ListItemText 
-              primary="Lista" 
-              sx={{ 
-                '& .MuiListItemText-primary': { 
-                  fontSize: '14px',
-                  fontWeight: viewType === 'list' ? 'medium' : 'normal'
-                } 
-              }} 
-            />
-          </MenuItem>
-        </Menu>
-      </Dialog>
 
       {/* Save/Discard Notification */}
       <Snackbar

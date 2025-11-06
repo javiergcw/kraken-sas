@@ -39,6 +39,10 @@ export const API_ENDPOINTS = {
     BASE: '/v1/banners',
     BY_ID: (id: string) => `/v1/banners/${id}`,
   },
+  STORAGE: {
+    UPLOAD_FILE: '/v1/storage/files',
+    GET_FOLDERS: '/v1/storage/folders',
+  },
 } as const;
 
 /**
@@ -69,6 +73,10 @@ export const EXTERNAL_ROUTES = {
   BANNERS: {
     BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.BANNERS.BASE}`,
     BY_ID: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.BANNERS.BY_ID(id)}`,
+  },
+  STORAGE: {
+    UPLOAD_FILE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.STORAGE.UPLOAD_FILE}`,
+    GET_FOLDERS: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.STORAGE.GET_FOLDERS}`,
   },
 } as const;
 

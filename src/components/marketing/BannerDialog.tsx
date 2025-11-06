@@ -18,9 +18,8 @@ import {
 } from '@mui/material';
 import {
   Close as CloseIcon,
-  AddPhotoAlternateOutlined as AddPhotoIcon,
 } from '@mui/icons-material';
-import ImagePickerDialog from '../common/ImagePickerDialog';
+import BannerMediaManager from './BannerMediaManager';
 
 interface BannerDialogProps {
   open: boolean;
@@ -48,9 +47,6 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
     urlWeb: '',
   });
 
-  const [imagePickerOpen, setImagePickerOpen] = useState(false);
-  const [currentImageField, setCurrentImageField] = useState<'urlWeb' | null>(null);
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   // Llenar el formulario con datos iniciales cuando se está editando
   useEffect(() => {
@@ -101,21 +97,12 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
     onClose();
   };
 
-  const handleImageUpload = (field: 'urlWeb') => {
-    setCurrentImageField(field);
-    setImagePickerOpen(true);
-  };
-
   const handleImageSelect = (imageUrl: string) => {
-    if (currentImageField) {
-      handleChange(currentImageField, imageUrl);
-    }
-    setImagePickerOpen(false);
-    setCurrentImageField(null);
+    handleChange('urlWeb', imageUrl);
   };
 
-  const handleUploadImage = (imageUrl: string) => {
-    setUploadedImages(prev => [...prev, imageUrl]);
+  const handleImageRemove = () => {
+    handleChange('urlWeb', '');
   };
 
   return (
@@ -235,69 +222,11 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
             <Typography variant="body2" sx={{ mb: 1, fontSize: '13px', color: '#757575', fontWeight: '500' }}>
               URL Web
             </Typography>
-            {formData.urlWeb ? (
-              <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                <Box
-                  component="img"
-                  src={formData.urlWeb}
-                  alt="Preview Web"
-                  onClick={() => handleImageUpload('urlWeb')}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    objectFit: 'cover',
-                    borderRadius: 1,
-                    border: '2px solid #e0e0e0',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      borderColor: '#1976d2',
-                      transform: 'scale(1.02)',
-                    },
-                  }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => handleChange('urlWeb', '')}
-                  sx={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    width: 20,
-                    height: 20,
-                    '&:hover': {
-                      backgroundColor: '#d32f2f',
-                    },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Box>
-            ) : (
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<AddPhotoIcon />}
-                onClick={() => handleImageUpload('urlWeb')}
-                sx={{
-                  borderColor: '#e0e0e0',
-                  color: '#757575',
-                  textTransform: 'none',
-                  fontSize: '13px',
-                  justifyContent: 'flex-start',
-                  py: 1.5,
-                  borderStyle: 'dashed',
-                  '&:hover': {
-                    borderColor: '#bdbdbd',
-                    backgroundColor: '#fafafa',
-                  },
-                }}
-              >
-                Añadir imagen
-              </Button>
-            )}
+            <BannerMediaManager
+              currentImage={formData.urlWeb}
+              onImageSelect={handleImageSelect}
+              onImageRemove={handleImageRemove}
+            />
           </Box>
 
         </Box>
@@ -348,18 +277,6 @@ const BannerDialog: React.FC<BannerDialogProps> = ({ open, onClose, onSave, zona
           {isEditing ? 'Guardar' : 'Crear'}
         </Button>
       </DialogActions>
-
-      {/* Dialog de selección de imágenes */}
-      <ImagePickerDialog
-        open={imagePickerOpen}
-        onClose={() => {
-          setImagePickerOpen(false);
-          setCurrentImageField(null);
-        }}
-        onSelect={handleImageSelect}
-        uploadedImages={uploadedImages}
-        onUploadImage={handleUploadImage}
-      />
     </Dialog>
   );
 };
