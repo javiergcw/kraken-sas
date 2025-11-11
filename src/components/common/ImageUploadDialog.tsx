@@ -142,7 +142,6 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
 
         {/* Área de subida */}
         <Box
-          component="label"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           sx={{
@@ -160,8 +159,10 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
               backgroundColor: '#f5f5f5',
             },
           }}
+          onClick={() => document.getElementById('image-upload-input')?.click()}
         >
           <input
+            id="image-upload-input"
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/svg+xml"
             onChange={handleFileUpload}
