@@ -4,10 +4,11 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // GET - Obtener estado del contrato por token público (sin autenticación)
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PUBLIC.STATUS(params.token), {
+    const { token } = await params;
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PUBLIC.STATUS(token), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

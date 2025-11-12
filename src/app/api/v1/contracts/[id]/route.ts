@@ -4,9 +4,10 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // GET - Obtener contrato por ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -16,7 +17,7 @@ export async function GET(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.BY_ID(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.BY_ID(id), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -52,9 +53,10 @@ export async function GET(
 // DELETE - Eliminar contrato
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -64,7 +66,7 @@ export async function DELETE(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.BY_ID(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.BY_ID(id), {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

@@ -4,9 +4,10 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // POST - Invalidar contrato
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -26,7 +27,7 @@ export async function POST(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.INVALIDATE(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.INVALIDATE(id), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

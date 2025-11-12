@@ -10,7 +10,7 @@ export interface ContractDto {
   code: string;
   related_type?: 'RESERVATION' | 'PRODUCT' | 'SERVICE' | 'OTHER';
   related_id?: string;
-  status: 'DRAFT' | 'PENDING' | 'SIGNED' | 'EXPIRED' | 'CANCELLED';
+  status: 'DRAFT' | 'PENDING_SIGN' | 'SIGNED' | 'EXPIRED' | 'CANCELLED';
   signer_name: string;
   signer_email: string;
   fields: Record<string, any>;
@@ -20,7 +20,10 @@ export interface ContractDto {
   signature_image?: string;
   expires_at?: string;
   pdf_url?: string;
+  pdf_path?: string;
+  html_snapshot?: string;
   public_token?: string;
+  access_token?: string;
   created_at: string;
   updated_at: string;
 }

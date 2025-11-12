@@ -4,9 +4,10 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // GET - Descargar PDF del contrato
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -16,7 +17,7 @@ export async function GET(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PDF(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PDF(id), {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
@@ -36,7 +37,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="contrato-${params.id}.pdf"`,
+        'Content-Disposition': `attachment; filename="contrato-${id}.pdf"`,
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -51,9 +52,10 @@ export async function GET(
 // POST - Generar/Regenerar PDF del contrato
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -70,7 +72,7 @@ export async function POST(
       body = {};
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PDF(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PDF(id), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

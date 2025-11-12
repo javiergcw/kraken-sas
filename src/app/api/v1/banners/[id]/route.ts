@@ -4,9 +4,10 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // PUT - Actualizar banner
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -26,10 +27,7 @@ export async function PUT(
       );
     }
 
-    const resolvedParams = await Promise.resolve(params);
-    const bannerId = resolvedParams.id;
-
-    const response = await fetch(EXTERNAL_ROUTES.BANNERS.BY_ID(bannerId), {
+    const response = await fetch(EXTERNAL_ROUTES.BANNERS.BY_ID(id), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -66,9 +64,10 @@ export async function PUT(
 // DELETE - Eliminar banner
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -78,10 +77,7 @@ export async function DELETE(
       );
     }
 
-    const resolvedParams = await Promise.resolve(params);
-    const bannerId = resolvedParams.id;
-
-    const response = await fetch(EXTERNAL_ROUTES.BANNERS.BY_ID(bannerId), {
+    const response = await fetch(EXTERNAL_ROUTES.BANNERS.BY_ID(id), {
       method: 'DELETE',
       headers: {
         'Authorization': authHeader,

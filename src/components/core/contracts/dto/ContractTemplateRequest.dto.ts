@@ -2,22 +2,12 @@
  * DTOs para requests de plantillas de contratos
  */
 
-export interface TemplateVariableDto {
-  key: string;
-  label: string;
-  description?: string;
-  data_type: 'TEXT' | 'NUMBER' | 'DATE' | 'SIGNATURE' | 'EMAIL';
-  required: boolean;
-  default_value?: string;
-  sort_order?: number;
-}
-
 export interface ContractTemplateCreateRequestDto {
   name: string;
   sku: string;
   description?: string;
   html_content: string;
-  variables?: TemplateVariableDto[];
+  variables?: TemplateVariableCreateRequestDto[];
 }
 
 export interface ContractTemplateUpdateRequestDto {

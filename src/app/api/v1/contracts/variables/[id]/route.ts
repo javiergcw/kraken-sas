@@ -4,9 +4,10 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // PUT - Actualizar variable
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -26,7 +27,7 @@ export async function PUT(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.VARIABLES.BY_ID(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.VARIABLES.BY_ID(id), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -63,9 +64,10 @@ export async function PUT(
 // DELETE - Eliminar variable
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -75,7 +77,7 @@ export async function DELETE(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.VARIABLES.BY_ID(params.id), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.VARIABLES.BY_ID(id), {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

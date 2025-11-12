@@ -4,9 +4,10 @@ import { EXTERNAL_ROUTES } from '@/routes/api.config';
 // POST - Firmar contrato por token público (sin autenticación)
 export async function POST(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params;
     let body;
     try {
       body = await req.json();
@@ -17,7 +18,7 @@ export async function POST(
       );
     }
 
-    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PUBLIC.SIGN(params.token), {
+    const response = await fetch(EXTERNAL_ROUTES.CONTRACTS.PUBLIC.SIGN(token), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

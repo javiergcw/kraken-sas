@@ -47,7 +47,23 @@ const CreateContractTemplatePage: React.FC = () => {
     description: '',
     html_content: '',
   });
-  const [variables, setVariables] = useState<TemplateVariable[]>([]);
+  const [variables, setVariables] = useState<TemplateVariable[]>([
+    {
+      key: 'company_name',
+      label: 'Nombre de la empresa',
+      data_type: 'TEXT',
+      required: true,
+      default_value: 'Scuba Exagone',
+      sort_order: 1,
+    },
+    {
+      key: 'signature_client',
+      label: 'Firma del cliente',
+      data_type: 'SIGNATURE',
+      required: true,
+      sort_order: 2,
+    },
+  ]);
   const [newVariable, setNewVariable] = useState<TemplateVariable>({
     key: '',
     label: '',
@@ -78,6 +94,10 @@ const CreateContractTemplatePage: React.FC = () => {
   };
 
   const handleRemoveVariable = (index: number) => {
+    // No permitir eliminar las dos variables por defecto (company_name y signature_client)
+    if (index < 2) {
+      return;
+    }
     setVariables(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -300,6 +320,7 @@ const CreateContractTemplatePage: React.FC = () => {
                           <Chip label={variable.data_type} size="small" sx={{ fontSize: '11px', height: 20 }} />
                         </TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
+                          {index >= 2 ? (
                           <IconButton
                             size="small"
                             onClick={() => handleRemoveVariable(index)}
@@ -307,6 +328,18 @@ const CreateContractTemplatePage: React.FC = () => {
                           >
                             <DeleteIcon sx={{ fontSize: 18 }} />
                           </IconButton>
+                          ) : (
+                            <Chip
+                              label="Por defecto"
+                              size="small"
+                              sx={{
+                                fontSize: '10px',
+                                height: 20,
+                                backgroundColor: '#e3f2fd',
+                                color: '#1976d2',
+                              }}
+                            />
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
