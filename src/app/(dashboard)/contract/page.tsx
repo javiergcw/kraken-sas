@@ -29,6 +29,8 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -46,6 +48,9 @@ import {
   GetApp as DownloadIcon,
   PlayArrow as CreateIcon,
   NoteAdd as NoteAddIcon,
+  Draw as DrawIcon,
+  Upload as UploadIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { contractTemplateController, contractController } from '@/components/core';
 import type { ContractTemplateDto, ContractDto } from '@/components/core/contracts/dto';
@@ -67,6 +72,16 @@ const ContractPage: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<ContractDto | null>(null);
   const [invalidateModalOpen, setInvalidateModalOpen] = useState(false);
   const [contractToInvalidate, setContractToInvalidate] = useState<{ id: string; code: string } | null>(null);
+  const [invalidateReason, setInvalidateReason] = useState('');
+  const [invalidateAllTokens, setInvalidateAllTokens] = useState(true);
+  
+  // Modal de firma
+  const [signModalOpen, setSignModalOpen] = useState(false);
+  const [contractToSign, setContractToSign] = useState<{ id: string; code: string } | null>(null);
+  const [signerName, setSignerName] = useState('');
+  const [signerEmail, setSignerEmail] = useState('');
+  const [signatureImage, setSignatureImage] = useState<string>('');
+  const [signatureMode, setSignatureMode] = useState<'draw' | 'upload'>('draw');
 
   // Notificaciones
   const [snackbar, setSnackbar] = useState<{
@@ -86,6 +101,98 @@ const ContractPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Inicializar el canvas cuando se abre el modal
+  useEffect(() => {
+    if (!signModalOpen || signatureMode !== 'draw') return;
+
+    // Usar setTimeout para asegurar que el canvas esté renderizado
+    const initCanvas = setTimeout(() => {
+      const canvas = document.getElementById('signature-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Limpiar el canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      let isDrawing = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      const getCoordinates = (e: MouseEvent | TouchEvent, rect: DOMRect) => {
+        if (e instanceof MouseEvent) {
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          };
+        } else {
+          e.preventDefault(); // Prevenir scroll en touch
+          return {
+            x: e.touches[0].clientX - rect.left,
+            y: e.touches[0].clientY - rect.top
+          };
+        }
+      };
+
+      const startDrawing = (e: MouseEvent | TouchEvent) => {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const coords = getCoordinates(e, rect);
+        lastX = coords.x;
+        lastY = coords.y;
+      };
+
+      const draw = (e: MouseEvent | TouchEvent) => {
+        if (!isDrawing) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const coords = getCoordinates(e, rect);
+
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(coords.x, coords.y);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        lastX = coords.x;
+        lastY = coords.y;
+      };
+
+      const stopDrawing = () => {
+        isDrawing = false;
+      };
+
+      // Event listeners
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseleave', stopDrawing);
+      
+      canvas.addEventListener('touchstart', startDrawing, { passive: false });
+      canvas.addEventListener('touchmove', draw, { passive: false });
+      canvas.addEventListener('touchend', stopDrawing);
+      canvas.addEventListener('touchcancel', stopDrawing);
+
+      // Cleanup function
+      return () => {
+        canvas.removeEventListener('mousedown', startDrawing);
+        canvas.removeEventListener('mousemove', draw);
+        canvas.removeEventListener('mouseup', stopDrawing);
+        canvas.removeEventListener('mouseleave', stopDrawing);
+        canvas.removeEventListener('touchstart', startDrawing);
+        canvas.removeEventListener('touchmove', draw);
+        canvas.removeEventListener('touchend', stopDrawing);
+        canvas.removeEventListener('touchcancel', stopDrawing);
+      };
+    }, 100); // Pequeño delay para asegurar renderizado
+
+    return () => clearTimeout(initCanvas);
+  }, [signModalOpen, signatureMode]);
 
   const loadData = async () => {
     try {
@@ -163,8 +270,7 @@ const ContractPage: React.FC = () => {
   };
 
   const handleViewContract = async (contract: ContractDto) => {
-    setSelectedContract(contract);
-    setViewContractModalOpen(true);
+    router.push(`/contract/view/${contract.id}`);
   };
 
   const handleCloseViewContractModal = () => {
@@ -187,21 +293,94 @@ const ContractPage: React.FC = () => {
       showSnackbar('Descargando PDF...', 'info');
       handleMenuClose();
 
-      // Crear enlace de descarga
+      // Buscar el contrato para obtener su código/SKU
+      const contract = contracts.find(c => c.id === contractId);
+      const fileName = contract ? `contrato-${contract.sku || contract.code}.pdf` : `contrato-${contractId}.pdf`;
+
+      // Usar el controlador para descargar el PDF
+      const blob = await contractController.downloadPDF(contractId);
+
+      if (!blob) {
+        throw new Error('No se pudo descargar el PDF');
+      }
+
+      // Crear URL temporal para el blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Crear enlace y simular click para descargar
       const link = document.createElement('a');
-      link.href = `/api/v1/contracts/${contractId}/pdf`;
-      link.download = `contrato-${contractId}.pdf`;
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
       link.click();
+
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
       showSnackbar('PDF descargado exitosamente', 'success');
     } catch (error) {
       console.error('Error al descargar PDF:', error);
-      showSnackbar('Error al descargar PDF', 'error');
+      
+      // Si el error es que el PDF no está generado, generarlo automáticamente
+      if (error instanceof Error && error.message === 'PDF_NOT_GENERATED') {
+        try {
+          showSnackbar('El PDF no existe. Generando automáticamente...', 'info');
+          
+          // Generar el PDF usando el endpoint POST
+          const generateResult = await contractController.generatePDF(contractId, {
+            force_regenerate: false,
+            notify_signer: false
+          });
+          
+          if (generateResult) {
+            showSnackbar('PDF generado exitosamente. Descargando...', 'success');
+            
+            // Intentar descargar nuevamente después de un breve delay
+            setTimeout(async () => {
+              try {
+                const blob = await contractController.downloadPDF(contractId);
+                if (blob) {
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  const contract = contracts.find(c => c.id === contractId);
+                  const fileName = contract ? `contrato-${contract.sku || contract.code}.pdf` : `contrato-${contractId}.pdf`;
+                  
+                  link.href = url;
+                  link.download = fileName;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+                  
+                  showSnackbar('PDF descargado exitosamente', 'success');
+                }
+              } catch (retryError) {
+                console.error('Error al reintentar descarga:', retryError);
+                showSnackbar('PDF generado, pero hubo un error al descargarlo. Intenta nuevamente.', 'warning');
+              }
+            }, 2000);
+          } else {
+            showSnackbar('Error al generar el PDF. Por favor intenta nuevamente.', 'error');
+          }
+        } catch (genError) {
+          console.error('Error al generar PDF:', genError);
+          const genErrorMessage = genError instanceof Error ? genError.message : 'Error desconocido';
+          showSnackbar(`Error al generar PDF: ${genErrorMessage}`, 'error');
+        }
+        return;
+      }
+      
+      // Otros errores
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      showSnackbar(`Error al descargar PDF: ${errorMessage}`, 'error');
     }
   };
 
   const handleInvalidateClick = (contractId: string, contractCode: string) => {
     setContractToInvalidate({ id: contractId, code: contractCode });
+    setInvalidateReason('');
+    setInvalidateAllTokens(true);
     setInvalidateModalOpen(true);
     handleMenuClose();
   };
@@ -209,22 +388,174 @@ const ContractPage: React.FC = () => {
   const handleConfirmInvalidate = async () => {
     if (!contractToInvalidate) return;
 
+    // Validar que se haya proporcionado una razón
+    if (!invalidateReason.trim()) {
+      showSnackbar('Por favor proporciona una razón para invalidar el contrato', 'warning');
+      return;
+    }
+
     try {
       const response = await contractController.invalidate(contractToInvalidate.id, {
-        reason: 'Invalidado desde el panel de administración',
+        reason: invalidateReason,
+        invalidate_all_tokens: invalidateAllTokens,
       });
 
       if (response?.success) {
         showSnackbar('Contrato invalidado exitosamente', 'success');
         await loadData();
+        setInvalidateModalOpen(false);
+        setContractToInvalidate(null);
+        setInvalidateReason('');
+        setInvalidateAllTokens(true);
       } else {
         showSnackbar('Error al invalidar el contrato', 'error');
       }
-      setInvalidateModalOpen(false);
-      setContractToInvalidate(null);
     } catch (error) {
       console.error('Error al invalidar:', error);
       showSnackbar('Error al invalidar el contrato', 'error');
+    }
+  };
+
+  const handleSignClick = (contractId: string, contractCode: string) => {
+    // Verificar el estado del contrato
+    const contract = contracts.find(c => c.id === contractId);
+    
+    if (!contract) {
+      showSnackbar('Contrato no encontrado', 'error');
+      handleMenuClose();
+      return;
+    }
+
+    // Validar estados que no permiten firma
+    if (contract.status === 'SIGNED') {
+      showSnackbar('Este contrato ya ha sido firmado', 'warning');
+      handleMenuClose();
+      return;
+    }
+
+    if (contract.status === 'CANCELLED') {
+      showSnackbar('No se puede firmar un contrato cancelado', 'error');
+      handleMenuClose();
+      return;
+    }
+
+    if (contract.status === 'EXPIRED') {
+      showSnackbar('No se puede firmar un contrato expirado', 'error');
+      handleMenuClose();
+      return;
+    }
+
+    // Solo permitir firma en estados DRAFT o PENDING_SIGN
+    if (contract.status !== 'DRAFT' && contract.status !== 'PENDING_SIGN') {
+      showSnackbar(`No se puede firmar un contrato en estado: ${getStatusLabel(contract.status)}`, 'warning');
+      handleMenuClose();
+      return;
+    }
+    
+    setContractToSign({ id: contractId, code: contractCode });
+    setSignerName('');
+    setSignerEmail('');
+    setSignatureImage('');
+    setSignatureMode('draw');
+    setSignModalOpen(true);
+    handleMenuClose();
+  };
+
+  const handleClearSignature = () => {
+    setSignatureImage('');
+    const canvas = document.getElementById('signature-canvas') as HTMLCanvasElement;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setSignatureImage(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleConfirmSign = async () => {
+    if (!contractToSign) return;
+
+    // Validaciones
+    if (!signerName.trim()) {
+      showSnackbar('Por favor ingresa el nombre del firmante', 'warning');
+      return;
+    }
+
+    if (!signerEmail.trim()) {
+      showSnackbar('Por favor ingresa el email del firmante', 'warning');
+      return;
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(signerEmail)) {
+      showSnackbar('Por favor ingresa un email válido', 'warning');
+      return;
+    }
+
+    // Obtener la firma del canvas si está en modo dibujo
+    let finalSignature = signatureImage;
+    if (signatureMode === 'draw' && !signatureImage) {
+      const canvas = document.getElementById('signature-canvas') as HTMLCanvasElement;
+      if (canvas) {
+        finalSignature = canvas.toDataURL('image/png');
+      }
+    }
+
+    if (!finalSignature) {
+      showSnackbar('Por favor dibuja o sube una firma', 'warning');
+      return;
+    }
+
+    try {
+      const response = await contractController.sign(contractToSign.id, {
+        signed_by_name: signerName,
+        signed_by_email: signerEmail,
+        signature_image: finalSignature,
+        signed_fields: {
+          signature_client: finalSignature
+        }
+      });
+
+      if (response?.success) {
+        showSnackbar('Contrato firmado exitosamente', 'success');
+        await loadData();
+        setSignModalOpen(false);
+        setContractToSign(null);
+        setSignerName('');
+        setSignerEmail('');
+        setSignatureImage('');
+      } else {
+        // Mostrar mensaje de error específico del backend
+        const errorMessage = (response as any)?.error || 'Error al firmar el contrato';
+        
+        // Traducir errores comunes
+        let friendlyMessage = errorMessage;
+        if (errorMessage.includes('already signed')) {
+          friendlyMessage = 'El contrato ya ha sido firmado';
+        } else if (errorMessage.includes('cancelled')) {
+          friendlyMessage = 'El contrato ha sido cancelado';
+        } else if (errorMessage.includes('expired')) {
+          friendlyMessage = 'El contrato ha expirado';
+        }
+        
+        showSnackbar(friendlyMessage, 'error');
+      }
+    } catch (error) {
+      console.error('Error al firmar:', error);
+      showSnackbar('Error al firmar el contrato. Por favor intenta nuevamente.', 'error');
     }
   };
 
@@ -599,6 +930,24 @@ const ContractPage: React.FC = () => {
                             }}
                           >
                             <ViewIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => router.push(`/contract/edit/${template.id}`)}
+                            title="Editar plantilla"
+                            sx={{
+                              border: '1px solid #e0e0e0',
+                              borderRadius: 1.5,
+                              color: '#757575',
+                              p: 1,
+                              '&:hover': { 
+                                backgroundColor: '#fff3e0', 
+                                color: '#ff9800',
+                                borderColor: '#ff9800' 
+                              },
+                            }}
+                          >
+                            <EditIcon sx={{ fontSize: 18 }} />
                           </IconButton>
                           <IconButton
                             size="small"
@@ -1175,34 +1524,91 @@ const ContractPage: React.FC = () => {
         onClose={() => setInvalidateModalOpen(false)}
         maxWidth="sm"
         fullWidth
-        sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxWidth: '420px', padding: '12px' } }}
+        sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxWidth: '500px' } }}
       >
-        <DialogTitle sx={{ pb: 0.5, px: 1.5, pt: 1, fontWeight: 'bold', color: '#424242', fontSize: '16px' }}>
-          Invalidar Contrato
+        <DialogTitle sx={{ pb: 1, fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: '50%', 
+              backgroundColor: '#fff3e0', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <BlockIcon sx={{ fontSize: 22, color: '#ff9800' }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 'bold', fontSize: '18px', color: '#424242' }}>
+                Invalidar Contrato
+              </Typography>
+            </Box>
+          </Box>
         </DialogTitle>
-        <DialogContent sx={{ px: 1.5, py: 1 }}>
-          <Typography variant="body2" sx={{ color: '#424242', fontSize: '13px', lineHeight: 1.4 }}>
+        <DialogContent sx={{ pb: 2 }}>
+          <Typography variant="body2" sx={{ color: '#424242', fontSize: '14px', lineHeight: 1.5, mb: 2 }}>
             ¿Estás seguro de que deseas invalidar el contrato{' '}
-            <Typography component="span" sx={{ fontWeight: 'bold', color: '#ff9800', fontSize: '13px' }}>
+            <Typography component="span" sx={{ fontWeight: 'bold', color: '#ff9800', fontSize: '14px' }}>
               {contractToInvalidate?.code}
             </Typography>
             ?
           </Typography>
-          <Typography variant="body2" sx={{ color: '#757575', fontSize: '12px', mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: '#757575', fontSize: '13px', mb: 3 }}>
             Esta acción marcará el contrato como inválido y no podrá ser utilizado.
           </Typography>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Razón de invalidación *"
+            placeholder="Ej: Contrato reemplazado por una versión actualizada"
+            value={invalidateReason}
+            onChange={(e) => setInvalidateReason(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={invalidateAllTokens}
+                onChange={(e) => setInvalidateAllTokens(e.target.checked)}
+                sx={{
+                  color: '#ff9800',
+                  '&.Mui-checked': {
+                    color: '#ff9800',
+                  },
+                }}
+              />
+            }
+            label={
+              <Box>
+                <Typography sx={{ fontSize: '14px', fontWeight: 'medium', color: '#424242' }}>
+                  Invalidar todos los tokens de acceso
+                </Typography>
+                <Typography sx={{ fontSize: '12px', color: '#757575' }}>
+                  Revocar acceso a todas las URLs públicas asociadas
+                </Typography>
+              </Box>
+            }
+          />
         </DialogContent>
-        <DialogActions sx={{ px: 1.5, pb: 1, pt: 0.5, gap: 1 }}>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button
             variant="outlined"
-            onClick={() => setInvalidateModalOpen(false)}
+            onClick={() => {
+              setInvalidateModalOpen(false);
+              setInvalidateReason('');
+              setInvalidateAllTokens(true);
+            }}
             sx={{
               borderColor: '#e0e0e0',
               color: '#424242',
-              textTransform: 'capitalize',
-              fontSize: '13px',
-              px: 2,
-              py: 0.5,
+              textTransform: 'none',
+              fontSize: '14px',
+              px: 3,
               '&:hover': { borderColor: '#bdbdbd', backgroundColor: '#f5f5f5' },
             }}
           >
@@ -1211,17 +1617,230 @@ const ContractPage: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleConfirmInvalidate}
+            disabled={!invalidateReason.trim()}
             sx={{
               backgroundColor: '#ff9800',
-              textTransform: 'capitalize',
-              fontSize: '13px',
-              px: 2,
-              py: 0.5,
+              textTransform: 'none',
+              fontSize: '14px',
+              px: 3,
               boxShadow: 'none',
               '&:hover': { backgroundColor: '#f57c00', boxShadow: 'none' },
+              '&:disabled': {
+                backgroundColor: '#e0e0e0',
+                color: '#9e9e9e',
+              },
             }}
           >
-            Invalidar
+            Invalidar Contrato
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Registrar Firma */}
+      <Dialog
+        open={signModalOpen}
+        onClose={() => setSignModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxWidth: '600px' } }}
+      >
+        <DialogTitle sx={{ pb: 1, fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: '50%', 
+              backgroundColor: '#e8f5e9', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <DrawIcon sx={{ fontSize: 22, color: '#4caf50' }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 'bold', fontSize: '18px', color: '#424242' }}>
+                Registrar Firma del Cliente
+              </Typography>
+              <Typography sx={{ fontSize: '13px', color: '#757575' }}>
+                Contrato: {contractToSign?.code}
+              </Typography>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            {/* Datos del firmante */}
+            <TextField
+              fullWidth
+              label="Nombre del firmante *"
+              placeholder="Ej: Juan Pérez"
+              value={signerName}
+              onChange={(e) => setSignerName(e.target.value)}
+              required
+            />
+
+            <TextField
+              fullWidth
+              label="Email del firmante *"
+              type="email"
+              placeholder="Ej: juan.perez@example.com"
+              value={signerEmail}
+              onChange={(e) => setSignerEmail(e.target.value)}
+              required
+            />
+
+            {/* Tabs para modo de firma */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
+              <Tabs 
+                value={signatureMode} 
+                onChange={(_, newValue) => setSignatureMode(newValue)}
+                sx={{
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontSize: '14px',
+                  }
+                }}
+              >
+                <Tab value="draw" label="Dibujar firma" icon={<DrawIcon />} iconPosition="start" />
+                <Tab value="upload" label="Subir imagen" icon={<UploadIcon />} iconPosition="start" />
+              </Tabs>
+            </Box>
+
+            {/* Canvas para dibujar */}
+            {signatureMode === 'draw' && (
+              <Box>
+                <Box sx={{ 
+                  border: '2px dashed #e0e0e0', 
+                  borderRadius: 2, 
+                  p: 2, 
+                  backgroundColor: '#fafafa',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 2
+                }}>
+                  <canvas
+                    id="signature-canvas"
+                    width={500}
+                    height={200}
+                    style={{
+                      border: '1px solid #e0e0e0',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      cursor: 'crosshair',
+                      maxWidth: '100%'
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ClearIcon />}
+                    onClick={handleClearSignature}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Limpiar firma
+                  </Button>
+                </Box>
+                <Typography sx={{ fontSize: '12px', color: '#757575', mt: 1 }}>
+                  Dibuja tu firma usando el mouse o el dedo (en dispositivos táctiles)
+                </Typography>
+              </Box>
+            )}
+
+            {/* Upload de imagen */}
+            {signatureMode === 'upload' && (
+              <Box>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  fullWidth
+                  startIcon={<UploadIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    py: 2,
+                    borderStyle: 'dashed',
+                    borderWidth: 2,
+                    backgroundColor: '#fafafa',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5',
+                      borderStyle: 'dashed',
+                    }
+                  }}
+                >
+                  {signatureImage ? 'Cambiar imagen' : 'Seleccionar imagen de firma'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </Button>
+                {signatureImage && (
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
+                    <img
+                      src={signatureImage}
+                      alt="Firma"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '200px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Button
+                      variant="text"
+                      size="small"
+                      startIcon={<ClearIcon />}
+                      onClick={handleClearSignature}
+                      sx={{ mt: 1, textTransform: 'none' }}
+                    >
+                      Eliminar imagen
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSignModalOpen(false);
+              setContractToSign(null);
+              setSignerName('');
+              setSignerEmail('');
+              setSignatureImage('');
+            }}
+            sx={{
+              borderColor: '#e0e0e0',
+              color: '#424242',
+              textTransform: 'none',
+              fontSize: '14px',
+              px: 3,
+              '&:hover': { borderColor: '#bdbdbd', backgroundColor: '#f5f5f5' },
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmSign}
+            disabled={!signerName.trim() || !signerEmail.trim()}
+            sx={{
+              backgroundColor: '#4caf50',
+              textTransform: 'none',
+              fontSize: '14px',
+              px: 3,
+              boxShadow: 'none',
+              '&:hover': { backgroundColor: '#45a049', boxShadow: 'none' },
+              '&:disabled': {
+                backgroundColor: '#e0e0e0',
+                color: '#9e9e9e',
+              },
+            }}
+          >
+            Registrar Firma
           </Button>
         </DialogActions>
       </Dialog>
@@ -1259,6 +1878,48 @@ const ContractPage: React.FC = () => {
             <PdfIcon sx={{ fontSize: 20, color: '#f44336' }} />
           </ListItemIcon>
           <ListItemText>Descargar PDF</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (selectedContractId) {
+              const contract = contracts.find(c => c.id === selectedContractId);
+              if (contract) {
+                handleSignClick(contract.id, contract.code);
+              }
+            }
+          }}
+          disabled={(() => {
+            if (!selectedContractId) return false;
+            const contract = contracts.find(c => c.id === selectedContractId);
+            if (!contract) return true;
+            // Deshabilitar si NO está en estado DRAFT o PENDING_SIGN
+            return contract.status !== 'DRAFT' && contract.status !== 'PENDING_SIGN';
+          })()}
+          sx={{ 
+            fontSize: '14px', 
+            py: 1,
+            '&.Mui-disabled': {
+              opacity: 0.5
+            }
+          }}
+        >
+          <ListItemIcon>
+            <DrawIcon sx={{ fontSize: 20, color: '#4caf50' }} />
+          </ListItemIcon>
+          <ListItemText>
+            {(() => {
+              if (!selectedContractId) return 'Registrar firma';
+              const contract = contracts.find(c => c.id === selectedContractId);
+              if (!contract) return 'Registrar firma';
+              
+              if (contract.status === 'SIGNED') return 'Ya firmado';
+              if (contract.status === 'CANCELLED') return 'Cancelado';
+              if (contract.status === 'EXPIRED') return 'Expirado';
+              if (contract.status === 'DRAFT' || contract.status === 'PENDING_SIGN') return 'Registrar firma';
+              
+              return 'No disponible';
+            })()}
+          </ListItemText>
         </MenuItem>
         <MenuItem
           onClick={() => {

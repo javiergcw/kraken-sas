@@ -78,6 +78,15 @@ export class ContractController {
       return await contractService.downloadPDF(id);
     } catch (error) {
       console.error('Error al descargar PDF:', error);
+      throw error; // Lanzar el error para que pueda ser manejado en el frontend
+    }
+  }
+
+  async generatePDF(id: string, generateData: any): Promise<any> {
+    try {
+      return await contractService.generatePDF(id, generateData);
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
       return null;
     }
   }

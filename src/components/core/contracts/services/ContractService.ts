@@ -3,6 +3,7 @@
  */
 
 import { httpService } from '@/utils/http.service';
+import { tokenService } from '@/utils/token.service';
 import { API_ENDPOINTS } from '@/utils/constants';
 import {
   ContractsResponseDto,
@@ -125,26 +126,72 @@ export class ContractService {
 
   async downloadPDF(id: string): Promise<Blob> {
     try {
-      // Para descargas de archivos, usar fetch directamente
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      // Obtener token usando el servicio centralizado
+      const token = tokenService.getToken();
+      
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
       const headers: HeadersInit = {
         'Accept': 'application/pdf',
+        'Authorization': `Bearer ${token}`,
       };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
 
+      console.log('[ContractService] Downloading PDF for contract:', id);
+
+      // Usar /api como prefijo para pasar por el proxy de Next.js
       const response = await fetch(
-        `${API_ENDPOINTS.CONTRACTS.PDF(id)}`,
-        { headers }
+        `/api${API_ENDPOINTS.CONTRACTS.PDF(id)}`,
+        { 
+          method: 'GET',
+          headers 
+        }
       );
 
-      if (!response.ok) {
-        throw new Error('Error al descargar PDF');
+      console.log('[ContractService] Response status:', response.status);
+      console.log('[ContractService] Response content-type:', response.headers.get('content-type'));
+
+      // Verificar si la respuesta es JSON (puede ser un error o que el PDF no exista)
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const jsonData = await response.json();
+        console.log('[ContractService] JSON response:', jsonData);
+        
+        // Si el PDF necesita ser generado
+        if (jsonData.needsGeneration) {
+          throw new Error('PDF_NOT_GENERATED');
+        }
+        
+        // Cualquier otro error
+        throw new Error(jsonData.message || jsonData.error || 'Error al descargar PDF');
       }
 
-      return await response.blob();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[ContractService] Error response:', errorText);
+        throw new Error(`Error al descargar PDF: ${errorText || response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      console.log('[ContractService] PDF blob downloaded, size:', blob.size);
+      console.log('[ContractService] Blob type:', blob.type);
+
+      // Validar que el blob sea realmente un PDF
+      if (blob.type && !blob.type.includes('pdf')) {
+        console.warn('[ContractService] Blob is not a PDF, type:', blob.type);
+        
+        // Intentar leer el contenido del blob para ver si es HTML
+        const text = await blob.text();
+        console.log('[ContractService] Blob content preview:', text.substring(0, 200));
+        
+        if (text.includes('<html') || text.includes('<h1>') || text.includes('<!DOCTYPE')) {
+          console.error('[ContractService] Downloaded content is HTML, not PDF');
+          throw new Error('PDF_NOT_GENERATED');
+        }
+      }
+
+      return blob;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -160,12 +207,18 @@ export class ContractService {
     generateData: ContractGeneratePDFRequestDto
   ): Promise<ContractPDFResponseDto> {
     try {
+      console.log('[ContractService] Generating PDF for contract:', id);
+      console.log('[ContractService] Generate data:', generateData);
+      
       const response = await httpService.post<ContractPDFResponseDto>(
         API_ENDPOINTS.CONTRACTS.PDF(id),
         generateData
       );
+      
+      console.log('[ContractService] PDF generation response:', response);
       return response;
     } catch (error) {
+      console.error('[ContractService] Error generating PDF:', error);
       if (error instanceof Error) {
         throw error;
       }

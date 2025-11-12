@@ -36,7 +36,13 @@ export interface ContractsResponseDto {
 export interface ContractResponseDto {
   success: boolean;
   message?: string;
-  data: ContractDto;
+  data: {
+    contract: ContractDto;
+    fields?: Array<{
+      key: string;
+      value: string;
+    }>;
+  };
 }
 
 export interface ContractDeleteResponseDto {

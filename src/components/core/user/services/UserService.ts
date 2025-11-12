@@ -13,9 +13,17 @@ export class UserService {
    */
   async getMe(): Promise<GetMeResponseDto> {
     try {
+      console.log('[UserService] Llamando a:', API_ENDPOINTS.AUTH.ME);
       const response = await httpService.get<GetMeResponseDto>(API_ENDPOINTS.AUTH.ME);
+      console.log('[UserService] Respuesta recibida:', response?.success ? 'exitosa' : 'con error');
       return response;
     } catch (error) {
+      console.error('[UserService] Error en getMe:', {
+        endpoint: API_ENDPOINTS.AUTH.ME,
+        error: error instanceof Error ? error.message : 'Error desconocido',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       if (error instanceof Error) {
         throw error;
       }
