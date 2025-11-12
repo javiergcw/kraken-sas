@@ -1,302 +1,330 @@
-"use client"
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/reservation/button";
-import { Input } from "@/components/reutilizables/input";
-import { Textarea } from "@/components/reutilizables/text-area";
-import { Label } from "@/components/reutilizables/label";
-import { Switch } from "@/components/reutilizables/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/reservation/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/reutilizables/seletc";
-import { Checkbox } from "@/components/reutilizables/checkbox";
-import { ArrowLeft, Save, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { toast } from "sonner";
-import DocumentManager from "@/components/reutilizables/big-documents";
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  Paper,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  FormControl,
+  Select,
+  MenuItem,
+} from '@mui/material';
+import {
+  ArrowBack as ArrowBackIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
+import { contractTemplateController } from '@/components/core';
+import RichTextEditor from '@/components/reutilizables/RichTextEditor';
 
-interface Document {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size?: number;
+interface TemplateVariable {
+  key: string;
+  label: string;
+  description?: string;
+  data_type: 'TEXT' | 'NUMBER' | 'DATE' | 'SIGNATURE' | 'EMAIL';
+  required: boolean;
+  default_value?: string;
+  sort_order: number;
 }
 
-interface Category {
-  id: string;
-  name: string;
-}
-
-export default function CreateContractPage() {
+const CreateContractTemplatePage: React.FC = () => {
   const router = useRouter();
-  
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Mock data para categorías
-  const [categories] = useState<Category[]>([
-    { id: "1", name: "Arrendamiento" },
-    { id: "2", name: "Servicios" },
-    { id: "3", name: "Compra-Venta" },
-    { id: "4", name: "Mantenimiento" },
-    { id: "5", name: "Consultoría" },
-  ]);
-  
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    template_url: "",
-    type: "automatic",
-    required: true,
-    active: true,
-    category_ids: [] as string[]
+    name: '',
+    sku: '',
+    description: '',
+    html_content: '',
+  });
+  const [variables, setVariables] = useState<TemplateVariable[]>([]);
+  const [newVariable, setNewVariable] = useState<TemplateVariable>({
+    key: '',
+    label: '',
+    description: '',
+    data_type: 'TEXT',
+    required: false,
+    default_value: '',
+    sort_order: 0,
   });
 
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-
-  const handleInputChange = (field: string, value: string | boolean | string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setFormData(prev => {
-      const currentIds = prev.category_ids;
-      const newIds = currentIds.includes(categoryId)
-        ? currentIds.filter(id => id !== categoryId)
-        : [...currentIds, categoryId];
-      
-      return {
-        ...prev,
-        category_ids: newIds
-      };
-    });
-  };
-
-  const handleDocumentSelect = (document: Document | null) => {
-    setSelectedDocument(document);
-    if (document) {
-      // Actualizar la URL de la plantilla con la URL del documento seleccionado
-      handleInputChange("template_url", document.url);
-    } else {
-      // Limpiar la URL de la plantilla si no hay documento seleccionado
-      handleInputChange("template_url", "");
+  const handleAddVariable = () => {
+    if (newVariable.key && newVariable.label) {
+      setVariables(prev => [...prev, { ...newVariable, sort_order: prev.length + 1 }]);
+      setNewVariable({
+        key: '',
+        label: '',
+        description: '',
+        data_type: 'TEXT',
+        required: false,
+        default_value: '',
+        sort_order: 0,
+      });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleRemoveVariable = (index: number) => {
+    setVariables(prev => prev.filter((_, i) => i !== index));
+  };
 
-    // Simular creación de contrato
-    setTimeout(() => {
-      console.log("Contrato creado:", {
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      const response = await contractTemplateController.create({
         name: formData.name,
-        description: formData.description,
-        template_url: formData.template_url,
-        type: formData.type,
-        required: formData.required,
-        active: formData.active,
-        category_ids: formData.category_ids
+        sku: formData.sku,
+        description: formData.description || undefined,
+        html_content: formData.html_content,
+        variables: variables.length > 0 ? variables : undefined,
       });
       
-      toast.success("Contrato creado exitosamente");
-      setIsLoading(false);
-      router.push("/contract");
-    }, 1500);
+      if (response?.success) {
+        router.push('/contract');
+      }
+    } catch (error) {
+      console.error('Error al crear plantilla:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="space-y-6 px-15 py-5">
-      <div className="flex items-center gap-4">
+    <Box sx={{ px: { xs: 2, sm: 3, md: 6 }, py: 2, backgroundColor: 'white', minHeight: 'calc(100vh - 64px)' }}>
+      {/* Header */}
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton 
+            sx={{ color: '#757575', p: { xs: 0.5, sm: 1 } }}
+            onClick={() => router.push('/contract')}
+          >
+            <ArrowBackIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
+          </IconButton>
+          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#424242', fontSize: { xs: '18px', sm: '20px' } }}>
+            Nueva Plantilla de Contrato
+          </Typography>
+        </Box>
         <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.back()}
-          className="flex items-center gap-2"
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={loading || !formData.name || !formData.sku}
+          sx={{
+            backgroundColor: '#424242',
+            textTransform: 'capitalize',
+            boxShadow: 'none',
+            fontSize: { xs: '13px', sm: '14px' },
+            px: { xs: 2, sm: 3 },
+            '&:hover': {
+              backgroundColor: '#303030',
+              boxShadow: 'none',
+            },
+          }}
         >
-          <ArrowLeft size={16} />
-          Volver
+          Guardar plantilla
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Crear Contrato</h1>
-          <p className="text-gray-600">Agrega un nuevo contrato al sistema</p>
-        </div>
-      </div>
+      </Box>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Información del Contrato</CardTitle>
-          <CardDescription>
-            Completa los detalles básicos del contrato. Las variables se pueden agregar después de crear el contrato.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre del Contrato *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+        {/* Información básica */}
+        <Box sx={{ flex: 1 }}>
+          <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
+              Información básica
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  Nombre de la plantilla *
+                </Typography>
+                <TextField
+                  fullWidth
                   placeholder="Ej: Contrato de Arrendamiento"
-                  required
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
                 />
-              </div>
+              </Box>
 
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo de Contrato</Label>
-                <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="automatic">Automático</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="template">Plantilla</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  SKU / Código *
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Ej: LEASE-001"
+                  value={formData.sku}
+                  onChange={(e) => handleInputChange('sku', e.target.value)}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+                />
+              </Box>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="Describe el propósito y contenido del contrato..."
-                rows={4}
-                required
-              />
-            </div>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  Descripción
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="Descripción breve de la plantilla"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+                />
+              </Box>
 
-            {/* Selector de Categorías */}
-            <div className="space-y-2">
-              <Label>Categorías</Label>
-              <div className="border border-gray-200 rounded">
-                <button
-                  type="button"
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50"
-                >
-                  <span className="text-sm text-gray-600">
-                    {formData.category_ids.length > 0 
-                      ? `${formData.category_ids.length} categoría(s) seleccionada(s)`
-                      : "Selecciona las categorías"
-                    }
-                  </span>
-                  {isCategoriesOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-                
-                {isCategoriesOpen && (
-                  <div className="border-t border-gray-200 p-4 space-y-3 max-h-60 overflow-y-auto">
-                    {categories.length > 0 ? (
-                      categories.map((category) => (
-                        <div key={category.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`category-${category.id}`}
-                            checked={formData.category_ids.includes(category.id)}
-                            onCheckedChange={() => handleCategoryToggle(category.id)}
-                          />
-                          <Label 
-                            htmlFor={`category-${category.id}`}
-                            className="text-sm cursor-pointer flex-1"
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  Contenido HTML del contrato
+                </Typography>
+                <RichTextEditor
+                  value={formData.html_content}
+                  onChange={(value) => handleInputChange('html_content', value)}
+                  placeholder="Escribe el contenido del contrato aquí. Usa {{variable}} para insertar variables dinámicas."
+                  minHeight={300}
+                />
+                <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+                  Usa doble llave para variables, por ejemplo: {'{{'}<Chip label="company_name" size="small" sx={{ fontSize: '11px', height: 18, mx: 0.5 }} />{'}}'} o {'{{'}<Chip label="client_name" size="small" sx={{ fontSize: '11px', height: 18, mx: 0.5 }} />{'}}'}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Variables dinámicas */}
+        <Box sx={{ flex: 1 }}>
+          <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
+              Variables dinámicas
+            </Typography>
+
+            {/* Formulario para agregar variable */}
+            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+              <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mb: 1, display: 'block' }}>
+                Agregar nueva variable
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    fullWidth
+                    placeholder="Clave (ej: client_name)"
+                    value={newVariable.key}
+                    onChange={(e) => setNewVariable(prev => ({ ...prev, key: e.target.value }))}
+                    size="small"
+                    sx={{ '& .MuiOutlinedInput-root': { fontSize: '13px', backgroundColor: 'white' } }}
+                  />
+                  <TextField
+                    fullWidth
+                    placeholder="Etiqueta (ej: Nombre del cliente)"
+                    value={newVariable.label}
+                    onChange={(e) => setNewVariable(prev => ({ ...prev, label: e.target.value }))}
+                    size="small"
+                    sx={{ '& .MuiOutlinedInput-root': { fontSize: '13px', backgroundColor: 'white' } }}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={newVariable.data_type}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, data_type: e.target.value as any }))}
+                      sx={{ fontSize: '13px', backgroundColor: 'white' }}
+                    >
+                      <MenuItem value="TEXT">Texto</MenuItem>
+                      <MenuItem value="NUMBER">Número</MenuItem>
+                      <MenuItem value="DATE">Fecha</MenuItem>
+                      <MenuItem value="EMAIL">Email</MenuItem>
+                      <MenuItem value="SIGNATURE">Firma</MenuItem>
+                    </Select>
+                  </FormControl>
+                  
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddVariable}
+                    disabled={!newVariable.key || !newVariable.label}
+                    sx={{
+                      backgroundColor: '#424242',
+                      textTransform: 'none',
+                      fontSize: '13px',
+                      px: 2,
+                      boxShadow: 'none',
+                      whiteSpace: 'nowrap',
+                      '&:hover': {
+                        backgroundColor: '#303030',
+                        boxShadow: 'none',
+                      },
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Lista de variables */}
+            {variables.length > 0 ? (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px' }}>Clave</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px' }}>Etiqueta</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px' }}>Tipo</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Acción</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {variables.map((variable, index) => (
+                      <TableRow key={index}>
+                        <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>{variable.key}</TableCell>
+                        <TableCell sx={{ fontSize: '13px' }}>{variable.label}</TableCell>
+                        <TableCell sx={{ fontSize: '13px' }}>
+                          <Chip label={variable.data_type} size="small" sx={{ fontSize: '11px', height: 20 }} />
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveVariable(index)}
+                            sx={{ color: '#f44336', p: 0.5 }}
                           >
-                            {category.name}
-                          </Label>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500">No hay categorías disponibles</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="active">Estado del Contrato</Label>
-                <div className="flex items-center space-x-2 pt-2">
-                  <Switch
-                    id="active"
-                    checked={formData.active}
-                    onCheckedChange={(checked) => handleInputChange("active", checked)}
-                  />
-                  <Label htmlFor="active">Contrato Activo</Label>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="required">Contrato Obligatorio</Label>
-                <div className="flex items-center space-x-2 pt-2">
-                  <Switch
-                    id="required"
-                    checked={formData.required}
-                    onCheckedChange={(checked) => handleInputChange("required", checked)}
-                  />
-                  <Label htmlFor="required">Obligatorio</Label>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <Label>Documento de Plantilla *</Label>
-              <DocumentManager
-                onDocumentSelect={handleDocumentSelect}
-                initialDocument={selectedDocument || undefined}
-                onInputChange={() => {
-                  // Trigger form validation
-                }}
-              />
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-sm font-medium">ℹ</span>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-blue-900 mb-1">
-                    Variables del Contrato
-                  </h4>
-                  <p className="text-sm text-blue-700">
-                    Primero sube el documento de plantilla. Después de crear el contrato, 
-                    podrás editar para detectar variables automáticamente desde la plantilla 
-                    o crear variables manualmente.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading || !formData.name || !formData.description || !selectedDocument}
-                className="flex items-center gap-2"
-              >
-                <Save size={16} />
-                {isLoading ? "Creando..." : "Crear Contrato"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
+                  No hay variables agregadas aún
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Box>
+      </Box>
+    </Box>
   );
-} 
+};
+
+export default CreateContractTemplatePage;

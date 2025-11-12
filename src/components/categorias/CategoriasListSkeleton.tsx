@@ -64,9 +64,12 @@ export default function CategoriasListSkeleton() {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: { xs: '1 1 100%', sm: '1 1 auto' } }}>
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 28, sm: 32 }} 
-                  height={{ xs: 28, sm: 32 }} 
-                  sx={{ borderRadius: 1, flexShrink: 0 }}
+                  sx={{ 
+                    width: { xs: 28, sm: 32 }, 
+                    height: { xs: 28, sm: 32 },
+                    borderRadius: 1, 
+                    flexShrink: 0 
+                  }}
                 />
                 <Box sx={{ lineHeight: 1, minWidth: 0, flex: 1 }}>
                   <Skeleton variant="text" width="60%" height={20} sx={{ mb: 0.3 }} />
@@ -77,21 +80,27 @@ export default function CategoriasListSkeleton() {
               <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 90, sm: 110 }} 
                   height={28} 
-                  sx={{ borderRadius: 0.5 }}
+                  sx={{ 
+                    width: { xs: 90, sm: 110 },
+                    borderRadius: 0.5 
+                  }}
                 />
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 28, sm: 32 }} 
                   height={28} 
-                  sx={{ borderRadius: 0.5 }}
+                  sx={{ 
+                    width: { xs: 28, sm: 32 },
+                    borderRadius: 0.5 
+                  }}
                 />
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 28, sm: 32 }} 
                   height={28} 
-                  sx={{ borderRadius: 0.5 }}
+                  sx={{ 
+                    width: { xs: 28, sm: 32 },
+                    borderRadius: 0.5 
+                  }}
                 />
               </Box>
             </Box>
@@ -113,9 +122,12 @@ export default function CategoriasListSkeleton() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, minWidth: 0, flex: 1 }}>
                   <Skeleton 
                     variant="rounded" 
-                    width={{ xs: 24, sm: 28 }} 
-                    height={{ xs: 24, sm: 28 }} 
-                    sx={{ borderRadius: 1, flexShrink: 0 }}
+                    sx={{ 
+                      width: { xs: 24, sm: 28 }, 
+                      height: { xs: 24, sm: 28 },
+                      borderRadius: 1, 
+                      flexShrink: 0 
+                    }}
                   />
                   <Box sx={{ lineHeight: 1, minWidth: 0, flex: 1 }}>
                     <Skeleton variant="text" width="50%" height={18} sx={{ mb: 0.3 }} />
@@ -126,15 +138,19 @@ export default function CategoriasListSkeleton() {
                 <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
                   <Skeleton 
                     variant="rounded" 
-                    width={{ xs: 28, sm: 32 }} 
                     height={28} 
-                    sx={{ borderRadius: 0.5 }}
+                    sx={{ 
+                      width: { xs: 28, sm: 32 },
+                      borderRadius: 0.5 
+                    }}
                   />
                   <Skeleton 
                     variant="rounded" 
-                    width={{ xs: 28, sm: 32 }} 
                     height={28} 
-                    sx={{ borderRadius: 0.5 }}
+                    sx={{ 
+                      width: { xs: 28, sm: 32 },
+                      borderRadius: 0.5 
+                    }}
                   />
                 </Box>
               </Box>

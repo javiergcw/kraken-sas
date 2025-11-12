@@ -10,7 +10,6 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Grid,
   Card,
   CardMedia,
   Button,
@@ -216,36 +215,44 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({
                 </Typography>
               </Box>
             ) : (
-              <Grid container spacing={1.5}>
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap',
+                gap: 1.5
+              }}>
                 {uploadedImages.map((image, index) => (
-                  <Grid item xs={viewMode === 'grid' ? 4 : 12} key={index}>
-                    <Box sx={{ position: 'relative' }}>
-                      <Card
+                  <Box 
+                    key={index}
+                    sx={{ 
+                      width: viewMode === 'grid' ? 'calc(33.333% - 8px)' : '100%',
+                      position: 'relative' 
+                    }}
+                  >
+                    <Card
+                      sx={{
+                        cursor: 'pointer',
+                        border: '2px solid transparent',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: '#1976d2',
+                          transform: 'scale(1.02)',
+                        },
+                      }}
+                      onClick={() => handleImageSelect(image)}
+                    >
+                      <CardMedia
+                        component="img"
+                        image={image}
+                        alt={`Imagen ${index + 1}`}
                         sx={{
-                          cursor: 'pointer',
-                          border: '2px solid transparent',
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            borderColor: '#1976d2',
-                            transform: 'scale(1.02)',
-                          },
+                          height: viewMode === 'grid' ? 100 : 80,
+                          objectFit: 'cover',
                         }}
-                        onClick={() => handleImageSelect(image)}
-                      >
-                        <CardMedia
-                          component="img"
-                          image={image}
-                          alt={`Imagen ${index + 1}`}
-                          sx={{
-                            height: viewMode === 'grid' ? 100 : 80,
-                            objectFit: 'cover',
-                          }}
-                        />
-                      </Card>
-                    </Box>
-                  </Grid>
+                      />
+                    </Card>
+                  </Box>
                 ))}
-              </Grid>
+              </Box>
             )}
           </Box>
 

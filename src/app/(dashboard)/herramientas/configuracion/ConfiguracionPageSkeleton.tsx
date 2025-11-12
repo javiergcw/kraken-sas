@@ -65,9 +65,12 @@ const ConfiguracionPageSkeleton: React.FC = () => {
               >
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 40, sm: 48 }} 
-                  height={{ xs: 40, sm: 48 }} 
-                  sx={{ borderRadius: 1, flexShrink: 0 }}
+                  sx={{ 
+                    width: { xs: 40, sm: 48 }, 
+                    height: { xs: 40, sm: 48 },
+                    borderRadius: 1, 
+                    flexShrink: 0 
+                  }}
                 />
                 <Skeleton 
                   variant="rounded" 
@@ -95,9 +98,12 @@ const ConfiguracionPageSkeleton: React.FC = () => {
               >
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 40, sm: 48 }} 
-                  height={{ xs: 40, sm: 48 }} 
-                  sx={{ borderRadius: 1, flexShrink: 0 }}
+                  sx={{ 
+                    width: { xs: 40, sm: 48 }, 
+                    height: { xs: 40, sm: 48 },
+                    borderRadius: 1, 
+                    flexShrink: 0 
+                  }}
                 />
                 <Skeleton 
                   variant="rounded" 
@@ -125,9 +131,12 @@ const ConfiguracionPageSkeleton: React.FC = () => {
               >
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 40, sm: 48 }} 
-                  height={{ xs: 40, sm: 48 }} 
-                  sx={{ borderRadius: 1, flexShrink: 0 }}
+                  sx={{ 
+                    width: { xs: 40, sm: 48 }, 
+                    height: { xs: 40, sm: 48 },
+                    borderRadius: 1, 
+                    flexShrink: 0 
+                  }}
                 />
                 <Skeleton 
                   variant="rounded" 
@@ -145,9 +154,12 @@ const ConfiguracionPageSkeleton: React.FC = () => {
               <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, alignItems: 'center' }}>
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 40, sm: 48 }} 
-                  height={{ xs: 36, sm: 40 }} 
-                  sx={{ borderRadius: 1, flexShrink: 0 }}
+                  sx={{ 
+                    width: { xs: 40, sm: 48 }, 
+                    height: { xs: 36, sm: 40 },
+                    borderRadius: 1, 
+                    flexShrink: 0 
+                  }}
                 />
                 <Skeleton variant="rounded" width="100%" height={40} sx={{ borderRadius: 0.5 }} />
               </Box>
@@ -160,9 +172,12 @@ const ConfiguracionPageSkeleton: React.FC = () => {
               <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, alignItems: 'center' }}>
                 <Skeleton 
                   variant="rounded" 
-                  width={{ xs: 40, sm: 48 }} 
-                  height={{ xs: 36, sm: 40 }} 
-                  sx={{ borderRadius: 1, flexShrink: 0 }}
+                  sx={{ 
+                    width: { xs: 40, sm: 48 }, 
+                    height: { xs: 36, sm: 40 },
+                    borderRadius: 1, 
+                    flexShrink: 0 
+                  }}
                 />
                 <Skeleton variant="rounded" width="100%" height={40} sx={{ borderRadius: 0.5 }} />
               </Box>
@@ -187,9 +202,11 @@ const ConfiguracionPageSkeleton: React.FC = () => {
             <Box sx={{ pt: 2 }}>
               <Skeleton 
                 variant="rounded" 
-                width={{ xs: '100%', sm: 200 }} 
                 height={40} 
-                sx={{ borderRadius: 1 }}
+                sx={{ 
+                  width: { xs: '100%', sm: 200 },
+                  borderRadius: 1 
+                }}
               />
             </Box>
           </Stack>
@@ -220,9 +237,9 @@ const ConfiguracionPageSkeleton: React.FC = () => {
             <Skeleton
               key={index}
               variant="rounded"
-              width={{ xs: '30%', md: '100%' }}
-              height={{ xs: 48, md: 40 }}
               sx={{ 
+                width: { xs: '30%', md: '100%' },
+                height: { xs: 48, md: 40 },
                 borderRadius: { xs: 0, md: 1 },
                 flexShrink: { xs: 0, md: 1 },
               }}
