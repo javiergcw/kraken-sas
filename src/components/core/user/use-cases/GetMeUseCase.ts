@@ -21,6 +21,13 @@ export class GetMeUseCase {
       const response = await this.userService.getMe();
       return response;
     } catch (error) {
+      // Log detallado del error
+      console.error('[GetMeUseCase] Error al obtener usuario:', {
+        error,
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       throw new Error(
         `Error en GetMeUseCase: ${error instanceof Error ? error.message : 'Error desconocido'}`
       );

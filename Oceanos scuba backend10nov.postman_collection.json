@@ -1,0 +1,715 @@
+{
+	"name": "Contratos",
+	"item": [
+		{
+			"name": "Plantillas de contratos",
+			"item": [
+				{
+					"name": "Crear la plantilla de un contrato",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Contrato de Arrendamiento\",\n    \"sku\": \"LEASE-001\",\n    \"description\": \"Plantilla base para alquiler de equipos\",\n    \"html_content\": \"<h1>Contrato</h1><p>Entre {{company_name}} y {{client_name}}</p>\",\n    \"variables\": [\n        {\n            \"key\": \"company_name\",\n            \"label\": \"Nombre de la empresa\",\n            \"data_type\": \"TEXT\",\n            \"required\": true,\n            \"default_value\": \"Scuba Exagone\",\n            \"sort_order\": 1\n        },\n        {\n            \"key\": \"signature_client\",\n            \"label\": \"Firma del cliente\",\n            \"data_type\": \"SIGNATURE\",\n            \"required\": true,\n            \"sort_order\": 2\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/templates",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"templates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener las plantillas de contratos",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/templates",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"templates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener el detalle de la plantilla de un contrato",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/templates/:id_plantilla",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"templates",
+								":id_plantilla"
+							],
+							"variable": [
+								{
+									"key": "id_plantilla",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar HTML/META",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Contrato de Arrendamiento (v2)\",\n    \"description\": \"Versión actualizada para 2025\",\n    \"html_content\": \"<h1>Contrato</h1><p>Compañía: {{company_name}}</p><p>Cliente: {{client_name}}</p>\",\n    \"is_active\": true\n}\n\n\n// Enviar solo los campos a modificar; sku normalmente no se cambia tras creación",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/templates/:id_plantilla",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"templates",
+								":id_plantilla"
+							],
+							"variable": [
+								{
+									"key": "id_plantilla",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Variables de plantilla",
+			"item": [
+				{
+					"name": "Registrar placeholder de una plantilla",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"key\": \"client_email\",\n    \"label\": \"Correo del cliente\",\n    \"description\": \"Se usará para enviar copia del contrato\",\n    \"data_type\": \"TEXT\",\n    \"required\": true,\n    \"default_value\": \"\",\n    \"sort_order\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/templates/:id_plantilla/variables",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"templates",
+								":id_plantilla",
+								"variables"
+							],
+							"variable": [
+								{
+									"key": "id_plantilla",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar variable de un contrato",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"label\": \"Correo electrónico del cliente\",\n    \"description\": \"Debe ser un email válido\",\n    \"data_type\": \"TEXT\",\n    \"required\": true,\n    \"default_value\": \"\",\n    \"sort_order\": 3\n}\n\n// key por lo general no se cambia\n// envía solo los campos que desees modificar",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}} /api/v1/contracts/variables/:id_variable",
+							"host": [
+								"{{URL}} "
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"variables",
+								":id_variable"
+							],
+							"variable": [
+								{
+									"key": "id_variable",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar una variable de un contrato",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}} /api/v1/contracts/variables/:id_variable",
+							"host": [
+								"{{URL}} "
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								"variables",
+								":id_variable"
+							],
+							"variable": [
+								{
+									"key": "id_variable",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contratos emitidos",
+			"item": [
+				{
+					"name": "Crear un contrato",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"template_id\": \"7f8e4c07-88c8-4d4d-9624-2b2f0f6ab1bf\",\n    \"sku\": \"RES-ABC-2025\",\n    \"related_type\": \"RESERVATION\",\n    \"related_id\": \"b6bfbca7-7f0b-4a82-9af1-4b0b0a4d487c\",\n    \"code\": \"CTR-000123\", // opcional; si no se envía, lo generamos\n    \"expires_at\": \"2025-09-30T23:59:59Z\",\n    \"signer_name\": \"Juan Pérez\",\n    \"signer_email\": \"juan.perez@example.com\",\n    \"fields\": {\n        \"company_name\": \"Scuba Exagone\",\n        \"client_name\": \"Juan Pérez\",\n        \"client_document\": \"CC 123456789\",\n        \"signature_client\": \"\", // vacío; se llena al firmar\n        \"contract_value\": \"1.200.000\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener contratos",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener contratos por id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/:id_contract",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								":id_contract"
+							],
+							"variable": [
+								{
+									"key": "id_contract",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar firma de un contrato por id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"signed_by_name\": \"Juan Pérez\",\n    \"signed_by_email\": \"juan.perez@example.com\",\n    \"signature_image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...\", // base64 o URL a la firma\n    \"signed_fields\": {\n        \"signature_client\": \"data:image/png;base64,iVBORw0K...\" // si necesitamos guardar firma en un campo específico\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/:contract_id/sign",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								":contract_id",
+								"sign"
+							],
+							"variable": [
+								{
+									"key": "contract_id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalidar un contrato por el contrato id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Contrato reemplazado por una versión actualizada\",\n    \"invalidate_all_tokens\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/:contract_id/invalidate",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								":contract_id",
+								"invalidate"
+							],
+							"variable": [
+								{
+									"key": "contract_id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Accesos público (firma via enlace)",
+			"item": [
+				{
+					"name": "Obtener el contrato por su token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/api/v1/public/contracts/:token",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"public",
+								"contracts",
+								":token"
+							],
+							"variable": [
+								{
+									"key": "token",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Firmar el contrato por su token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"signer_name\": \"Juan Pérez\",\n    \"signer_email\": \"juan.perez@example.com\",\n    \"signature_image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...\",\n    \"fields\": {\n        \"signature_client\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...\",\n        \"signature_date\": \"2025-08-09\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/public/contracts/:token/sign",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"public",
+								"contracts",
+								":token",
+								"sign"
+							],
+							"variable": [
+								{
+									"key": "token",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener el status de un contrato por su token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/api/v1/public/contracts/:token/sign",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"public",
+								"contracts",
+								":token",
+								"sign"
+							],
+							"variable": [
+								{
+									"key": "token",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Archivos o descargas",
+			"item": [
+				{
+					"name": "Descargar el contrato por su id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/:id/pdf",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								":id",
+								"pdf"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Forzar regeneración PDF cuando se generó cambios (ej. tras firma).",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"format\": \"pdf\", // valores aceptados: pdf | html\n    \"force_regenerate\": true, // opcional; si false y ya existe PDF, reutiliza\n    \"notify_signer\": false, // opcional; si true podríamos disparar un correo\n    \"notes\": \"Actualizar PDF tras nueva firma\" // opcional, comentario de auditoría\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/api/v1/contracts/:id/pdf",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contracts",
+								":id",
+								"pdf"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

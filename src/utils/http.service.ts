@@ -123,7 +123,9 @@ class HttpService {
     }
 
     try {
+      console.log(`[HttpService] ${method} ${url}`);
       const response = await fetch(url, config);
+      console.log(`[HttpService] Response status: ${response.status}`);
 
       let data: T;
       const contentType = response.headers.get('content-type');
@@ -136,6 +138,7 @@ class HttpService {
         try {
           data = JSON.parse(responseText) as T;
         } catch {
+          console.warn('[HttpService] Error al parsear JSON, usando como texto');
           // Si falla el parseo JSON, usar como texto
           data = responseText as any;
         }
@@ -144,6 +147,7 @@ class HttpService {
       }
 
       if (!response.ok) {
+        console.error(`[HttpService] Error HTTP ${response.status}:`, data);
         throw new HttpError(response.status, response.statusText, data);
       }
 
@@ -157,6 +161,12 @@ class HttpService {
       if (error instanceof HttpError) {
         throw error;
       }
+      
+      console.error('[HttpService] Error de red:', {
+        url,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       
       // Error de red o desconocido
       throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);

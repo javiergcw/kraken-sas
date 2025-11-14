@@ -26,3 +26,6 @@ export * from './zones';
 // Banners - módulo completo
 export * from './banners';
 
+// Contratos - módulo completo
+export * from './contracts';
+

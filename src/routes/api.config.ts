@@ -43,6 +43,26 @@ export const API_ENDPOINTS = {
     UPLOAD_FILE: '/v1/storage/files',
     GET_FOLDERS: '/v1/storage/folders',
   },
+  CONTRACTS: {
+    BASE: '/v1/contracts',
+    BY_ID: (id: string) => `/v1/contracts/${id}`,
+    SIGN: (id: string) => `/v1/contracts/${id}/sign`,
+    INVALIDATE: (id: string) => `/v1/contracts/${id}/invalidate`,
+    PDF: (id: string) => `/v1/contracts/${id}/pdf`,
+    TEMPLATES: {
+      BASE: '/v1/contracts/templates',
+      BY_ID: (id: string) => `/v1/contracts/templates/${id}`,
+      VARIABLES: (templateId: string) => `/v1/contracts/templates/${templateId}/variables`,
+    },
+    VARIABLES: {
+      BY_ID: (id: string) => `/v1/contracts/variables/${id}`,
+    },
+    PUBLIC: {
+      BY_TOKEN: (token: string) => `/v1/public/contracts/${token}`,
+      SIGN: (token: string) => `/v1/public/contracts/${token}/sign`,
+      STATUS: (token: string) => `/v1/public/contracts/${token}/status`,
+    },
+  },
 } as const;
 
 /**
@@ -77,6 +97,26 @@ export const EXTERNAL_ROUTES = {
   STORAGE: {
     UPLOAD_FILE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.STORAGE.UPLOAD_FILE}`,
     GET_FOLDERS: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.STORAGE.GET_FOLDERS}`,
+  },
+  CONTRACTS: {
+    BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.BASE}`,
+    BY_ID: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.BY_ID(id)}`,
+    SIGN: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.SIGN(id)}`,
+    INVALIDATE: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.INVALIDATE(id)}`,
+    PDF: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.PDF(id)}`,
+    TEMPLATES: {
+      BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.TEMPLATES.BASE}`,
+      BY_ID: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.TEMPLATES.BY_ID(id)}`,
+      VARIABLES: (templateId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.TEMPLATES.VARIABLES(templateId)}`,
+    },
+    VARIABLES: {
+      BY_ID: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.VARIABLES.BY_ID(id)}`,
+    },
+    PUBLIC: {
+      BY_TOKEN: (token: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.PUBLIC.BY_TOKEN(token)}`,
+      SIGN: (token: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.PUBLIC.SIGN(token)}`,
+      STATUS: (token: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.PUBLIC.STATUS(token)}`,
+    },
   },
 } as const;
 
