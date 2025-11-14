@@ -19,6 +19,8 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -41,6 +43,11 @@ interface TemplateVariable {
 const CreateContractTemplatePage: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error',
+  });
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -101,7 +108,26 @@ const CreateContractTemplatePage: React.FC = () => {
     setVariables(prev => prev.filter((_, i) => i !== index));
   };
 
+  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   const handleSubmit = async () => {
+    // Validaciones básicas
+    if (!formData.name.trim()) {
+      showSnackbar('El nombre de la plantilla es requerido', 'error');
+      return;
+    }
+
+    if (!formData.sku.trim()) {
+      showSnackbar('El SKU es requerido', 'error');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await contractTemplateController.create({
@@ -113,10 +139,21 @@ const CreateContractTemplatePage: React.FC = () => {
       });
       
       if (response?.success) {
-        router.push('/contract');
+        showSnackbar('Plantilla creada exitosamente', 'success');
+        setTimeout(() => {
+          router.push('/contract');
+        }, 1500);
+      } else {
+        // Mostrar mensaje de error de la API si está disponible
+        const errorMessage = response?.message || 'Error al crear la plantilla. Por favor, verifica los datos e intenta nuevamente.';
+        showSnackbar(errorMessage, 'error');
       }
     } catch (error) {
       console.error('Error al crear plantilla:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Error al crear la plantilla. Por favor, intenta nuevamente.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -356,6 +393,22 @@ const CreateContractTemplatePage: React.FC = () => {
           </Paper>
         </Box>
       </Box>
+
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

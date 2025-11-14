@@ -122,11 +122,16 @@ const EditContractTemplatePage = ({ params }: { params: Promise<{ id: string }> 
           router.push('/contract');
         }, 1500);
       } else {
-        showSnackbar('Error al actualizar la plantilla', 'error');
+        // Mostrar mensaje de error de la API si está disponible
+        const errorMessage = response?.message || 'Error al actualizar la plantilla. Por favor, verifica los datos e intenta nuevamente.';
+        showSnackbar(errorMessage, 'error');
       }
     } catch (error) {
       console.error('Error al actualizar plantilla:', error);
-      showSnackbar('Error al actualizar la plantilla', 'error');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Error al actualizar la plantilla. Por favor, intenta nuevamente.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setSubmitting(false);
     }

@@ -34,7 +34,7 @@ export default function EmitContractPage({ params }: { params: Promise<{ id: str
   const [formData, setFormData] = useState({
     sku: '',
     code: '',
-    related_type: '' as '' | 'RESERVATION' | 'PRODUCT' | 'SERVICE' | 'OTHER',
+    related_type: '' as '' | 'RESERVATION' | 'PRODUCT' | 'VESSEL' | 'RENT',
     related_id: '',
     signer_name: '',
     signer_email: '',
@@ -308,13 +308,13 @@ export default function EmitContractPage({ params }: { params: Promise<{ id: str
                 <Select
                   value={formData.related_type}
                   label="Tipo de Relación (opcional)"
-                  onChange={(e) => handleInputChange('related_type', e.target.value)}
+                  onChange={(e) => handleInputChange('related_type', e.target.value as 'RESERVATION' | 'PRODUCT' | 'VESSEL' | 'RENT' | '')}
                 >
                   <MenuItem value="">Ninguno</MenuItem>
                   <MenuItem value="RESERVATION">Reserva</MenuItem>
                   <MenuItem value="PRODUCT">Producto</MenuItem>
-                  <MenuItem value="SERVICE">Servicio</MenuItem>
-                  <MenuItem value="OTHER">Otro</MenuItem>
+                  <MenuItem value="VESSEL">Embarcación</MenuItem>
+                  <MenuItem value="RENT">Alquiler</MenuItem>
                 </Select>
               </FormControl>
               <Typography sx={{ fontSize: '12px', color: '#757575', mt: 0.5, ml: 1.5 }}>

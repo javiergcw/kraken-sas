@@ -13,9 +13,12 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
-  TextField,
   CircularProgress,
   Alert,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -27,7 +30,7 @@ import {
   AddPhotoAlternateOutlined as AddPhotoIcon,
 } from '@mui/icons-material';
 import { useStorage } from '@/hooks/useStorage';
-import type { StorageFileInfo } from '@/components/core/storage/dto';
+import type { StorageFileInfo, StorageFolderInfo } from '@/components/core/storage/dto';
 
 interface BannerMediaManagerProps {
   currentImage: string;
@@ -43,31 +46,46 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
   const { uploadFile, getFolders, isUploading, isLoadingFolders, uploadError } = useStorage();
   
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFolder, setSelectedFolder] = useState<string>('banners');
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [bannerImages, setBannerImages] = useState<StorageFileInfo[]>([]);
+  const [allFolders, setAllFolders] = useState<StorageFolderInfo[]>([]);
 
-  // Cargar imágenes de la carpeta "banners"
-  const loadBannerImages = async () => {
+  // Cargar carpetas e imágenes
+  const loadFoldersAndImages = async () => {
     try {
       const response = await getFolders();
       if (response.success) {
-        const bannersFolder = response.data.find(folder => folder.name === 'banners');
-        if (bannersFolder) {
-          setBannerImages(bannersFolder.files);
+        setAllFolders(response.data);
+        const selectedFolderData = response.data.find(folder => folder.name === selectedFolder);
+        if (selectedFolderData) {
+          setBannerImages(selectedFolderData.files);
+        } else {
+          setBannerImages([]);
         }
       }
     } catch (error) {
-      console.error('Error al cargar imágenes de banners:', error);
+      console.error('Error al cargar carpetas e imágenes:', error);
     }
   };
 
   useEffect(() => {
     if (mediaModalOpen) {
-      loadBannerImages();
+      loadFoldersAndImages();
     }
   }, [mediaModalOpen]);
+
+  useEffect(() => {
+    if (mediaModalOpen && allFolders.length > 0) {
+      const selectedFolderData = allFolders.find(folder => folder.name === selectedFolder);
+      if (selectedFolderData) {
+        setBannerImages(selectedFolderData.files);
+      } else {
+        setBannerImages([]);
+      }
+    }
+  }, [selectedFolder, allFolders, mediaModalOpen]);
 
   const handleOpenMediaModal = () => {
     setMediaModalOpen(true);
@@ -75,7 +93,7 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
 
   const handleCloseMediaModal = () => {
     setMediaModalOpen(false);
-    setSearchTerm('');
+    setSelectedFolder('banners');
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,10 +118,10 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
 
     // Subir automáticamente al seleccionar
     try {
-      const response = await uploadFile('banners', file);
+      const response = await uploadFile(selectedFolder, file);
       if (response.success) {
         // Recargar las imágenes para mostrar la nueva
-        await loadBannerImages();
+        await loadFoldersAndImages();
       }
     } catch (error) {
       console.error('Error al subir imagen:', error);
@@ -126,14 +144,12 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
     setViewType(prev => prev === 'grid' ? 'list' : 'grid');
   };
 
-  // Filtrar y ordenar imágenes
-  const filteredAndSortedImages = bannerImages
-    .filter(img => img.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => {
-      const dateA = new Date(a.last_modified).getTime();
-      const dateB = new Date(b.last_modified).getTime();
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
+  // Ordenar imágenes
+  const sortedImages = bannerImages.sort((a, b) => {
+    const dateA = new Date(a.last_modified).getTime();
+    const dateB = new Date(b.last_modified).getTime();
+    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+  });
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -324,22 +340,51 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
             </Alert>
           )}
 
-          {/* Barra de búsqueda y controles */}
+          {/* Selector de carpetas y controles */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="Buscar imagen..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
+            <FormControl fullWidth size="small" sx={{ minWidth: 200 }}>
+              <InputLabel 
+                id="folder-select-label"
+                sx={{
+                  fontSize: '14px',
+                }}
+              >
+                Seleccionar carpeta
+              </InputLabel>
+              <Select
+                labelId="folder-select-label"
+                id="folder-select"
+                value={selectedFolder}
+                label="Seleccionar carpeta"
+                onChange={(e) => setSelectedFolder(e.target.value)}
+                sx={{
                   borderRadius: 1,
                   fontSize: '14px',
                   height: '32px',
-                },
-              }}
-            />
+                  backgroundColor: 'white',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e0e0e0',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bdbdbd',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#424242',
+                    borderWidth: '1px',
+                  },
+                  '& .MuiSelect-select': {
+                    padding: '6px 14px',
+                    fontSize: '14px',
+                  },
+                }}
+              >
+                {allFolders.map((folder) => (
+                  <MenuItem key={folder.path} value={folder.name} sx={{ fontSize: '14px' }}>
+                    {folder.name} ({folder.files.length} {folder.files.length === 1 ? 'archivo' : 'archivos'})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <IconButton
               size="small"
               onClick={handleSortToggle}
@@ -375,10 +420,10 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
             </Box>
-          ) : filteredAndSortedImages.length === 0 ? (
+          ) : sortedImages.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body2" sx={{ color: '#757575' }}>
-                {searchTerm ? 'No se encontraron imágenes' : 'No hay imágenes en la carpeta banners'}
+                No hay imágenes en la carpeta {selectedFolder}
               </Typography>
             </Box>
           ) : (
@@ -413,7 +458,7 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
                     gap: 1.5,
                   }}
                 >
-                  {filteredAndSortedImages.map((image) => (
+                  {sortedImages.map((image) => (
                     <Box
                       key={image.path}
                       onClick={() => handleImageClick(image.url)}
@@ -450,7 +495,7 @@ const BannerMediaManager: React.FC<BannerMediaManagerProps> = ({
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {filteredAndSortedImages.map((image) => (
+                  {sortedImages.map((image) => (
                     <Box
                       key={image.path}
                       onClick={() => handleImageClick(image.url)}

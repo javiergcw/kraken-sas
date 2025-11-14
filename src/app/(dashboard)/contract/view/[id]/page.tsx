@@ -29,6 +29,18 @@ import {
 import { contractController } from '@/components/core';
 import type { ContractDto } from '@/components/core/contracts/dto';
 
+// Función helper para traducir tipos de relación al español
+const translateRelatedType = (type: string | undefined): string => {
+  if (!type) return '-';
+  const translations: Record<string, string> = {
+    'RESERVATION': 'Reserva',
+    'PRODUCT': 'Producto',
+    'VESSEL': 'Embarcación',
+    'RENT': 'Alquiler',
+  };
+  return translations[type] || type;
+};
+
 export default function ViewContractPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
@@ -275,7 +287,7 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
                 <TableCell sx={{ borderBottom: '1px solid #f5f5f5' }}>
                   {contract.related_type ? (
                     <Chip
-                      label={contract.related_type}
+                      label={translateRelatedType(contract.related_type)}
                       size="small"
                       sx={{
                         backgroundColor: '#e3f2fd',

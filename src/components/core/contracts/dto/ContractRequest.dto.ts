@@ -5,7 +5,7 @@
 export interface ContractCreateRequestDto {
   template_id: string;
   sku: string;
-  related_type?: 'RESERVATION' | 'PRODUCT' | 'SERVICE' | 'OTHER';
+  related_type?: 'RESERVATION' | 'PRODUCT' | 'VESSEL' | 'RENT';
   related_id?: string;
   code?: string;
   expires_at?: string;

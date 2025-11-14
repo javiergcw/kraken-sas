@@ -8,7 +8,7 @@ export interface ContractDto {
   template_id: string;
   sku: string;
   code: string;
-  related_type?: 'RESERVATION' | 'PRODUCT' | 'SERVICE' | 'OTHER';
+  related_type?: 'RESERVATION' | 'PRODUCT' | 'VESSEL' | 'RENT';
   related_id?: string;
   status: 'DRAFT' | 'PENDING_SIGN' | 'SIGNED' | 'EXPIRED' | 'CANCELLED';
   signer_name: string;
