@@ -32,12 +32,15 @@ export class ContractTemplateController {
     }
   }
 
-  async create(templateData: ContractTemplateCreateRequestDto): Promise<ContractTemplateResponseDto | null> {
+  async create(templateData: ContractTemplateCreateRequestDto): Promise<ContractTemplateResponseDto | { success: false; message: string }> {
     try {
       return await createTemplateUseCase.execute(templateData);
     } catch (error) {
       console.error('Error al crear plantilla:', error);
-      return null;
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Error al crear la plantilla. Por favor, intenta nuevamente.';
+      return { success: false, message: errorMessage };
     }
   }
 

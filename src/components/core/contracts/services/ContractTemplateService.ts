@@ -2,7 +2,7 @@
  * Servicio para realizar operaciones de plantillas de contratos
  */
 
-import { httpService } from '@/utils/http.service';
+import { httpService, HttpError } from '@/utils/http.service';
 import { API_ENDPOINTS } from '@/utils/constants';
 import {
   ContractTemplatesResponseDto,
@@ -58,6 +58,11 @@ export class ContractTemplateService {
       );
       return response;
     } catch (error) {
+      // Extraer el mensaje de error de la API si está disponible
+      if (error instanceof HttpError && error.data) {
+        const errorMessage = error.data?.message || error.data?.error || error.message;
+        throw new Error(errorMessage);
+      }
       if (error instanceof Error) {
         throw error;
       }

@@ -7,6 +7,10 @@ export class CreateTemplateUseCase {
       const response = await contractTemplateService.create(templateData);
       return response;
     } catch (error) {
+      // Propagar el mensaje de error original de la API
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error(
         `Error en CreateTemplateUseCase: ${error instanceof Error ? error.message : 'Error desconocido'}`
       );

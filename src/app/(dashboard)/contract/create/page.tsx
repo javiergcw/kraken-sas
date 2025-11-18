@@ -138,15 +138,21 @@ const CreateContractTemplatePage: React.FC = () => {
         variables: variables.length > 0 ? variables : undefined,
       });
       
-      if (response?.success) {
-        showSnackbar('Plantilla creada exitosamente', 'success');
-        setTimeout(() => {
-          router.push('/contract');
-        }, 1500);
-      } else {
-        // Mostrar mensaje de error de la API si está disponible
-        const errorMessage = response?.message || 'Error al crear la plantilla. Por favor, verifica los datos e intenta nuevamente.';
-        showSnackbar(errorMessage, 'error');
+      if (response && 'success' in response) {
+        if (response.success === false) {
+          // Error retornado por el controlador con mensaje de la API
+          const errorMessage = response.message || 'Error al crear la plantilla. Por favor, verifica los datos e intenta nuevamente.';
+          showSnackbar(errorMessage, 'error');
+        } else if (response.success === true) {
+          // Éxito
+          showSnackbar('Plantilla creada exitosamente', 'success');
+          setTimeout(() => {
+            router.push('/contract');
+          }, 1500);
+        }
+      } else if (!response) {
+        // Respuesta null (no debería pasar con los cambios)
+        showSnackbar('Error al crear la plantilla. Por favor, intenta nuevamente.', 'error');
       }
     } catch (error) {
       console.error('Error al crear plantilla:', error);
