@@ -17,7 +17,6 @@ import {
 import {
   ArrowBack as ArrowBackIcon,
   Info as InfoIcon,
-  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { categoryController, subcategoryController } from '@/components/core';
 import { ProductCreateRequestDto, ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
@@ -155,18 +154,26 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const generateSKU = () => {
-    // Generar un SKU único basado en timestamp y caracteres aleatorios
-    const timestamp = Date.now().toString(36);
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    const sku = `SKU-${timestamp}${randomStr}`.toUpperCase();
-    handleInputChange('sku', sku);
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Generar SKU automáticamente desde el nombre (en crear y editar)
+      if (field === 'name') {
+        const sku = value
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-') // Reemplazar espacios con guiones medios
+          .replace(/[^a-z0-9-]/g, '') // Eliminar caracteres especiales excepto guiones
+          .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno solo
+          .replace(/^-|-$/g, ''); // Eliminar guiones al inicio y final
+        updated.sku = sku;
+      }
+      
+      return updated;
+    });
   };
 
   const handleBack = () => {
@@ -245,46 +252,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {/* SKU */}
-              <Box>
-                <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
-                  SKU
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Ingresa o genera el SKU del producto"
-                    value={formData.sku}
-                    onChange={(e) => handleInputChange('sku', e.target.value)}
-                    size="small"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        height: 32,
-                        fontSize: '12px',
-                      },
-                    }}
-                  />
-                  <Button
-                    variant="outlined"
-                    onClick={generateSKU}
-                    sx={{
-                      minWidth: 'auto',
-                      px: 1,
-                      height: 32,
-                      borderColor: '#e0e0e0',
-                      color: '#424242',
-                      '&:hover': {
-                        borderColor: '#bdbdbd',
-                        backgroundColor: '#f5f5f5',
-                      },
-                    }}
-                    title="Generar SKU automáticamente"
-                  >
-                    <RefreshIcon sx={{ fontSize: 18 }} />
-                  </Button>
-                </Box>
-              </Box>
-
               {/* Nombre */}
               <Box>
                 <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
@@ -295,6 +262,26 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   placeholder="Ingresa el nombre del producto"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
+                  size="small"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      height: 32,
+                      fontSize: '12px',
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* SKU */}
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
+                  SKU
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Se generará automáticamente desde el nombre"
+                  value={formData.sku}
+                  disabled={true}
                   size="small"
                   sx={{
                     '& .MuiOutlinedInput-root': {

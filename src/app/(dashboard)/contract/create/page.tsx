@@ -263,7 +263,7 @@ const CreateContractTemplatePage: React.FC = () => {
                   minHeight={300}
                 />
                 <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
-                  Usa doble llave para variables, por ejemplo: {'{{'}<Chip label="company_name" size="small" sx={{ fontSize: '11px', height: 18, mx: 0.5 }} />{'}}'} o {'{{'}<Chip label="client_name" size="small" sx={{ fontSize: '11px', height: 18, mx: 0.5 }} />{'}}'}
+                  Usa doble llave para variables, por ejemplo: {'{'} {'{'}company_name{'}'} {'}'} o {'{'} {'{'}client_name{'}'} {'}'}
                 </Typography>
               </Box>
             </Box>

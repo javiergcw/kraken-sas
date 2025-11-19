@@ -246,7 +246,7 @@ const EditContractTemplatePage = ({ params }: { params: Promise<{ id: string }> 
                 Contenido HTML
               </Typography>
               <Typography sx={{ fontSize: '13px', color: '#757575', mb: 2 }}>
-                Define el contenido del contrato. Puedes usar variables como {'{'}{'{'} company_name {'}'}{'}'}
+                Define el contenido del contrato. Puedes usar variables como {'{'} {'{'}company_name{'}'} {'}'}
               </Typography>
             </Box>
 
