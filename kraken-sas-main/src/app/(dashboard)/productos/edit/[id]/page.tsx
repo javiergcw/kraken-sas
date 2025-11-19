@@ -36,6 +36,7 @@ const EditProductPage: React.FC<EditProductPageProps> = ({ params }) => {
           price: product.price,
           dives_only: product.dives_only,
           days_course: product.days_course,
+          sku: product.sku,
         });
       }
     } catch (error) {

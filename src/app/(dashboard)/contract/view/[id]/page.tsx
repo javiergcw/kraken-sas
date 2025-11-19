@@ -73,27 +73,86 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
   };
 
   const handleDownloadPDF = async () => {
+    let tempDiv: HTMLElement | null = null;
+
     try {
       if (!contract) return;
 
       const fileName = `contrato-${contract.sku || contract.code}.pdf`;
-      const blob = await contractController.downloadPDF(contract.id);
+      const htmlContent = await contractController.downloadPDF(contract.id);
 
-      if (!blob) {
-        throw new Error('No se pudo descargar el PDF');
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        throw new Error('El contenido HTML del contrato está vacío');
       }
 
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      tempDiv = document.createElement('div');
+      tempDiv.style.cssText = `
+        position: fixed;
+        top: -10000px;
+        left: -10000px;
+        width: 794px;
+        background: white;
+        padding: 60px;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        color: #000;
+      `;
+
+      tempDiv.innerHTML = `
+        <div style="font-size: 16px; line-height: 1.8; color: #1a1a1a;">
+          ${htmlContent}
+        </div>
+      `;
+
+      document.body.appendChild(tempDiv);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: tempDiv.offsetWidth,
+        height: tempDiv.offsetHeight
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(fileName);
+
     } catch (error) {
       console.error('Error al descargar PDF:', error);
       setError('Error al descargar PDF');
+    } finally {
+      if (tempDiv && document.body.contains(tempDiv)) {
+        document.body.removeChild(tempDiv);
+      }
     }
   };
 

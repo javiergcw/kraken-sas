@@ -2,7 +2,7 @@
  * DTOs para requests de plantillas de contratos
  */
 
-export interface TemplateVariableDto {
+export interface TemplateVariableInputDto {
   key: string;
   label: string;
   description?: string;
@@ -17,7 +17,7 @@ export interface ContractTemplateCreateRequestDto {
   sku: string;
   description?: string;
   html_content: string;
-  variables?: TemplateVariableDto[];
+  variables?: TemplateVariableInputDto[];
 }
 
 export interface ContractTemplateUpdateRequestDto {
