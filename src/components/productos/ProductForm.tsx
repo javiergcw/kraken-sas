@@ -17,6 +17,7 @@ import {
 import {
   ArrowBack as ArrowBackIcon,
   Info as InfoIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { categoryController, subcategoryController } from '@/components/core';
 import { ProductCreateRequestDto, ProductUpdateRequestDto } from '@/components/core/products/dto/ProductRequest.dto';
@@ -26,6 +27,7 @@ import RichTextEditor from '@/components/reutilizables/RichTextEditor';
 export interface ProductFormData {
   category_id: string;
   subcategory_id: string;
+  sku: string;
   name: string;
   short_description: string;
   long_description: string;
@@ -53,6 +55,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [formData, setFormData] = useState<ProductFormData>(initialData || {
     category_id: '',
     subcategory_id: '',
+    sku: '',
     name: '',
     short_description: '',
     long_description: '',
@@ -76,6 +79,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     initialData || {
       category_id: '',
       subcategory_id: '',
+      sku: '',
       name: '',
       short_description: '',
       long_description: '',
@@ -157,6 +161,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }));
   };
 
+  const generateSKU = () => {
+    // Generar un SKU único basado en timestamp y caracteres aleatorios
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const sku = `SKU-${timestamp}${randomStr}`.toUpperCase();
+    handleInputChange('sku', sku);
+  };
+
   const handleBack = () => {
     router.push('/productos');
   };
@@ -233,6 +245,46 @@ const ProductForm: React.FC<ProductFormProps> = ({
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {/* SKU */}
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>
+                  SKU
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    fullWidth
+                    placeholder="Ingresa o genera el SKU del producto"
+                    value={formData.sku}
+                    onChange={(e) => handleInputChange('sku', e.target.value)}
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        height: 32,
+                        fontSize: '12px',
+                      },
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={generateSKU}
+                    sx={{
+                      minWidth: 'auto',
+                      px: 1,
+                      height: 32,
+                      borderColor: '#e0e0e0',
+                      color: '#424242',
+                      '&:hover': {
+                        borderColor: '#bdbdbd',
+                        backgroundColor: '#f5f5f5',
+                      },
+                    }}
+                    title="Generar SKU automáticamente"
+                  >
+                    <RefreshIcon sx={{ fontSize: 18 }} />
+                  </Button>
+                </Box>
+              </Box>
+
               {/* Nombre */}
               <Box>
                 <Typography variant="caption" sx={{ color: '#424242', mb: 0.25, fontWeight: 'medium' }}>

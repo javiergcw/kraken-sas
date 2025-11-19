@@ -123,12 +123,12 @@ export class ContractService {
     }
   }
 
-  async downloadPDF(id: string): Promise<Blob> {
+  async downloadPDF(id: string): Promise<string> {
     try {
       // Para descargas de archivos, usar fetch directamente
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const headers: HeadersInit = {
-        'Accept': 'application/pdf',
+        'Accept': 'text/html',
       };
       
       if (token) {
@@ -141,16 +141,23 @@ export class ContractService {
       );
 
       if (!response.ok) {
-        throw new Error('Error al descargar PDF');
+        throw new Error('Error al obtener HTML del contrato');
       }
 
-      return await response.blob();
+      const htmlContent = await response.text();
+      
+      // Validar que no esté vacío
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        throw new Error('La respuesta está vacía');
+      }
+
+      return htmlContent;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
       }
       throw new Error(
-        `Error al descargar PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`
+        `Error al obtener HTML: ${error instanceof Error ? error.message : 'Error desconocido'}`
       );
     }
   }

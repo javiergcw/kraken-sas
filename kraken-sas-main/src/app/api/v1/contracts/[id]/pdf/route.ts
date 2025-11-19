@@ -20,23 +20,23 @@ export async function GET(
       method: 'GET',
       headers: {
         'Authorization': authHeader,
+        'Accept': 'text/html',
       },
     });
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: 'Error al descargar PDF' },
+        { error: 'Error al obtener HTML del contrato' },
         { status: response.status }
       );
     }
 
-    const blob = await response.blob();
+    const htmlContent = await response.text();
 
-    return new NextResponse(blob, {
+    return new NextResponse(htmlContent, {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="contrato-${params.id}.pdf"`,
+        'Content-Type': 'text/html',
         'Access-Control-Allow-Origin': '*',
       },
     });

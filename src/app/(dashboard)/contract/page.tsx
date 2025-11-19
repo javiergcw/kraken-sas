@@ -301,91 +301,114 @@ const ContractPage: React.FC = () => {
   };
 
   const handleDownloadPDF = async (contractId: string) => {
+    let tempDiv: HTMLElement | null = null;
+
     try {
-      showSnackbar('Descargando PDF...', 'info');
+      showSnackbar('Generando PDF...', 'info');
       handleMenuClose();
 
       // Buscar el contrato para obtener su código/SKU
       const contract = contracts.find(c => c.id === contractId);
       const fileName = contract ? `contrato-${contract.sku || contract.code}.pdf` : `contrato-${contractId}.pdf`;
 
-      // Usar el controlador para descargar el PDF
-      const blob = await contractController.downloadPDF(contractId);
+      // Obtener el HTML del contrato desde la API
+      const htmlContent = await contractController.downloadPDF(contractId);
 
-      if (!blob) {
-        throw new Error('No se pudo descargar el PDF');
+      console.log('[PDF] HTML recibido, longitud:', htmlContent?.length);
+      console.log('[PDF] Muestra del HTML:', htmlContent?.substring(0, 500));
+
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        throw new Error('El contenido HTML del contrato está vacío');
       }
 
-      // Crear URL temporal para el blob
-      const url = window.URL.createObjectURL(blob);
+      // Importar librerías
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
 
-      // Crear enlace y simular click para descargar
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
+      // Crear contenedor del documento (oculto fuera de la pantalla)
+      tempDiv = document.createElement('div');
+      tempDiv.style.cssText = `
+        position: fixed;
+        top: -10000px;
+        left: -10000px;
+        width: 794px;
+        background: white;
+        padding: 60px;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        color: #000;
+      `;
 
-      // Limpiar
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Construir el documento - simple y limpio
+      tempDiv.innerHTML = `
+        <div style="font-size: 16px; line-height: 1.8; color: #1a1a1a;">
+          ${htmlContent}
+        </div>
+      `;
 
+      document.body.appendChild(tempDiv);
+
+      // Esperar renderizado
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      console.log('[PDF] Elemento renderizado. Capturando...');
+      console.log('[PDF] Contenido del elemento:', tempDiv.textContent?.substring(0, 300));
+
+      // Capturar con html2canvas
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: tempDiv.offsetWidth,
+        height: tempDiv.offsetHeight
+      });
+
+      console.log('[PDF] Canvas generado:', canvas.width, 'x', canvas.height);
+
+      // Crear PDF
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Agregar primera página
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Agregar páginas adicionales si es necesario
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      // Guardar PDF
+      pdf.save(fileName);
+
+      console.log('[PDF] PDF guardado exitosamente');
       showSnackbar('PDF descargado exitosamente', 'success');
+
     } catch (error) {
-      console.error('Error al descargar PDF:', error);
-      
-      // Si el error es que el PDF no está generado, generarlo automáticamente
-      if (error instanceof Error && error.message === 'PDF_NOT_GENERATED') {
-        try {
-          showSnackbar('El PDF no existe. Generando automáticamente...', 'info');
-          
-          // Generar el PDF usando el endpoint POST
-          const generateResult = await contractController.generatePDF(contractId, {
-            force_regenerate: false,
-            notify_signer: false
-          });
-          
-          if (generateResult) {
-            showSnackbar('PDF generado exitosamente. Descargando...', 'success');
-            
-            // Intentar descargar nuevamente después de un breve delay
-            setTimeout(async () => {
-              try {
-                const blob = await contractController.downloadPDF(contractId);
-                if (blob) {
-                  const url = window.URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  const contract = contracts.find(c => c.id === contractId);
-                  const fileName = contract ? `contrato-${contract.sku || contract.code}.pdf` : `contrato-${contractId}.pdf`;
-                  
-                  link.href = url;
-                  link.download = fileName;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(url);
-                  
-                  showSnackbar('PDF descargado exitosamente', 'success');
-                }
-              } catch (retryError) {
-                console.error('Error al reintentar descarga:', retryError);
-                showSnackbar('PDF generado, pero hubo un error al descargarlo. Intenta nuevamente.', 'warning');
-              }
-            }, 2000);
-          } else {
-            showSnackbar('Error al generar el PDF. Por favor intenta nuevamente.', 'error');
-          }
-        } catch (genError) {
-          console.error('Error al generar PDF:', genError);
-          const genErrorMessage = genError instanceof Error ? genError.message : 'Error desconocido';
-          showSnackbar(`Error al generar PDF: ${genErrorMessage}`, 'error');
-        }
-        return;
-      }
-      
-      // Otros errores
+      console.error('[PDF] ERROR:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      showSnackbar(`Error al descargar PDF: ${errorMessage}`, 'error');
+      showSnackbar(`Error al generar PDF: ${errorMessage}`, 'error');
+    } finally {
+      // Limpiar SIEMPRE
+      if (tempDiv && document.body.contains(tempDiv)) {
+        document.body.removeChild(tempDiv);
+      }
     }
   };
 
@@ -577,7 +600,9 @@ const ContractPage: React.FC = () => {
   );
 
   const filteredContracts = contracts.filter(contract =>
+    contract.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contract.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.signer_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -1007,7 +1032,7 @@ const ContractPage: React.FC = () => {
               <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
-                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>SKU / Código</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>ID / SKU / Código</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Firmante</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Relación</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Estado</TableCell>
@@ -1024,9 +1049,12 @@ const ContractPage: React.FC = () => {
                 
                 return (
                   <TableRow key={contract.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                    {/* SKU / Código */}
+                    {/* ID / SKU / Código */}
                     <TableCell>
                       <Box>
+                        <Typography sx={{ fontSize: '11px', color: '#9e9e9e', fontFamily: 'monospace', mb: 0.25 }}>
+                          ID: {contract.id}
+                        </Typography>
                         <Typography sx={{ fontSize: '13px', fontFamily: 'monospace', color: '#424242', fontWeight: 'medium' }}>
                           {contract.sku}
                         </Typography>

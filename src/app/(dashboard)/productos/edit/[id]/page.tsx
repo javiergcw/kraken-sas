@@ -29,6 +29,7 @@ const EditProductPage: React.FC<EditProductPageProps> = ({ params }) => {
         setInitialData({
           category_id: product.category_id,
           subcategory_id: product.subcategory_id,
+          sku: product.sku,
           name: product.name,
           short_description: product.short_description,
           long_description: product.long_description,

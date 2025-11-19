@@ -117,7 +117,9 @@ const ContractPage: React.FC = () => {
   );
 
   const filteredContracts = contracts.filter(contract =>
+    contract.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contract.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.signer_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -384,7 +386,7 @@ const ContractPage: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
-                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Código</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>ID / SKU / Código</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Firmante</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Estado</TableCell>
@@ -397,8 +399,18 @@ const ContractPage: React.FC = () => {
                 const statusStyle = getStatusColor(contract.status);
                 return (
                   <TableRow key={contract.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                    <TableCell sx={{ fontSize: '14px', fontFamily: 'monospace', color: '#424242', fontWeight: 'medium' }}>
-                      {contract.code}
+                    <TableCell>
+                      <Box>
+                        <Typography sx={{ fontSize: '11px', color: '#9e9e9e', fontFamily: 'monospace', mb: 0.25 }}>
+                          ID: {contract.id}
+                        </Typography>
+                        <Typography sx={{ fontSize: '13px', fontFamily: 'monospace', color: '#424242', fontWeight: 'medium' }}>
+                          {contract.sku}
+                        </Typography>
+                        <Typography sx={{ fontSize: '12px', color: '#9e9e9e', fontFamily: 'monospace' }}>
+                          {contract.code}
+                        </Typography>
+                      </Box>
                     </TableCell>
                     <TableCell sx={{ fontSize: '14px' }}>{contract.signer_name}</TableCell>
                     <TableCell sx={{ fontSize: '13px', color: '#757575' }}>{contract.signer_email}</TableCell>

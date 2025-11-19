@@ -73,7 +73,7 @@ export class ContractController {
     }
   }
 
-  async downloadPDF(id: string): Promise<Blob | null> {
+  async downloadPDF(id: string): Promise<string | null> {
     try {
       return await contractService.downloadPDF(id);
     } catch (error) {

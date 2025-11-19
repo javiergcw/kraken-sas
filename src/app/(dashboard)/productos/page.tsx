@@ -124,6 +124,7 @@ const ProductsPage: React.FC = () => {
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
     getCategoryName(product.category_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
     getSubcategoryName(product.subcategory_id).toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -365,6 +366,7 @@ const ProductsPage: React.FC = () => {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Nombre</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>SKU</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Categoría</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Subcategoría</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Precio</TableCell>
@@ -386,6 +388,11 @@ const ProductsPage: React.FC = () => {
                       {product.name}
                     </Typography>
                   </Box>
+                </TableCell>
+                <TableCell sx={{ py: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: '#757575', fontSize: '13px', fontFamily: 'monospace' }}>
+                    {product.sku || 'N/A'}
+                  </Typography>
                 </TableCell>
                 <TableCell sx={{ py: 0.5 }}>
                   <Chip
@@ -624,6 +631,14 @@ const ProductsPage: React.FC = () => {
                 <Box>
                   <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
                     {selectedProduct.name}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#757575', fontWeight: 'medium' }}>
+                    SKU:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#424242', fontFamily: 'monospace', fontSize: '14px' }}>
+                    {selectedProduct.sku || 'N/A'}
                   </Typography>
                 </Box>
                 <Box>

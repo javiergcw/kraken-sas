@@ -124,7 +124,7 @@ export class ContractService {
     }
   }
 
-  async downloadPDF(id: string): Promise<Blob> {
+  async downloadPDF(id: string): Promise<string> {
     try {
       // Obtener token usando el servicio centralizado
       const token = tokenService.getToken();
@@ -134,11 +134,11 @@ export class ContractService {
       }
 
       const headers: HeadersInit = {
-        'Accept': 'application/pdf',
+        'Accept': 'text/html',
         'Authorization': `Bearer ${token}`,
       };
 
-      console.log('[ContractService] Downloading PDF for contract:', id);
+      console.log('[ContractService] Downloading HTML for contract:', id);
 
       // Usar /api como prefijo para pasar por el proxy de Next.js
       const response = await fetch(
@@ -152,52 +152,38 @@ export class ContractService {
       console.log('[ContractService] Response status:', response.status);
       console.log('[ContractService] Response content-type:', response.headers.get('content-type'));
 
-      // Verificar si la respuesta es JSON (puede ser un error o que el PDF no exista)
+      // Verificar si la respuesta es JSON (puede ser un error)
       const contentType = response.headers.get('content-type');
       if (contentType?.includes('application/json')) {
         const jsonData = await response.json();
         console.log('[ContractService] JSON response:', jsonData);
         
-        // Si el PDF necesita ser generado
-        if (jsonData.needsGeneration) {
-          throw new Error('PDF_NOT_GENERATED');
-        }
-        
-        // Cualquier otro error
-        throw new Error(jsonData.message || jsonData.error || 'Error al descargar PDF');
+        // Cualquier error
+        throw new Error(jsonData.message || jsonData.error || 'Error al obtener HTML del contrato');
       }
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[ContractService] Error response:', errorText);
-        throw new Error(`Error al descargar PDF: ${errorText || response.statusText}`);
+        throw new Error(`Error al obtener HTML: ${errorText || response.statusText}`);
       }
 
-      const blob = await response.blob();
-      console.log('[ContractService] PDF blob downloaded, size:', blob.size);
-      console.log('[ContractService] Blob type:', blob.type);
+      const htmlContent = await response.text();
+      console.log('[ContractService] HTML downloaded, length:', htmlContent.length);
 
-      // Validar que el blob sea realmente un PDF
-      if (blob.type && !blob.type.includes('pdf')) {
-        console.warn('[ContractService] Blob is not a PDF, type:', blob.type);
-        
-        // Intentar leer el contenido del blob para ver si es HTML
-        const text = await blob.text();
-        console.log('[ContractService] Blob content preview:', text.substring(0, 200));
-        
-        if (text.includes('<html') || text.includes('<h1>') || text.includes('<!DOCTYPE')) {
-          console.error('[ContractService] Downloaded content is HTML, not PDF');
-          throw new Error('PDF_NOT_GENERATED');
-        }
+      // Validar que no esté vacío
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        console.error('[ContractService] Response is empty');
+        throw new Error('La respuesta está vacía');
       }
 
-      return blob;
+      return htmlContent;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
       }
       throw new Error(
-        `Error al descargar PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`
+        `Error al descargar HTML: ${error instanceof Error ? error.message : 'Error desconocido'}`
       );
     }
   }

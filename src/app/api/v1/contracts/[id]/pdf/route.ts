@@ -48,20 +48,18 @@ export async function GET(
     // Verificar el tipo de contenido
     const contentType = response.headers.get('content-type');
     
-    // Si es HTML, significa que el PDF no está generado o hay un error
+    // Si es HTML, devolver el HTML directamente (el frontend lo convertirá a PDF)
     if (contentType?.includes('text/html')) {
       const htmlContent = await response.text();
-      console.log('[PDF Download] Received HTML instead of PDF:', htmlContent.substring(0, 200));
+      console.log('[Contract HTML] Received HTML from API, length:', htmlContent.length);
       
-      return NextResponse.json(
-        { 
-          error: 'PDF no disponible',
-          message: 'El PDF del contrato aún no ha sido generado. Por favor, genera el PDF primero.',
-          html_snapshot: htmlContent,
-          needsGeneration: true
+      return new NextResponse(htmlContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html',
+          'Access-Control-Allow-Origin': '*',
         },
-        { status: 404 }
-      );
+      });
     }
 
     // Si es JSON, puede ser un error del backend
@@ -74,47 +72,9 @@ export async function GET(
       });
     }
 
-    // Si es PDF o cualquier otro tipo binario, descargarlo
-    // Leer como ArrayBuffer para poder inspeccionar y reutilizar
+    // Para cualquier otro tipo de contenido, devolverlo tal cual
     const arrayBuffer = await response.arrayBuffer();
     console.log('[PDF Download] Response size:', arrayBuffer.byteLength);
-
-    // Validación adicional: verificar que no sea HTML disfrazado de PDF
-    if (arrayBuffer.byteLength < 50000) { // PDFs suelen ser más grandes, verificar si es pequeño
-      const text = new TextDecoder().decode(arrayBuffer.slice(0, Math.min(1000, arrayBuffer.byteLength)));
-      console.log('[PDF Download] Content preview:', text.substring(0, 200));
-      
-      if (text.includes('<html') || text.includes('<h1>') || text.includes('<!DOCTYPE') || text.includes('<p>')) {
-        console.error('[PDF Download] Response claims to be PDF but contains HTML');
-        return NextResponse.json(
-          { 
-            error: 'PDF no disponible',
-            message: 'El PDF del contrato aún no ha sido generado. Por favor, genera el PDF primero.',
-            html_snapshot: text,
-            needsGeneration: true
-          },
-          { status: 404 }
-        );
-      }
-    }
-
-    // Verificar firma PDF (los PDFs comienzan con %PDF-)
-    const pdfSignature = new TextDecoder().decode(arrayBuffer.slice(0, 5));
-    if (!pdfSignature.startsWith('%PDF-')) {
-      console.error('[PDF Download] Invalid PDF signature:', pdfSignature);
-      const text = new TextDecoder().decode(arrayBuffer.slice(0, Math.min(500, arrayBuffer.byteLength)));
-      
-      if (text.includes('<') || text.includes('>')) {
-        return NextResponse.json(
-          { 
-            error: 'PDF no disponible',
-            message: 'El contenido recibido no es un PDF válido.',
-            needsGeneration: true
-          },
-          { status: 404 }
-        );
-      }
-    }
 
     return new NextResponse(arrayBuffer, {
       status: 200,

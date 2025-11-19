@@ -412,21 +412,20 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
         {/* Variables del Contrato */}
         {fields.length > 0 && (
           <Paper sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
-            <Box sx={{ p: 2, backgroundColor: '#fafafa', borderBottom: '1px solid #e0e0e0' }}>
+            <Box sx={{ p: 2, backgroundColor: '#fafafa', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Typography sx={{ fontSize: '16px', fontWeight: 'bold', color: '#424242' }}>
                 Variables del Contrato
-                <Chip 
-                  label={fields.length} 
-                  size="small" 
-                  sx={{ 
-                    ml: 1.5, 
-                    backgroundColor: '#e0e0e0', 
-                    color: '#424242', 
-                    fontSize: '12px', 
-                    height: 22 
-                  }} 
-                />
               </Typography>
+              <Chip 
+                label={fields.length} 
+                size="small" 
+                sx={{ 
+                  backgroundColor: '#e0e0e0', 
+                  color: '#424242', 
+                  fontSize: '12px', 
+                  height: 22 
+                }} 
+              />
             </Box>
             <Table>
               <TableBody>
