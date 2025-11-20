@@ -29,3 +29,6 @@ export * from './banners';
 // Contratos - módulo completo
 export * from './contracts';
 
+// Company Settings - módulo completo
+export * from './company-settings';
+
