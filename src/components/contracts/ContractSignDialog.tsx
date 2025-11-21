@@ -20,7 +20,7 @@ interface ContractSignDialogProps {
   onSign: (signatureData: {
     signed_by_name: string;
     signed_by_email: string;
-    signature_image: string;
+    signature_client: string;
   }) => void;
   contractCode?: string;
 }
@@ -45,7 +45,7 @@ const ContractSignDialog: React.FC<ContractSignDialogProps> = ({
       onSign({
         signed_by_name: signerName,
         signed_by_email: signerEmail,
-        signature_image: signatureImage,
+        signature_client: signatureImage,
       });
       handleClear();
       setSignerName('');

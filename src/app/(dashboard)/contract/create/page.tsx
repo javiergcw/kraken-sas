@@ -56,19 +56,46 @@ const CreateContractTemplatePage: React.FC = () => {
   });
   const [variables, setVariables] = useState<TemplateVariable[]>([
     {
-      key: 'company_name',
-      label: 'Nombre de la empresa',
-      data_type: 'TEXT',
+      key: 'email',
+      label: 'Email',
+      data_type: 'EMAIL',
       required: true,
-      default_value: 'Scuba Exagone',
       sort_order: 1,
     },
     {
-      key: 'signature_client',
-      label: 'Firma del cliente',
-      data_type: 'SIGNATURE',
+      key: 'signer_name',
+      label: 'Nombre del firmante',
+      data_type: 'TEXT',
       required: true,
       sort_order: 2,
+    },
+    {
+      key: 'identity_type',
+      label: 'Tipo de identificación',
+      data_type: 'TEXT',
+      required: true,
+      sort_order: 3,
+    },
+    {
+      key: 'identity_number',
+      label: 'Número de identificación',
+      data_type: 'TEXT',
+      required: true,
+      sort_order: 4,
+    },
+    {
+      key: 'company',
+      label: 'Empresa',
+      data_type: 'TEXT',
+      required: true,
+      sort_order: 5,
+    },
+    {
+      key: 'signature',
+      label: 'Firma',
+      data_type: 'SIGNATURE',
+      required: true,
+      sort_order: 6,
     },
   ]);
   const [newVariable, setNewVariable] = useState<TemplateVariable>({
@@ -101,8 +128,8 @@ const CreateContractTemplatePage: React.FC = () => {
   };
 
   const handleRemoveVariable = (index: number) => {
-    // No permitir eliminar las dos variables por defecto (company_name y signature_client)
-    if (index < 2) {
+    // No permitir eliminar las seis variables por defecto (email, signer_name, identity_type, identity_number, company, signature)
+    if (index < 6) {
       return;
     }
     setVariables(prev => prev.filter((_, i) => i !== index));
@@ -259,11 +286,11 @@ const CreateContractTemplatePage: React.FC = () => {
                 <RichTextEditor
                   value={formData.html_content}
                   onChange={(value) => handleInputChange('html_content', value)}
-                  placeholder="Escribe el contenido del contrato aquí. Usa {{variable}} para insertar variables dinámicas."
+                  placeholder="Escribe el contenido del contrato aquí. Usa %variable% para insertar variables dinámicas."
                   minHeight={300}
                 />
                 <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
-                  Usa doble llave para variables, por ejemplo: {'{'} {'{'}company_name{'}'} {'}'} o {'{'} {'{'}client_name{'}'} {'}'}
+                  Usa el formato %variable% para insertar variables, por ejemplo: %email%, %signer_name%, %company%, %signature%
                 </Typography>
               </Box>
             </Box>
@@ -274,73 +301,9 @@ const CreateContractTemplatePage: React.FC = () => {
         <Box sx={{ flex: 1 }}>
           <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
-              Variables dinámicas
+              Variables 
             </Typography>
 
-            {/* Formulario para agregar variable */}
-            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
-              <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mb: 1, display: 'block' }}>
-                Agregar nueva variable
-              </Typography>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Clave (ej: client_name)"
-                    value={newVariable.key}
-                    onChange={(e) => setNewVariable(prev => ({ ...prev, key: e.target.value }))}
-                    size="small"
-                    sx={{ '& .MuiOutlinedInput-root': { fontSize: '13px', backgroundColor: 'white' } }}
-                  />
-                  <TextField
-                    fullWidth
-                    placeholder="Etiqueta (ej: Nombre del cliente)"
-                    value={newVariable.label}
-                    onChange={(e) => setNewVariable(prev => ({ ...prev, label: e.target.value }))}
-                    size="small"
-                    sx={{ '& .MuiOutlinedInput-root': { fontSize: '13px', backgroundColor: 'white' } }}
-                  />
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <FormControl fullWidth size="small">
-                    <Select
-                      value={newVariable.data_type}
-                      onChange={(e) => setNewVariable(prev => ({ ...prev, data_type: e.target.value as any }))}
-                      sx={{ fontSize: '13px', backgroundColor: 'white' }}
-                    >
-                      <MenuItem value="TEXT">Texto</MenuItem>
-                      <MenuItem value="NUMBER">Número</MenuItem>
-                      <MenuItem value="DATE">Fecha</MenuItem>
-                      <MenuItem value="EMAIL">Email</MenuItem>
-                      <MenuItem value="SIGNATURE">Firma</MenuItem>
-                    </Select>
-                  </FormControl>
-                  
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddVariable}
-                    disabled={!newVariable.key || !newVariable.label}
-                    sx={{
-                      backgroundColor: '#424242',
-                      textTransform: 'none',
-                      fontSize: '13px',
-                      px: 2,
-                      boxShadow: 'none',
-                      whiteSpace: 'nowrap',
-                      '&:hover': {
-                        backgroundColor: '#303030',
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    Agregar
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
 
             {/* Lista de variables */}
             {variables.length > 0 ? (
@@ -357,13 +320,13 @@ const CreateContractTemplatePage: React.FC = () => {
                   <TableBody>
                     {variables.map((variable, index) => (
                       <TableRow key={index}>
-                        <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>{variable.key}</TableCell>
+                        <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>%{variable.key}%</TableCell>
                         <TableCell sx={{ fontSize: '13px' }}>{variable.label}</TableCell>
                         <TableCell sx={{ fontSize: '13px' }}>
-                          <Chip label={variable.data_type} size="small" sx={{ fontSize: '11px', height: 20 }} />
+                          <Chip label={"%"+variable.data_type+"%"} size="small" sx={{ fontSize: '11px', height: 20 }} />
                         </TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
-                          {index >= 2 ? (
+                          {index >= 6 ? (
                           <IconButton
                             size="small"
                             onClick={() => handleRemoveVariable(index)}

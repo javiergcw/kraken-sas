@@ -152,29 +152,59 @@ export class ContractService {
       console.log('[ContractService] Response status:', response.status);
       console.log('[ContractService] Response content-type:', response.headers.get('content-type'));
 
-      // Verificar si la respuesta es JSON (puede ser un error)
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        const jsonData = await response.json();
-        console.log('[ContractService] JSON response:', jsonData);
-        
-        // Cualquier error
-        throw new Error(jsonData.message || jsonData.error || 'Error al obtener HTML del contrato');
-      }
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[ContractService] Error response:', errorText);
         throw new Error(`Error al obtener HTML: ${errorText || response.statusText}`);
       }
 
-      const htmlContent = await response.text();
+      // Leer la respuesta como texto primero
+      const responseText = await response.text();
+      console.log('[ContractService] Response text preview:', responseText.substring(0, 200));
+
+      // Verificar si la respuesta es JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        try {
+          const jsonData = JSON.parse(responseText);
+          console.log('[ContractService] JSON response:', jsonData);
+          
+          // Intentar extraer HTML de campos comunes
+          const htmlContent = jsonData.html || jsonData.content || jsonData.data || jsonData.body;
+          
+          if (htmlContent && typeof htmlContent === 'string') {
+            console.log('[ContractService] HTML extracted from JSON, length:', htmlContent.length);
+            return htmlContent;
+          }
+          
+          // Si no hay HTML pero hay un mensaje de éxito, puede que el HTML esté en otro campo
+          // o que necesitemos hacer otra petición
+          if (jsonData.message && jsonData.message.includes('successfully')) {
+            throw new Error('El backend devolvió un mensaje de éxito pero no contiene HTML. Verifica la respuesta del servidor.');
+          }
+          
+          // Si hay un error en el JSON
+          throw new Error(jsonData.message || jsonData.error || 'Error al obtener HTML del contrato');
+        } catch (parseError) {
+          // Si no se puede parsear como JSON, tratar como texto HTML
+          console.log('[ContractService] Response is not valid JSON, treating as HTML');
+        }
+      }
+
+      // Si no es JSON o no se pudo parsear, tratar como HTML
+      const htmlContent = responseText;
       console.log('[ContractService] HTML downloaded, length:', htmlContent.length);
 
       // Validar que no esté vacío
       if (!htmlContent || htmlContent.trim().length === 0) {
         console.error('[ContractService] Response is empty');
         throw new Error('La respuesta está vacía');
+      }
+
+      // Validar que no sea solo un mensaje de texto
+      if (htmlContent.trim().toLowerCase().includes('contract retrieved successfully') && 
+          htmlContent.length < 500) {
+        throw new Error('El backend devolvió un mensaje de éxito en lugar del HTML del contrato');
       }
 
       return htmlContent;

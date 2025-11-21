@@ -45,15 +45,18 @@ export async function GET(
       );
     }
 
+    // Leer la respuesta como texto primero para poder analizarla
+    const responseText = await response.text();
+    console.log('[PDF Download] Response text preview:', responseText.substring(0, 200));
+    
     // Verificar el tipo de contenido
     const contentType = response.headers.get('content-type');
     
     // Si es HTML, devolver el HTML directamente (el frontend lo convertirá a PDF)
     if (contentType?.includes('text/html')) {
-      const htmlContent = await response.text();
-      console.log('[Contract HTML] Received HTML from API, length:', htmlContent.length);
+      console.log('[Contract HTML] Received HTML from API, length:', responseText.length);
       
-      return new NextResponse(htmlContent, {
+      return new NextResponse(responseText, {
         status: 200,
         headers: {
           'Content-Type': 'text/html',
@@ -62,14 +65,41 @@ export async function GET(
       });
     }
 
-    // Si es JSON, puede ser un error del backend
+    // Si es JSON, intentar extraer el HTML de campos comunes
     if (contentType?.includes('application/json')) {
-      const jsonData = await response.json();
-      console.log('[PDF Download] Received JSON:', jsonData);
-      
-      return NextResponse.json(jsonData, {
-        status: response.status,
-      });
+      try {
+        const jsonData = JSON.parse(responseText);
+        console.log('[PDF Download] Received JSON:', jsonData);
+        
+        // Intentar extraer HTML de campos comunes
+        const htmlContent = jsonData.html || jsonData.content || jsonData.data || jsonData.body;
+        
+        if (htmlContent && typeof htmlContent === 'string') {
+          console.log('[PDF Download] HTML extracted from JSON, length:', htmlContent.length);
+          return new NextResponse(htmlContent, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/html',
+              'Access-Control-Allow-Origin': '*',
+            },
+          });
+        }
+        
+        // Si no hay HTML, devolver el JSON (puede ser un error o mensaje)
+        return NextResponse.json(jsonData, {
+          status: response.status,
+        });
+      } catch (parseError) {
+        // Si no se puede parsear como JSON, tratar como HTML
+        console.log('[PDF Download] Response is not valid JSON, treating as HTML');
+        return new NextResponse(responseText, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
     }
 
     // Para cualquier otro tipo de contenido, devolverlo tal cual

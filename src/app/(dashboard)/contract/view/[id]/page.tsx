@@ -267,6 +267,25 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
       </Box>
 
       <Box sx={{ px: { xs: 2, sm: 2, md: 3 }, py: 2 }}>
+        {/* HTML Snapshot - Vista Previa */}
+        {contract.html_snapshot && (
+          <Paper sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
+            <Box sx={{ p: 2, backgroundColor: '#fafafa', borderBottom: '1px solid #e0e0e0' }}>
+              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', color: '#424242' }}>
+                Vista Previa del Contrato
+              </Typography>
+            </Box>
+            <Box 
+              sx={{ 
+                p: 3, 
+                backgroundColor: 'white', 
+                minHeight: '200px'
+              }}
+              dangerouslySetInnerHTML={{ __html: contract.html_snapshot }}
+            />
+          </Paper>
+        )}
+
         {/* Estado destacado */}
         <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
@@ -378,12 +397,22 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
                   </Box>
                 </TableCell>
                 <TableCell sx={{ borderBottom: '1px solid #f5f5f5' }}>
-                  <Typography sx={{ fontSize: '14px', fontWeight: 'medium', color: '#424242' }}>
-                    {contract.signed_by_name}
-                  </Typography>
-                  <Typography sx={{ fontSize: '13px', color: '#757575' }}>
-                    {contract.signed_by_email}
-                  </Typography>
+                  {contract.signed_by_name || contract.signer_name ? (
+                    <>
+                      <Typography sx={{ fontSize: '14px', fontWeight: 'medium', color: '#424242' }}>
+                        {contract.signed_by_name || contract.signer_name}
+                      </Typography>
+                      {(contract.signed_by_email || contract.signer_email) && (
+                        <Typography sx={{ fontSize: '13px', color: '#757575' }}>
+                          {contract.signed_by_email || contract.signer_email}
+                        </Typography>
+                      )}
+                    </>
+                  ) : (
+                    <Typography sx={{ fontSize: '14px', color: '#bdbdbd', fontStyle: 'italic' }}>
+                      No asignado
+                    </Typography>
+                  )}
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -514,24 +543,6 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
           </Paper>
         )}
 
-        {/* HTML Snapshot */}
-        {contract.html_snapshot && (
-          <Paper sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
-            <Box sx={{ p: 2, backgroundColor: '#fafafa', borderBottom: '1px solid #e0e0e0' }}>
-              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', color: '#424242' }}>
-                Vista Previa del Contrato
-              </Typography>
-            </Box>
-            <Box 
-              sx={{ 
-                p: 3, 
-                backgroundColor: 'white', 
-                minHeight: '200px'
-              }}
-              dangerouslySetInnerHTML={{ __html: contract.html_snapshot }}
-            />
-          </Paper>
-        )}
       </Box>
     </Box>
   );

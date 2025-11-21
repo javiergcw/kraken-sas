@@ -31,13 +31,16 @@ import {
   ListItemText,
   Checkbox,
   FormControlLabel,
+  CircularProgress,
+  FormControl,
+  Select,
+  InputLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Search as SearchIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
   Description as DescriptionIcon,
   FileCopy as FileCopyIcon,
   CalendarToday as CalendarIcon,
@@ -51,8 +54,10 @@ import {
   Draw as DrawIcon,
   Upload as UploadIcon,
   Clear as ClearIcon,
+  Link as LinkIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
-import { contractTemplateController, contractController } from '@/components/core';
+import { contractTemplateController, contractController, companySettingsController } from '@/components/core';
 import type { ContractTemplateDto, ContractDto } from '@/components/core/contracts/dto';
 
 // Función helper para traducir tipos de relación al español
@@ -71,15 +76,14 @@ const ContractPage: React.FC = () => {
   const router = useRouter();
   const [tabValue, setTabValue] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>('');
+  const [signatureStatusFilter, setSignatureStatusFilter] = useState<string>('all'); // 'all', 'signed', 'unsigned'
+  const [createdDateFilter, setCreatedDateFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<ContractTemplateDto[]>([]);
   const [contracts, setContracts] = useState<ContractDto[]>([]);
 
   // Modales
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateDto | null>(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'template' | 'contract' } | null>(null);
   const [viewContractModalOpen, setViewContractModalOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<ContractDto | null>(null);
   const [invalidateModalOpen, setInvalidateModalOpen] = useState(false);
@@ -110,9 +114,30 @@ const ContractPage: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
+  // Modal de vista previa
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewContractId, setPreviewContractId] = useState<string | null>(null);
+  const [previewHtmlContent, setPreviewHtmlContent] = useState<string>('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  
+  // Website URL para construir la URL del contrato
+  const [websiteURL, setWebsiteURL] = useState<string>('');
+
   useEffect(() => {
     loadData();
+    loadCompanySettings();
   }, []);
+
+  const loadCompanySettings = async () => {
+    try {
+      const response = await companySettingsController.get();
+      if (response?.success && response.data) {
+        setWebsiteURL(response.data.WebsiteURL || '');
+      }
+    } catch (error) {
+      console.error('Error al cargar configuración de compañía:', error);
+    }
+  };
 
   // Inicializar el canvas cuando se abre el modal
   useEffect(() => {
@@ -228,49 +253,6 @@ const ContractPage: React.FC = () => {
     }
   };
 
-  const handleViewTemplate = (template: ContractTemplateDto) => {
-    setSelectedTemplate(template);
-    setViewModalOpen(true);
-  };
-
-  const handleCloseViewModal = () => {
-    setViewModalOpen(false);
-    setSelectedTemplate(null);
-  };
-
-  const handleDeleteClick = (id: string, name: string, type: 'template' | 'contract') => {
-    setItemToDelete({ id, name, type });
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!itemToDelete) return;
-
-    try {
-      if (itemToDelete.type === 'template') {
-        const response = await contractTemplateController.delete(itemToDelete.id);
-        if (response?.success) {
-          showSnackbar('Plantilla eliminada exitosamente', 'success');
-          await loadData();
-        } else {
-          showSnackbar('Error al eliminar la plantilla', 'error');
-        }
-      } else {
-        const response = await contractController.delete(itemToDelete.id);
-        if (response?.success) {
-          showSnackbar('Contrato eliminado exitosamente', 'success');
-          await loadData();
-        } else {
-          showSnackbar('Error al eliminar el contrato', 'error');
-        }
-      }
-      setDeleteModalOpen(false);
-      setItemToDelete(null);
-    } catch (error) {
-      console.error('Error al eliminar:', error);
-      showSnackbar('Error al eliminar', 'error');
-    }
-  };
 
   // Nuevas funciones
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
@@ -283,6 +265,71 @@ const ContractPage: React.FC = () => {
 
   const handleViewContract = async (contract: ContractDto) => {
     router.push(`/contract/view/${contract.id}`);
+  };
+
+  const handlePreviewContract = async (contractId: string) => {
+    try {
+      setLoadingPreview(true);
+      setPreviewContractId(contractId);
+      setPreviewModalOpen(true);
+      
+      // Cargar el HTML del contrato
+      const htmlContent = await contractController.downloadPDF(contractId);
+      if (htmlContent) {
+        setPreviewHtmlContent(htmlContent);
+      } else {
+        showSnackbar('No se pudo cargar la vista previa del contrato', 'error');
+        setPreviewModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error al cargar vista previa:', error);
+      showSnackbar('Error al cargar la vista previa del contrato', 'error');
+      setPreviewModalOpen(false);
+    } finally {
+      setLoadingPreview(false);
+      handleMenuClose();
+    }
+  };
+
+  const handleClosePreviewModal = () => {
+    setPreviewModalOpen(false);
+    setPreviewContractId(null);
+    setPreviewHtmlContent('');
+  };
+
+  const handleCopyContractURL = async (contractId: string) => {
+    try {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract) {
+        showSnackbar('Contrato no encontrado', 'error');
+        handleMenuClose();
+        return;
+      }
+
+      if (!contract.access_token) {
+        showSnackbar('Este contrato no tiene un token de acceso', 'warning');
+        handleMenuClose();
+        return;
+      }
+
+      if (!websiteURL) {
+        showSnackbar('No se ha configurado la URL del sitio web', 'warning');
+        handleMenuClose();
+        return;
+      }
+
+      // Construir la URL: WebsiteURL + /consultar-contrato/ + access_token
+      const contractURL = `${websiteURL.replace(/\/$/, '')}/consultar-contrato/${contract.access_token}`;
+
+      // Copiar al portapapeles
+      await navigator.clipboard.writeText(contractURL);
+      showSnackbar('URL del contrato copiada al portapapeles', 'success');
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error al copiar URL:', error);
+      showSnackbar('Error al copiar la URL del contrato', 'error');
+      handleMenuClose();
+    }
   };
 
   const handleCloseViewContractModal = () => {
@@ -558,7 +605,7 @@ const ContractPage: React.FC = () => {
       const response = await contractController.sign(contractToSign.id, {
         signed_by_name: signerName,
         signed_by_email: signerEmail,
-        signature_image: finalSignature,
+        signature_client: finalSignature,
         signed_fields: {
           signature_client: finalSignature
         }
@@ -595,16 +642,31 @@ const ContractPage: React.FC = () => {
   };
 
   const filteredTemplates = templates.filter(template =>
-    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     template.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredContracts = contracts.filter(contract =>
-    contract.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.signer_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredContracts = contracts.filter(contract => {
+    const matchesTemplate = !selectedTemplateFilter || contract.template_id === selectedTemplateFilter;
+    
+    // Filtro por estado de firma
+    const matchesSignatureStatus = 
+      signatureStatusFilter === 'all' ||
+      (signatureStatusFilter === 'signed' && contract.status === 'SIGNED') ||
+      (signatureStatusFilter === 'unsigned' && contract.status !== 'SIGNED');
+    
+    // Filtro por fecha de creación
+    let matchesDate = true;
+    if (createdDateFilter) {
+      const contractDate = new Date(contract.created_at);
+      const filterDate = new Date(createdDateFilter);
+      matchesDate = 
+        contractDate.getDate() === filterDate.getDate() &&
+        contractDate.getMonth() === filterDate.getMonth() &&
+        contractDate.getFullYear() === filterDate.getFullYear();
+    }
+    
+    return matchesTemplate && matchesSignatureStatus && matchesDate;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -729,7 +791,7 @@ const ContractPage: React.FC = () => {
         </Box>
 
         {/* Tabs Mejorados */}
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 2, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
           <Tabs
             value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
@@ -790,42 +852,166 @@ const ContractPage: React.FC = () => {
           </Tabs>
         </Paper>
 
-        {/* Search Mejorado */}
-        <Paper sx={{ p: 2, borderRadius: 2, mb: 2 }}>
-          <TextField
-            fullWidth
-            placeholder={tabValue === 0
-              ? "Buscar plantillas por nombre o SKU..."
-              : "Buscar contratos por código o firmante..."}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ color: '#757575', mr: 1, fontSize: 22 }} />,
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#f8f8f8',
-                borderRadius: 2,
-                fontSize: '14px',
-                '& fieldset': {
-                  borderColor: 'transparent',
+        {/* Search y Filtros */}
+        <Paper sx={{ p: 2, borderRadius: 2, mb: 2, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
+          {tabValue === 0 ? (
+            <TextField
+              fullWidth
+              placeholder="Buscar plantillas por SKU..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: '#757575', mr: 1, fontSize: 22 }} />,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#f8f8f8',
+                  borderRadius: 2,
+                  fontSize: '14px',
+                  '& fieldset': {
+                    borderColor: 'transparent',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#1976d2',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2',
+                  },
                 },
-                '&:hover fieldset': {
-                  borderColor: '#1976d2',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#1976d2',
-                },
-              },
-            }}
-          />
+              }}
+            />
+          ) : (
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
+              <FormControl sx={{ minWidth: { xs: '100%', md: 250 }, flexShrink: 0 }}>
+                <InputLabel id="template-filter-label" sx={{ fontSize: '14px' }}>
+                  Filtrar por Plantilla
+                </InputLabel>
+                <Select
+                  labelId="template-filter-label"
+                  value={selectedTemplateFilter}
+                  onChange={(e) => setSelectedTemplateFilter(e.target.value)}
+                  label="Filtrar por Plantilla"
+                  sx={{
+                    backgroundColor: '#f8f8f8',
+                    fontSize: '14px',
+                    borderRadius: 2,
+                    '& fieldset': {
+                      borderColor: 'transparent',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>Todas las plantillas</em>
+                  </MenuItem>
+                  {templates.map((template) => (
+                    <MenuItem key={template.id} value={template.id}>
+                      {template.name} ({template.sku})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: { xs: '100%', md: 200 }, flexShrink: 0 }}>
+                <InputLabel id="signature-status-filter-label" sx={{ fontSize: '14px' }}>
+                  Estado de Firma
+                </InputLabel>
+                <Select
+                  labelId="signature-status-filter-label"
+                  value={signatureStatusFilter}
+                  onChange={(e) => setSignatureStatusFilter(e.target.value)}
+                  label="Estado de Firma"
+                  sx={{
+                    backgroundColor: '#f8f8f8',
+                    fontSize: '14px',
+                    borderRadius: 2,
+                    '& fieldset': {
+                      borderColor: 'transparent',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                  }}
+                >
+                  <MenuItem value="all">
+                    <em>Todos</em>
+                  </MenuItem>
+                  <MenuItem value="signed">Firmados</MenuItem>
+                  <MenuItem value="unsigned">No Firmados</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                type="date"
+                label="Fecha de Creación"
+                value={createdDateFilter}
+                onChange={(e) => setCreatedDateFilter(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: { fontSize: '14px' }
+                }}
+                sx={{
+                  flex: 1,
+                  maxWidth: { xs: '100%', md: 200 },
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#f8f8f8',
+                    borderRadius: 2,
+                    fontSize: '14px',
+                    '& fieldset': {
+                      borderColor: 'transparent',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                  },
+                }}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<ClearIcon />}
+                onClick={() => {
+                  setSelectedTemplateFilter('');
+                  setSignatureStatusFilter('all');
+                  setCreatedDateFilter('');
+                }}
+                disabled={!selectedTemplateFilter && signatureStatusFilter === 'all' && !createdDateFilter}
+                sx={{
+                  textTransform: 'none',
+                  borderColor: '#e0e0e0',
+                  color: '#424242',
+                  fontSize: '14px',
+                  px: 2,
+                  minWidth: { xs: '100%', md: 'auto' },
+                  '&:hover': {
+                    borderColor: '#757575',
+                    backgroundColor: '#f5f5f5',
+                  },
+                  '&:disabled': {
+                    borderColor: '#e0e0e0',
+                    color: '#bdbdbd',
+                  },
+                }}
+              >
+                Limpiar Filtros
+              </Button>
+            </Box>
+          )}
         </Paper>
       </Box>
 
       {/* Contenido según tab */}
       {tabValue === 0 ? (
         // Tabla de plantillas mejorada
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: 'none', border: '1px solid #e0e0e0' }}>
           {filteredTemplates.length > 0 ? (
             <TableContainer>
               <Table>
@@ -836,9 +1022,6 @@ const ContractPage: React.FC = () => {
                     </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '13px', py: 2 }}>
                       SKU
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '13px', py: 2, textAlign: 'center' }}>
-                      Variables
                     </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '13px', py: 2, textAlign: 'center' }}>
                       Estado
@@ -900,20 +1083,6 @@ const ContractPage: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell sx={{ textAlign: 'center', py: 2.5 }}>
-                        <Chip 
-                          label={`${template.variables?.length || 0}`} 
-                          size="small" 
-                          sx={{ 
-                            fontSize: '13px', 
-                            height: 28,
-                            minWidth: 45,
-                            backgroundColor: template.variables && template.variables.length > 0 ? '#e8f5e9' : '#f5f5f5',
-                            color: template.variables && template.variables.length > 0 ? '#4caf50' : '#757575',
-                            fontWeight: 'bold'
-                          }} 
-                        />
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center', py: 2.5 }}>
                         <Chip
                           label={template.is_active ? 'Activa' : 'Inactiva'}
                           size="small"
@@ -952,7 +1121,7 @@ const ContractPage: React.FC = () => {
                           </Button>
                           <IconButton
                             size="small"
-                            onClick={() => handleViewTemplate(template)}
+                            onClick={() => router.push(`/contract/template/${template.id}`)}
                             title="Ver detalles de la plantilla"
                             sx={{
                               border: '1px solid #e0e0e0',
@@ -986,25 +1155,6 @@ const ContractPage: React.FC = () => {
                           >
                             <EditIcon sx={{ fontSize: 18 }} />
                           </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteClick(template.id, template.name, 'template')}
-                            title="Eliminar plantilla"
-                            sx={{
-                              border: '1px solid #ffcdd2',
-                              borderRadius: 1.5,
-                              backgroundColor: '#ffebee',
-                              color: '#f44336',
-                              p: 1,
-                              '&:hover': { 
-                                backgroundColor: '#f44336', 
-                                color: 'white',
-                                borderColor: '#f44336' 
-                              },
-                            }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1026,15 +1176,15 @@ const ContractPage: React.FC = () => {
         </Paper>
       ) : (
         // Tabla de contratos emitidos mejorada
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: 'none', border: '1px solid #e0e0e0' }}>
           {filteredContracts.length > 0 ? (
             <TableContainer>
               <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
-                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>ID / SKU / Código</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>SKU / Código</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Firmante</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Relación</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Tipo</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Vencimiento</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>Creado</TableCell>
@@ -1049,12 +1199,9 @@ const ContractPage: React.FC = () => {
                 
                 return (
                   <TableRow key={contract.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                    {/* ID / SKU / Código */}
+                    {/* SKU / Código */}
                     <TableCell>
                       <Box>
-                        <Typography sx={{ fontSize: '11px', color: '#9e9e9e', fontFamily: 'monospace', mb: 0.25 }}>
-                          ID: {contract.id}
-                        </Typography>
                         <Typography sx={{ fontSize: '13px', fontFamily: 'monospace', color: '#424242', fontWeight: 'medium' }}>
                           {contract.sku}
                         </Typography>
@@ -1076,7 +1223,7 @@ const ContractPage: React.FC = () => {
                       </Box>
                     </TableCell>
 
-                    {/* Relación */}
+                    {/* Tipo */}
                     <TableCell>
                       {contract.related_type ? (
                         <Chip
@@ -1091,7 +1238,7 @@ const ContractPage: React.FC = () => {
                           }}
                         />
                       ) : (
-                        <Typography sx={{ fontSize: '12px', color: '#bdbdbd' }}>-</Typography>
+                        <Typography sx={{ fontSize: '12px', color: '#bdbdbd' }}>Sin tipo</Typography>
                       )}
                     </TableCell>
 
@@ -1160,6 +1307,20 @@ const ContractPage: React.FC = () => {
                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
                         <IconButton
                           size="small"
+                          onClick={() => handlePreviewContract(contract.id)}
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            borderRadius: 1,
+                            color: '#757575',
+                            p: 0.75,
+                            '&:hover': { backgroundColor: '#e3f2fd', color: '#1976d2', borderColor: '#1976d2' },
+                          }}
+                          title="Vista previa"
+                        >
+                          <DescriptionIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
                           onClick={() => handleViewContract(contract)}
                           sx={{
                             border: '1px solid #e0e0e0',
@@ -1186,21 +1347,6 @@ const ContractPage: React.FC = () => {
                         >
                           <MoreVertIcon sx={{ fontSize: 18 }} />
                         </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteClick(contract.id, contract.code, 'contract')}
-                          sx={{
-                            border: '1px solid #ffcdd2',
-                            borderRadius: 1,
-                            backgroundColor: '#ffebee',
-                            color: '#f44336',
-                            p: 0.75,
-                            '&:hover': { backgroundColor: '#f44336', color: 'white' },
-                          }}
-                          title="Eliminar"
-                        >
-                          <DeleteIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -1222,124 +1368,6 @@ const ContractPage: React.FC = () => {
           )}
         </Paper>
       )}
-
-      {/* Modal de Ver Plantilla */}
-      <Dialog
-        open={viewModalOpen}
-        onClose={handleCloseViewModal}
-        maxWidth="md"
-        fullWidth
-        sx={{ '& .MuiDialog-paper': { borderRadius: 2 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 'bold', color: '#424242', fontSize: '18px' }}>
-          {selectedTemplate?.name}
-        </DialogTitle>
-        <DialogContent>
-          {selectedTemplate && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                  SKU:
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575' }}>
-                  {selectedTemplate.sku}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                  Descripción:
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575' }}>
-                  {selectedTemplate.description || 'Sin descripción'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 1 }}>
-                  Variables ({selectedTemplate.variables?.length || 0}):
-                </Typography>
-                {selectedTemplate.variables && selectedTemplate.variables.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {selectedTemplate.variables.map((variable, index) => (
-                      <Chip
-                        key={index}
-                        label={`${variable.key} (${variable.data_type})`}
-                        size="small"
-                        sx={{ fontSize: '12px' }}
-                      />
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" sx={{ color: '#757575' }}>
-                    Sin variables definidas
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseViewModal} sx={{ textTransform: 'capitalize' }}>
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal de Eliminar */}
-      <Dialog
-        open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxWidth: '420px', padding: '12px' } }}
-      >
-        <DialogTitle sx={{ pb: 0.5, px: 1.5, pt: 1, fontWeight: 'bold', color: '#424242', fontSize: '16px' }}>
-          Eliminar {itemToDelete?.type === 'template' ? 'Plantilla' : 'Contrato'}
-        </DialogTitle>
-        <DialogContent sx={{ px: 1.5, py: 1 }}>
-          <Typography variant="body2" sx={{ color: '#424242', fontSize: '13px', lineHeight: 1.4 }}>
-            ¿Estás seguro de que deseas eliminar{' '}
-            <Typography component="span" sx={{ fontWeight: 'bold', color: '#f44336', fontSize: '13px' }}>
-              {itemToDelete?.name}
-            </Typography>
-            ?
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#757575', fontSize: '12px', mt: 0.5 }}>
-            Esta acción no se puede deshacer.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 1.5, pb: 1, pt: 0.5, gap: 1 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setDeleteModalOpen(false)}
-            sx={{
-              borderColor: '#e0e0e0',
-              color: '#424242',
-              textTransform: 'capitalize',
-              fontSize: '13px',
-              px: 2,
-              py: 0.5,
-              '&:hover': { borderColor: '#bdbdbd', backgroundColor: '#f5f5f5' },
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmDelete}
-            sx={{
-              backgroundColor: '#f44336',
-              textTransform: 'capitalize',
-              fontSize: '13px',
-              px: 2,
-              py: 0.5,
-              boxShadow: 'none',
-              '&:hover': { backgroundColor: '#d32f2f', boxShadow: 'none' },
-            }}
-          >
-            Eliminar
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Modal de Ver Contrato */}
       <Dialog
@@ -1909,6 +1937,30 @@ const ContractPage: React.FC = () => {
         <MenuItem
           onClick={() => {
             if (selectedContractId) {
+              handleCopyContractURL(selectedContractId);
+            }
+          }}
+          disabled={(() => {
+            if (!selectedContractId) return false;
+            const contract = contracts.find(c => c.id === selectedContractId);
+            return !contract?.access_token || !websiteURL;
+          })()}
+          sx={{ 
+            fontSize: '14px', 
+            py: 1,
+            '&.Mui-disabled': {
+              opacity: 0.5
+            }
+          }}
+        >
+          <ListItemIcon>
+            <LinkIcon sx={{ fontSize: 20, color: '#4caf50' }} />
+          </ListItemIcon>
+          <ListItemText>Copiar URL del contrato</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (selectedContractId) {
               handleDownloadPDF(selectedContractId);
             }
           }}
@@ -1965,19 +2017,181 @@ const ContractPage: React.FC = () => {
           onClick={() => {
             if (selectedContractId) {
               const contract = contracts.find(c => c.id === selectedContractId);
-              if (contract) {
+              if (contract && contract.status !== 'CANCELLED') {
                 handleInvalidateClick(contract.id, contract.code);
               }
             }
           }}
-          sx={{ fontSize: '14px', py: 1 }}
+          disabled={(() => {
+            if (!selectedContractId) return false;
+            const contract = contracts.find(c => c.id === selectedContractId);
+            return contract?.status === 'CANCELLED';
+          })()}
+          sx={{ 
+            fontSize: '14px', 
+            py: 1,
+            '&.Mui-disabled': {
+              opacity: 0.5
+            }
+          }}
         >
           <ListItemIcon>
             <BlockIcon sx={{ fontSize: 20, color: '#ff9800' }} />
           </ListItemIcon>
-          <ListItemText>Invalidar contrato</ListItemText>
+          <ListItemText>
+            {(() => {
+              if (!selectedContractId) return 'Invalidar contrato';
+              const contract = contracts.find(c => c.id === selectedContractId);
+              if (!contract) return 'Invalidar contrato';
+              
+              if (contract.status === 'CANCELLED') return 'Invalidado';
+              return 'Invalidar contrato';
+            })()}
+          </ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Modal de Vista Previa del Contrato */}
+      <Dialog
+        open={previewModalOpen}
+        onClose={handleClosePreviewModal}
+        maxWidth="lg"
+        fullWidth
+        sx={{ 
+          '& .MuiDialog-paper': { 
+            borderRadius: 2,
+            maxHeight: '90vh'
+          } 
+        }}
+      >
+        <DialogTitle sx={{ 
+          pb: 1, 
+          fontWeight: 'bold', 
+          color: '#424242', 
+          fontSize: '18px',
+          borderBottom: '1px solid #e0e0e0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: '50%', 
+              backgroundColor: '#e3f2fd', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <ViewIcon sx={{ fontSize: 22, color: '#1976d2' }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 'bold', fontSize: '18px', color: '#424242' }}>
+                Vista Previa del Contrato
+              </Typography>
+              {previewContractId && (
+                <Typography sx={{ fontSize: '13px', color: '#757575' }}>
+                  {contracts.find(c => c.id === previewContractId)?.code || previewContractId}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 0,
+          backgroundColor: '#fafafa',
+          position: 'relative',
+          minHeight: '400px'
+        }}>
+          {loadingPreview ? (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              minHeight: '400px',
+              flexDirection: 'column',
+              gap: 2
+            }}>
+              <CircularProgress />
+              <Typography sx={{ color: '#757575', fontSize: '14px' }}>
+                Cargando vista previa...
+              </Typography>
+            </Box>
+          ) : previewHtmlContent ? (
+            <Box 
+              sx={{ 
+                p: 3, 
+                backgroundColor: 'white', 
+                minHeight: '400px',
+                maxHeight: 'calc(90vh - 120px)',
+                overflow: 'auto',
+                '& *': {
+                  maxWidth: '100%'
+                }
+              }}
+              dangerouslySetInnerHTML={{ __html: previewHtmlContent }}
+            />
+          ) : (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              minHeight: '400px',
+              flexDirection: 'column',
+              gap: 2
+            }}>
+              <DescriptionIcon sx={{ fontSize: 60, color: '#bdbdbd', opacity: 0.5 }} />
+              <Typography sx={{ color: '#757575', fontSize: '14px' }}>
+                No se pudo cargar la vista previa
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ 
+          px: 3, 
+          pb: 2, 
+          pt: 2,
+          borderTop: '1px solid #e0e0e0',
+          gap: 1 
+        }}>
+          <Button
+            variant="outlined"
+            onClick={handleClosePreviewModal}
+            sx={{
+              borderColor: '#e0e0e0',
+              color: '#424242',
+              textTransform: 'none',
+              fontSize: '14px',
+              px: 3,
+              '&:hover': { borderColor: '#bdbdbd', backgroundColor: '#f5f5f5' },
+            }}
+          >
+            Cerrar
+          </Button>
+          {previewContractId && (
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={() => {
+                if (previewContractId) {
+                  handleDownloadPDF(previewContractId);
+                }
+              }}
+              sx={{
+                backgroundColor: '#424242',
+                textTransform: 'none',
+                fontSize: '14px',
+                px: 3,
+                boxShadow: 'none',
+                '&:hover': { backgroundColor: '#303030', boxShadow: 'none' },
+              }}
+            >
+              Descargar PDF
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar para notificaciones */}
       <Snackbar

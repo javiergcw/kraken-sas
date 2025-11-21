@@ -17,7 +17,7 @@ export interface ContractCreateRequestDto {
 export interface ContractSignRequestDto {
   signed_by_name: string;
   signed_by_email: string;
-  signature_image: string;
+  signature_client: string;
   signed_fields?: Record<string, any>;
 }
 
