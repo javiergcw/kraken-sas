@@ -2143,19 +2143,68 @@ const ContractPage: React.FC = () => {
               </Typography>
             </Box>
           ) : previewHtmlContent ? (
-            <Box 
-              sx={{ 
-                p: 3, 
-                backgroundColor: 'white', 
-                minHeight: '400px',
-                maxHeight: 'calc(90vh - 120px)',
-                overflow: 'auto',
-                '& *': {
-                  maxWidth: '100%'
-                }
-              }}
-              dangerouslySetInnerHTML={{ __html: previewHtmlContent }}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <Box 
+                sx={{ 
+                  p: 3, 
+                  backgroundColor: 'white', 
+                  minHeight: '400px',
+                  maxHeight: 'calc(90vh - 200px)',
+                  overflow: 'auto',
+                  flex: 1,
+                  '& *': {
+                    maxWidth: '100%'
+                  }
+                }}
+                dangerouslySetInnerHTML={{ __html: previewHtmlContent }}
+              />
+              {previewContractId && (() => {
+                const contract = contracts.find(c => c.id === previewContractId);
+                if (!contract) return null;
+                
+                return (
+                  <Box sx={{ 
+                    p: 2, 
+                    backgroundColor: '#f5f5f5', 
+                    borderTop: '1px solid #e0e0e0',
+                    display: 'flex',
+                    gap: 3,
+                    flexWrap: 'wrap'
+                  }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '11px', color: '#9e9e9e', mb: 0.5 }}>
+                        Fecha de Creación
+                      </Typography>
+                      <Typography sx={{ fontSize: '13px', color: '#424242', fontWeight: 'medium' }}>
+                        {new Date(contract.created_at).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Typography>
+                    </Box>
+                    {contract.signed_at && (
+                      <Box>
+                        <Typography sx={{ fontSize: '11px', color: '#9e9e9e', mb: 0.5 }}>
+                          Fecha de Firmado
+                        </Typography>
+                        <Typography sx={{ fontSize: '13px', color: '#424242', fontWeight: 'medium' }}>
+                          {new Date(contract.signed_at).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })()}
+            </Box>
           ) : (
             <Box sx={{ 
               display: 'flex', 
