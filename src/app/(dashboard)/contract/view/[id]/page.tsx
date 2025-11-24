@@ -78,7 +78,13 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
     try {
       if (!contract) return;
 
-      const fileName = `contrato-${contract.sku || contract.code}.pdf`;
+      // Validar que el contrato esté firmado
+      if (!contract.signed_at) {
+        setError('Este contrato no puede descargarse porque aún no ha sido firmado');
+        return;
+      }
+
+      const fileName = `${contract.code}.pdf`;
       const htmlContent = await contractController.downloadPDF(contract.id);
 
       if (!htmlContent || htmlContent.trim().length === 0) {
@@ -101,11 +107,8 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
         color: #000;
       `;
 
-      tempDiv.innerHTML = `
-        <div style="font-size: 16px; line-height: 1.8; color: #1a1a1a;">
-          ${htmlContent}
-        </div>
-      `;
+      // El HTML ya viene completo del API, no agregar wrappers adicionales
+      tempDiv.innerHTML = htmlContent;
 
       document.body.appendChild(tempDiv);
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -251,6 +254,7 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
             variant="contained"
             startIcon={<DownloadIcon />}
             onClick={handleDownloadPDF}
+            disabled={!contract.signed_at}
             sx={{
               textTransform: 'none',
               backgroundColor: '#424242',
@@ -259,9 +263,13 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
                 backgroundColor: '#303030',
                 boxShadow: 'none',
               },
+              '&.Mui-disabled': {
+                backgroundColor: '#e0e0e0',
+                color: '#9e9e9e'
+              }
             }}
           >
-            Descargar PDF
+            Descargar PDF{!contract.signed_at ? ' (no firmado)' : ''}
           </Button>
         </Box>
       </Box>

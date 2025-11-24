@@ -351,12 +351,20 @@ const ContractPage: React.FC = () => {
     let tempDiv: HTMLElement | null = null;
 
     try {
+      // Buscar el contrato para validar que esté firmado
+      const contract = contracts.find(c => c.id === contractId);
+      
+      // Validar que el contrato esté firmado
+      if (!contract?.signed_at) {
+        showSnackbar('Este contrato no puede descargarse porque aún no ha sido firmado', 'warning');
+        handleMenuClose();
+        return;
+      }
+
       showSnackbar('Generando PDF...', 'info');
       handleMenuClose();
 
-      // Buscar el contrato para obtener su código/SKU
-      const contract = contracts.find(c => c.id === contractId);
-      const fileName = contract ? `contrato-${contract.sku || contract.code}.pdf` : `contrato-${contractId}.pdf`;
+      const fileName = contract ? `${contract.code}.pdf` : `contrato-${contractId}.pdf`;
 
       // Obtener el HTML del contrato desde la API
       const htmlContent = await contractController.downloadPDF(contractId);
@@ -386,12 +394,8 @@ const ContractPage: React.FC = () => {
         color: #000;
       `;
 
-      // Construir el documento - simple y limpio
-      tempDiv.innerHTML = `
-        <div style="font-size: 16px; line-height: 1.8; color: #1a1a1a;">
-          ${htmlContent}
-        </div>
-      `;
+      // El HTML ya viene completo del API, no agregar wrappers adicionales
+      tempDiv.innerHTML = htmlContent;
 
       document.body.appendChild(tempDiv);
 
@@ -1573,14 +1577,19 @@ const ContractPage: React.FC = () => {
               variant="contained"
               startIcon={<DownloadIcon />}
               onClick={() => handleDownloadPDF(selectedContract.id)}
+              disabled={!selectedContract.signed_at}
               sx={{
                 backgroundColor: '#424242',
                 textTransform: 'capitalize',
                 boxShadow: 'none',
                 '&:hover': { backgroundColor: '#303030', boxShadow: 'none' },
+                '&.Mui-disabled': {
+                  backgroundColor: '#e0e0e0',
+                  color: '#9e9e9e'
+                }
               }}
             >
-              Descargar PDF
+              Descargar PDF{!selectedContract.signed_at ? ' (no firmado)' : ''}
             </Button>
           )}
         </DialogActions>
@@ -1964,12 +1973,27 @@ const ContractPage: React.FC = () => {
               handleDownloadPDF(selectedContractId);
             }
           }}
-          sx={{ fontSize: '14px', py: 1 }}
+          disabled={(() => {
+            if (!selectedContractId) return false;
+            const contract = contracts.find(c => c.id === selectedContractId);
+            return !contract?.signed_at;
+          })()}
+          sx={{ 
+            fontSize: '14px', 
+            py: 1,
+            '&.Mui-disabled': {
+              opacity: 0.5
+            }
+          }}
         >
           <ListItemIcon>
             <PdfIcon sx={{ fontSize: 20, color: '#f44336' }} />
           </ListItemIcon>
-          <ListItemText>Descargar PDF</ListItemText>
+          <ListItemText>Descargar PDF{(() => {
+            if (!selectedContractId) return '';
+            const contract = contracts.find(c => c.id === selectedContractId);
+            return !contract?.signed_at ? ' (no firmado)' : '';
+          })()}</ListItemText>
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -2169,27 +2193,35 @@ const ContractPage: React.FC = () => {
           >
             Cerrar
           </Button>
-          {previewContractId && (
-            <Button
-              variant="contained"
-              startIcon={<DownloadIcon />}
-              onClick={() => {
-                if (previewContractId) {
-                  handleDownloadPDF(previewContractId);
-                }
-              }}
-              sx={{
-                backgroundColor: '#424242',
-                textTransform: 'none',
-                fontSize: '14px',
-                px: 3,
-                boxShadow: 'none',
-                '&:hover': { backgroundColor: '#303030', boxShadow: 'none' },
-              }}
-            >
-              Descargar PDF
-            </Button>
-          )}
+          {previewContractId && (() => {
+            const contract = contracts.find(c => c.id === previewContractId);
+            return (
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={() => {
+                  if (previewContractId) {
+                    handleDownloadPDF(previewContractId);
+                  }
+                }}
+                disabled={!contract?.signed_at}
+                sx={{
+                  backgroundColor: '#424242',
+                  textTransform: 'none',
+                  fontSize: '14px',
+                  px: 3,
+                  boxShadow: 'none',
+                  '&:hover': { backgroundColor: '#303030', boxShadow: 'none' },
+                  '&.Mui-disabled': {
+                    backgroundColor: '#e0e0e0',
+                    color: '#9e9e9e'
+                  }
+                }}
+              >
+                Descargar PDF{!contract?.signed_at ? ' (no firmado)' : ''}
+              </Button>
+            );
+          })()}
         </DialogActions>
       </Dialog>
 

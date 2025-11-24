@@ -71,8 +71,15 @@ export async function GET(
         const jsonData = JSON.parse(responseText);
         console.log('[PDF Download] Received JSON:', jsonData);
         
-        // Intentar extraer HTML de campos comunes
-        const htmlContent = jsonData.html || jsonData.content || jsonData.data || jsonData.body;
+        // Intentar extraer HTML del campo data.content (estructura del API)
+        let htmlContent = null;
+        
+        if (jsonData.data && jsonData.data.content) {
+          htmlContent = jsonData.data.content;
+        } else {
+          // Fallback a campos comunes
+          htmlContent = jsonData.html || jsonData.content || jsonData.data || jsonData.body;
+        }
         
         if (htmlContent && typeof htmlContent === 'string') {
           console.log('[PDF Download] HTML extracted from JSON, length:', htmlContent.length);
