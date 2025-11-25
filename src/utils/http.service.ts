@@ -103,6 +103,9 @@ class HttpService {
     const token = tokenService.getToken();
     if (token && !defaultHeaders['Authorization']) {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
+      console.log(`[HttpService] Token agregado al header Authorization`);
+    } else if (!token) {
+      console.warn(`[HttpService] No se encontró token de autenticación`);
     }
 
     // Solo mantener Content-Type si hay body, de lo contrario eliminarlo

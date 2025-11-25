@@ -29,6 +29,8 @@ import {
   AssignmentIndOutlined,
   CampaignOutlined,
   LogoutOutlined,
+  EventOutlined,
+  SchoolOutlined,
 } from '@mui/icons-material';
 import { authController } from '@/components/core';
 import { useUser } from '@/contexts/UserContext';
@@ -47,11 +49,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const isMarketingRoute = pathname.startsWith('/marketing');
   const isHerramientasRoute = pathname.startsWith('/herramientas');
   const isProyectosRoute = pathname.startsWith('/contract');
+  const isActividadesRoute = pathname.startsWith('/actividades') || pathname.startsWith('/maestros');
   
-  const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute && !isProyectosRoute);
+  const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute && !isProyectosRoute && !isActividadesRoute);
   const [marketingOpen, setMarketingOpen] = useState(isMarketingRoute);
   const [herramientasOpen, setHerramientasOpen] = useState(isHerramientasRoute);
   const [proyectosOpen, setProyectosOpen] = useState(isProyectosRoute);
+  const [actividadesOpen, setActividadesOpen] = useState(isActividadesRoute);
   
   // Obtener información del usuario desde el contexto
   const { user } = useUser();
@@ -95,21 +99,31 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       setPrincipalOpen(false);
       setHerramientasOpen(false);
       setProyectosOpen(false);
+      setActividadesOpen(false);
     } else if (pathname.startsWith('/herramientas')) {
       setHerramientasOpen(true);
       setPrincipalOpen(false);
       setMarketingOpen(false);
       setProyectosOpen(false);
+      setActividadesOpen(false);
     } else if (pathname.startsWith('/contract')) {
       setProyectosOpen(true);
       setPrincipalOpen(false);
       setMarketingOpen(false);
       setHerramientasOpen(false);
+      setActividadesOpen(false);
+    } else if (pathname.startsWith('/actividades') || pathname.startsWith('/maestros')) {
+      setActividadesOpen(true);
+      setPrincipalOpen(false);
+      setMarketingOpen(false);
+      setHerramientasOpen(false);
+      setProyectosOpen(false);
     } else {
       setPrincipalOpen(true);
       setMarketingOpen(false);
       setHerramientasOpen(false);
       setProyectosOpen(false);
+      setActividadesOpen(false);
     }
   }, [pathname]);
 
@@ -126,13 +140,23 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       icon: <HomeOutlined sx={{ fontSize: 18 }} />,
       expanded: principalOpen,
       onToggle: () => setPrincipalOpen(!principalOpen),
-      active: !isMarketingRoute && !isHerramientasRoute && !isProyectosRoute,
+      active: !isMarketingRoute && !isHerramientasRoute && !isProyectosRoute && !isActividadesRoute,
       children: [
         { title: 'Dashboard', path: '/dashboard', active: pathname === '/dashboard' },
         { title: 'Productos', path: '/productos', active: pathname.startsWith('/productos') },
         { title: 'Categorías', path: '/categorias', active: pathname.startsWith('/categorias') },
         { title: 'Historial de ventas', path: '/historial', active: pathname.startsWith('/historial') },
-        { title: 'Reservas', path: '/reservation', active: pathname.startsWith('/reservation') },
+      ],
+    },
+    {
+      title: 'Reservas',
+      icon: <EventOutlined sx={{ fontSize: 18 }} />,
+      expanded: actividadesOpen,
+      onToggle: () => setActividadesOpen(!actividadesOpen),
+      active: isActividadesRoute,
+      children: [
+        { title: 'Actividades', path: '/actividades', active: pathname.startsWith('/actividades') },
+        { title: 'Maestros', path: '/maestros', active: pathname.startsWith('/maestros') },
       ],
     },
     {
