@@ -90,6 +90,11 @@ export const API_ENDPOINTS = {
   OPERATION_GROUPS: {
     BY_OPERATION: (operationId: string) => `/v1/operations/${operationId}/groups`,
     BY_ID: (groupId: string) => `/v1/operation-groups/${groupId}`,
+    PARTICIPANTS: (groupId: string) => `/v1/operation-groups/${groupId}/participants`,
+  },
+  OPERATION_PARTICIPANTS: {
+    BY_ID: (participantId: string) => `/v1/operation-participants/${participantId}`,
+    NOTES: (participantId: string) => `/v1/operation-participants/${participantId}/notes`,
   },
 } as const;
 
@@ -173,6 +178,11 @@ export const EXTERNAL_ROUTES = {
   OPERATION_GROUPS: {
     BY_OPERATION: (operationId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.BY_OPERATION(operationId)}`,
     BY_ID: (groupId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.BY_ID(groupId)}`,
+    PARTICIPANTS: (groupId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.PARTICIPANTS(groupId)}`,
+  },
+  OPERATION_PARTICIPANTS: {
+    BY_ID: (participantId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_PARTICIPANTS.BY_ID(participantId)}`,
+    NOTES: (participantId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_PARTICIPANTS.NOTES(participantId)}`,
   },
 } as const;
 

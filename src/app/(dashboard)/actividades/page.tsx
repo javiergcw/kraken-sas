@@ -4,22 +4,23 @@ import { Button } from "@/components/reservation/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/reservation/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/reservation/popover"
 import {    
-  Download, 
   Plus,
-  Printer,
   Calendar as CalendarIcon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Pencil,
+  StickyNote
 } from "lucide-react"
 import React, { useState, useEffect } from "react"
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isSameMonth, isToday } from "date-fns"
 import { es } from "date-fns/locale"
-import { operationController, peopleController, marinaController, vesselController, operationGroupController } from "@/components/core"
+import { operationController, peopleController, marinaController, vesselController, operationGroupController, activityController } from "@/components/core"
 import { OperationDto } from "@/components/core/operations/dto"
 import { PeopleDto } from "@/components/core/people/dto"
 import { MarinaDto } from "@/components/core/marinas/dto"
 import { VesselDto } from "@/components/core/vessels/dto"
 import { OperationGroupDto } from "@/components/core/operation-groups/dto"
+import { ParticipantDto, ParticipantCreateDto, ParticipantUpdateDto, ParticipantNoteDto, ParticipantNoteCreateDto } from "@/components/core/operation-groups/controllers/OperationGroupController"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/reutilizables/seletc"
 import { Input } from "@/components/reutilizables/input"
 import { Textarea } from "@/components/reutilizables/text-area"
@@ -292,6 +293,7 @@ export default function SheetPage() {
   const [peopleCatalog, setPeopleCatalog] = useState<PeopleDto[]>([])
   const [marinasCatalog, setMarinasCatalog] = useState<MarinaDto[]>([])
   const [vesselsCatalog, setVesselsCatalog] = useState<VesselDto[]>([])
+  const [activitiesCatalog, setActivitiesCatalog] = useState<any[]>([])
   const [loadingCatalogs, setLoadingCatalogs] = useState(false)
   
   // Estados para diálogo de crear operación
@@ -333,12 +335,44 @@ export default function SheetPage() {
     { id: 25, nombre: "Manuel D Macedo" }
   ]
 
-  // Estados locales para los datos editables - ahora vacíos
-  const [buzos, setBuzos] = useState<any[]>([])
-  const [instructores, setInstructores] = useState(
-    instructoresEstaticos.map(inst => ({ ...inst, tanque: "", equipos: "", actividad: "", observaciones: "" }))
-  )
-  const [piscina, setPiscina] = useState<any[]>([])
+  // Estados para participantes
+  const [participants, setParticipants] = useState<Record<string, ParticipantDto[]>>({})
+  const [loadingParticipants, setLoadingParticipants] = useState<Record<string, boolean>>({})
+  const [addParticipantDialogOpen, setAddParticipantDialogOpen] = useState(false)
+  const [editParticipantDialogOpen, setEditParticipantDialogOpen] = useState(false)
+  const [selectedGroupForParticipant, setSelectedGroupForParticipant] = useState<OperationGroupDto | null>(null)
+  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantDto | null>(null)
+  const [participantRole, setParticipantRole] = useState<'DIVER' | 'INSTRUCTOR' | 'CREW'>('DIVER')
+  const [addingParticipant, setAddingParticipant] = useState(false)
+  const [updatingParticipant, setUpdatingParticipant] = useState(false)
+  
+  // Estados para notas de participantes
+  const [participantNotes, setParticipantNotes] = useState<Record<string, ParticipantNoteDto[]>>({})
+  const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false)
+  const [selectedParticipantForNote, setSelectedParticipantForNote] = useState<ParticipantDto | null>(null)
+  const [addingNote, setAddingNote] = useState(false)
+  const [noteFormData, setNoteFormData] = useState<Omit<ParticipantNoteCreateDto, 'person_id'>>({
+    note: "",
+    color: "#FFE599"
+  })
+  const [participantFormData, setParticipantFormData] = useState<ParticipantCreateDto>({
+    person_id: "",
+    role: "DIVER",
+    tanks: undefined,
+    bags: undefined,
+    regulator: "",
+    bcd: "",
+    weightbelt: "",
+    weights_kg: undefined,
+    misc: "",
+    snorkel_set: "",
+    altimeter: "",
+    suit_size: "",
+    observations: "",
+    value_label: "",
+    invoice_reference: "",
+    payment_status: ""
+  })
 
   // Cargar operación cuando cambie la fecha
   useEffect(() => {
@@ -438,10 +472,11 @@ export default function SheetPage() {
   const loadCatalogData = async () => {
     try {
       setLoadingCatalogs(true)
-      const [peopleRes, marinasRes, vesselsRes] = await Promise.all([
+      const [peopleRes, marinasRes, vesselsRes, activitiesRes] = await Promise.all([
         peopleController.getAll(),
         marinaController.getAll(),
         vesselController.getAll(),
+        activityController.getAll(),
       ])
 
       if (peopleRes?.success && peopleRes.data) {
@@ -455,11 +490,74 @@ export default function SheetPage() {
       if (vesselsRes?.success && vesselsRes.data) {
         setVesselsCatalog(vesselsRes.data)
       }
+
+      if (activitiesRes?.success && activitiesRes.data) {
+        setActivitiesCatalog(activitiesRes.data)
+      }
     } catch (error) {
       console.error('Error al cargar catálogos:', error)
     } finally {
       setLoadingCatalogs(false)
     }
+  }
+
+  // Función helper para obtener participantes de grupos de océano con rol DIVER
+  const getOceanDivers = (): ParticipantDto[] => {
+    const oceanGroups = operationGroups.filter(g => g.environment === "OCEAN")
+    const allParticipants: ParticipantDto[] = []
+    oceanGroups.forEach(group => {
+      const groupParticipants = participants[group.id]
+      // Asegurar que siempre sea un array
+      const participantsArray = Array.isArray(groupParticipants) ? groupParticipants : []
+      const divers = participantsArray.filter(p => p.role === "DIVER")
+      allParticipants.push(...divers)
+    })
+    return allParticipants
+  }
+
+  // Función helper para obtener participantes de grupos de piscina con rol DIVER
+  const getPoolDivers = (): ParticipantDto[] => {
+    const poolGroups = operationGroups.filter(g => g.environment === "POOL")
+    const allParticipants: ParticipantDto[] = []
+    poolGroups.forEach(group => {
+      const groupParticipants = participants[group.id]
+      // Asegurar que siempre sea un array
+      const participantsArray = Array.isArray(groupParticipants) ? groupParticipants : []
+      const divers = participantsArray.filter(p => p.role === "DIVER")
+      allParticipants.push(...divers)
+    })
+    return allParticipants
+  }
+
+  // Función helper para obtener participantes con rol INSTRUCTOR
+  const getInstructors = (): ParticipantDto[] => {
+    const allParticipants: ParticipantDto[] = []
+    operationGroups.forEach(group => {
+      const groupParticipants = participants[group.id]
+      // Asegurar que siempre sea un array
+      const participantsArray = Array.isArray(groupParticipants) ? groupParticipants : []
+      const instructors = participantsArray.filter(p => p.role === "INSTRUCTOR")
+      allParticipants.push(...instructors)
+    })
+    return allParticipants
+  }
+
+  // Función helper para obtener nombre de persona
+  const getParticipantName = (personId: string): string => {
+    const person = peopleCatalog.find(p => p.id === personId)
+    return person?.full_name || 'Sin nombre'
+  }
+
+  // Función helper para obtener el grupo de un participante
+  const getParticipantGroup = (participantId: string): OperationGroupDto | null => {
+    for (const group of operationGroups) {
+      const groupParticipants = participants[group.id]
+      if (Array.isArray(groupParticipants)) {
+        const found = groupParticipants.find(p => p.id === participantId)
+        if (found) return group
+      }
+    }
+    return null
   }
 
   const getPersonName = (id?: string | null) => {
@@ -481,40 +579,19 @@ export default function SheetPage() {
   }
 
   const agregarNuevoBuzo = () => {
-    const nuevoId = buzos.length > 0 ? Math.max(...buzos.map(b => b.id)) + 1 : 1
-    const nuevoBuzo = {
-      id: nuevoId,
-      nombre: `Nuevo Buzo ${nuevoId}`,
-      tanque: "",
-      maleta: "",
-      regulador: "",
-      chaleco: "",
-      cinturon: "",
-      pesas: "",
-      mascara: "",
-      snorkel: "",
-      aletas: "",
-      traje: "",
-      actividad: "",
-      observaciones: "",
-      valor: "",
-      factura: ""
+    // Obtener el primer grupo de océano
+    const oceanGroup = operationGroups.find(g => g.environment === "OCEAN")
+    if (oceanGroup) {
+      openAddParticipantDialog(oceanGroup, "DIVER")
     }
-    setBuzos([...buzos, nuevoBuzo])
   }
 
   const agregarNuevaPersonaPiscina = () => {
-    const nuevoId = piscina.length > 0 ? Math.max(...piscina.map(p => p.id)) + 1 : 1
-    const nuevaPersona = {
-      id: nuevoId,
-      nombre: "",
-      tanque: "",
-      equipos: "",
-      actividad: "",
-      ubicacion: "",
-      observaciones: ""
+    // Obtener el primer grupo de piscina
+    const poolGroup = operationGroups.find(g => g.environment === "POOL")
+    if (poolGroup) {
+      openAddParticipantDialog(poolGroup, "DIVER")
     }
-    setPiscina([...piscina, nuevaPersona])
   }
 
   // Función para cargar grupos de operación
@@ -524,6 +601,10 @@ export default function SheetPage() {
       const response = await operationGroupController.getAllByOperation(operationId)
       if (response?.success && response.data) {
         setOperationGroups(response.data)
+        // Cargar participantes de cada grupo
+        for (const group of response.data) {
+          await loadGroupParticipants(group.id)
+        }
       } else {
         setOperationGroups([])
       }
@@ -533,6 +614,209 @@ export default function SheetPage() {
     } finally {
       setLoadingGroups(false)
     }
+  }
+
+  // Función para cargar participantes de un grupo
+  const loadGroupParticipants = async (groupId: string) => {
+    try {
+      setLoadingParticipants(prev => ({ ...prev, [groupId]: true }))
+      const response = await operationGroupController.getParticipants(groupId)
+      if (response.success && response.data) {
+        // Asegurar que siempre sea un array
+        const participantsArray = Array.isArray(response.data) ? response.data : []
+        setParticipants(prev => ({ ...prev, [groupId]: participantsArray }))
+      } else {
+        setParticipants(prev => ({ ...prev, [groupId]: [] }))
+      }
+    } catch (error) {
+      console.error('Error al cargar participantes:', error)
+      setParticipants(prev => ({ ...prev, [groupId]: [] }))
+    } finally {
+      setLoadingParticipants(prev => ({ ...prev, [groupId]: false }))
+    }
+  }
+
+  // Función para abrir diálogo de agregar participante
+  const openAddParticipantDialog = (group: OperationGroupDto, role: 'DIVER' | 'INSTRUCTOR' | 'CREW') => {
+    setSelectedGroupForParticipant(group)
+    setParticipantRole(role)
+    setParticipantFormData({
+      person_id: "",
+      role: role,
+      tanks: undefined,
+      bags: undefined,
+      regulator: "",
+      bcd: "",
+      weightbelt: "",
+      weights_kg: undefined,
+      misc: "",
+      snorkel_set: "",
+      altimeter: "",
+      suit_size: "",
+      observations: "",
+      value_label: "",
+      invoice_reference: "",
+      payment_status: ""
+    })
+    setAddParticipantDialogOpen(true)
+  }
+
+  // Función para agregar participante
+  const handleAddParticipant = async () => {
+    if (!selectedGroupForParticipant || !participantFormData.person_id) return
+
+    try {
+      setAddingParticipant(true)
+      const response = await operationGroupController.addParticipant(
+        selectedGroupForParticipant.id,
+        participantFormData
+      )
+
+      if (response.success) {
+        // Recargar participantes del grupo
+        await loadGroupParticipants(selectedGroupForParticipant.id)
+        setAddParticipantDialogOpen(false)
+        setSelectedGroupForParticipant(null)
+      } else {
+        alert(response.message || 'Error al agregar participante')
+      }
+    } catch (error) {
+      console.error('Error al agregar participante:', error)
+      alert('Error al agregar participante')
+    } finally {
+      setAddingParticipant(false)
+    }
+  }
+
+  // Función para abrir diálogo de editar participante
+  const openEditParticipantDialog = (participant: ParticipantDto, group: OperationGroupDto) => {
+    setSelectedParticipant(participant)
+    setSelectedGroupForParticipant(group)
+    setParticipantRole(participant.role)
+    setParticipantFormData({
+      person_id: participant.person_id,
+      role: participant.role,
+      activity_id: participant.activity_id,
+      highlight_color: participant.highlight_color,
+      tanks: participant.tanks,
+      bags: participant.bags,
+      regulator: participant.regulator || "",
+      bcd: participant.bcd || "",
+      weightbelt: participant.weightbelt || "",
+      weights_kg: participant.weights_kg,
+      misc: participant.misc || "",
+      snorkel_set: participant.snorkel_set || "",
+      altimeter: participant.altimeter || "",
+      suit_size: participant.suit_size || "",
+      observations: participant.observations || "",
+      value_label: participant.value_label || "",
+      invoice_reference: participant.invoice_reference || "",
+      payment_status: participant.payment_status || ""
+    })
+    setEditParticipantDialogOpen(true)
+  }
+
+  // Función para actualizar participante
+  const handleUpdateParticipant = async () => {
+    if (!selectedParticipant || !selectedParticipant.id) return
+
+    try {
+      setUpdatingParticipant(true)
+      
+      // Preparar datos de actualización (sin person_id ya que no se puede cambiar)
+      const updateData: ParticipantUpdateDto = {
+        activity_id: participantFormData.activity_id,
+        role: participantFormData.role,
+        highlight_color: participantFormData.highlight_color,
+        tanks: participantFormData.tanks,
+        bags: participantFormData.bags,
+        regulator: participantFormData.regulator || undefined,
+        bcd: participantFormData.bcd || undefined,
+        weightbelt: participantFormData.weightbelt || undefined,
+        weights_kg: participantFormData.weights_kg,
+        misc: participantFormData.misc || undefined,
+        snorkel_set: participantFormData.snorkel_set || undefined,
+        altimeter: participantFormData.altimeter || undefined,
+        suit_size: participantFormData.suit_size || undefined,
+        observations: participantFormData.observations || undefined,
+        value_label: participantFormData.value_label || undefined,
+        invoice_reference: participantFormData.invoice_reference || undefined,
+        payment_status: participantFormData.payment_status || undefined
+      }
+
+      const response = await operationGroupController.updateParticipant(
+        selectedParticipant.id,
+        updateData
+      )
+
+      if (response.success && selectedGroupForParticipant) {
+        // Recargar participantes del grupo
+        await loadGroupParticipants(selectedGroupForParticipant.id)
+        setEditParticipantDialogOpen(false)
+        setSelectedParticipant(null)
+        setSelectedGroupForParticipant(null)
+      } else {
+        alert(response.message || 'Error al actualizar participante')
+      }
+    } catch (error) {
+      console.error('Error al actualizar participante:', error)
+      alert('Error al actualizar participante')
+    } finally {
+      setUpdatingParticipant(false)
+    }
+  }
+
+  // Función para abrir diálogo de agregar nota
+  const openAddNoteDialog = (participant: ParticipantDto) => {
+    setSelectedParticipantForNote(participant)
+    setNoteFormData({
+      note: "",
+      color: "#FFE599"
+    })
+    setAddNoteDialogOpen(true)
+  }
+
+  // Función para agregar nota a un participante
+  const handleAddNote = async () => {
+    if (!selectedParticipantForNote || !selectedParticipantForNote.id || !noteFormData.note.trim() || !selectedParticipantForNote.person_id) return
+
+    try {
+      setAddingNote(true)
+      const response = await operationGroupController.addParticipantNote(
+        selectedParticipantForNote.id,
+        {
+          ...noteFormData,
+          person_id: selectedParticipantForNote.person_id
+        }
+      )
+
+      if (response.success && response.data) {
+        // Agregar la nota al estado
+        const participantId = selectedParticipantForNote.id
+        setParticipantNotes(prev => ({
+          ...prev,
+          [participantId]: [...(prev[participantId] || []), response.data!]
+        }))
+        setAddNoteDialogOpen(false)
+        setSelectedParticipantForNote(null)
+        setNoteFormData({
+          note: "",
+          color: "#FFE599"
+        })
+      } else {
+        alert(response.message || 'Error al agregar nota')
+      }
+    } catch (error) {
+      console.error('Error al agregar nota:', error)
+      alert('Error al agregar nota')
+    } finally {
+      setAddingNote(false)
+    }
+  }
+
+  // Función helper para obtener notas de un participante
+  const getParticipantNotes = (participantId: string): ParticipantNoteDto[] => {
+    return participantNotes[participantId] || []
   }
 
   // Función para abrir diálogo de crear grupo
@@ -685,19 +969,24 @@ export default function SheetPage() {
     return format(fecha, "EEEE d 'de' MMMM", { locale: es })
   }
 
+  // Verificar qué tipos de grupos existen
+  const hasOceanGroups = operationGroups.some(group => group.environment === "OCEAN")
+  const hasPoolGroups = operationGroups.some(group => group.environment === "POOL")
+
   return (
-    <div className="flex-1 space-y-2 px-12 py-5">
+    <div className="flex-1 space-y-6 px-6 md:px-12 py-6">
       {/* Header con selector de fecha */}
-      <div className="bg-white border border-gray-200 p-2 sm:p-3 rounded-lg shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
-          <div>
-            <div className="flex items-center space-x-4 mb-2">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">{formatearFecha(fechaSeleccionada)}</h1>
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="space-y-6">
+          {/* Fecha y selector */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{formatearFecha(fechaSeleccionada)}</h1>
               <Popover open={calendarioAbierto} onOpenChange={setCalendarioAbierto}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     Cambiar fecha
@@ -714,39 +1003,53 @@ export default function SheetPage() {
                 </PopoverContent>
               </Popover>
             </div>
+            </div>
             
             {/* Información de operación */}
-            <div className="space-y-3">
+          <div className="space-y-4">
               {loadingOperation ? (
-                <div className="text-sm text-gray-500">Cargando operación...</div>
+              <div className="text-sm text-gray-500 py-4">Cargando operación...</div>
               ) : operation ? (
-                <>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-semibold">Estado:</span> {operation.status}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-700">Estado:</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    operation.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                    operation.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {operation.status}
+                  </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs sm:text-sm text-gray-700">
-                    <div>
-                      <span className="font-semibold">Capitán:</span> {getPersonName(operation.captain_id)}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2 pb-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Capitán</div>
+                    <div className="text-base font-medium text-gray-900">{getPersonName(operation.captain_id)}</div>
                     </div>
-                    <div>
-                      <span className="font-semibold">Segundo:</span> {getPersonName(operation.first_officer_id)}
+                  <div className="space-y-2 pb-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Segundo</div>
+                    <div className="text-base font-medium text-gray-900">{getPersonName(operation.first_officer_id)}</div>
                     </div>
-                    <div>
-                      <span className="font-semibold">Marina:</span> {getMarinaName(operation.marina_id)}
+                  <div className="space-y-2 pb-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Marina</div>
+                    <div className="text-base font-medium text-gray-900">{getMarinaName(operation.marina_id)}</div>
                     </div>
-                    <div>
-                      <span className="font-semibold">Embarcación:</span> {getVesselName(operation.vessel_id)}
+                  <div className="space-y-2 pb-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Embarcación</div>
+                    <div className="text-base font-medium text-gray-900">{getVesselName(operation.vessel_id)}</div>
                     </div>
-                    <div>
-                      <span className="font-semibold">Clima:</span> {operation.weather || 'Sin definir'}
+                  <div className="space-y-2 pb-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Clima</div>
+                    <div className="text-base font-medium text-gray-900">{operation.weather || 'Sin definir'}</div>
                     </div>
-                    <div>
-                      <span className="font-semibold">Notas:</span> {operation.general_notes || 'Sin notas'}
+                  <div className="space-y-2 pb-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Notas</div>
+                    <div className="text-base font-medium text-gray-900">{operation.general_notes || 'Sin notas'}</div>
                     </div>
                   </div>
-                </>
+              </div>
               ) : (
-                <div className="space-y-2">
+              <div className="space-y-3 py-4">
                   <div className="text-sm text-gray-600">
                     No hay operación activa para esta fecha
                   </div>
@@ -754,101 +1057,94 @@ export default function SheetPage() {
                     variant="outline" 
                     size="sm"
                     onClick={openCreateDialog}
-                    className="text-xs"
                     disabled={loadingCatalogs}
                   >
-                    <Plus className="mr-2 h-3 w-3" />
+                  <Plus className="mr-2 h-4 w-4" />
                     Crear operación
                   </Button>
                 </div>
               )}
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="secondary" size="sm" className="w-full sm:w-auto">
-              <Printer className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Imprimir</span>
-              <span className="sm:hidden">Imprimir</span>
-            </Button>
-            <Button variant="secondary" size="sm" className="w-full sm:w-auto">
-              <Download className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Exportar</span>
-              <span className="sm:hidden">Exportar</span>
-            </Button>
           </div>
         </div>
       </div>
 
-      {/* Sección de Grupos de Operación */}
+      {/* Botones para crear grupos */}
       {operation && operationId && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Grupos de Operación</CardTitle>
-                <CardDescription>
-                  Grupos de pool y océano para esta operación
-                </CardDescription>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openCreateGroupDialog("OCEAN")}
-                  disabled={loadingGroups}
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openCreateGroupDialog("OCEAN")}
+            disabled={loadingGroups}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Crear Grupo Océano
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openCreateGroupDialog("POOL")}
+            disabled={loadingGroups}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Crear Grupo Piscina
+          </Button>
+        </div>
+      )}
+
+      {/* Tabla de buzos - Solo se muestra si hay grupos de OCÉANO */}
+      {operation && operationId && hasOceanGroups && (
+      <Card className="border border-gray-200">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl">Registro de Buzos</CardTitle>
+          <CardDescription className="mt-1">
+            Control de equipos y actividades de buceo
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {/* Información de grupos de océano */}
+          <div className="mb-6 space-y-3">
+            {operationGroups
+              .filter(group => group.environment === "OCEAN")
+              .map((group) => (
+                <div
+                  key={group.id}
+                  className="border border-gray-200 rounded-lg p-4 bg-blue-50/30"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Grupo Océano
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openCreateGroupDialog("POOL")}
-                  disabled={loadingGroups}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Grupo Piscina
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loadingGroups ? (
-              <div className="text-sm text-gray-500 text-center py-4">Cargando grupos...</div>
-            ) : operationGroups.length > 0 ? (
-              <div className="space-y-4">
-                {operationGroups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            group.environment === "OCEAN" 
-                              ? "bg-blue-100 text-blue-800" 
-                              : "bg-green-100 text-green-800"
-                          }`}>
-                            {group.environment === "OCEAN" ? "OCÉANO" : "PISCINA"}
-                          </span>
-                          {group.label && (
-                            <span className="text-sm font-medium text-gray-900">{group.label}</span>
-                          )}
-                        </div>
-                        {(group.start_time || group.end_time) && (
-                          <div className="text-sm text-gray-600 mb-2">
-                            {group.start_time && <span>Inicio: {group.start_time}</span>}
-                            {group.start_time && group.end_time && <span className="mx-2">-</span>}
-                            {group.end_time && <span>Fin: {group.end_time}</span>}
-                          </div>
-                        )}
-                        {group.comments && (
-                          <div className="text-sm text-gray-700">
-                            <span className="font-semibold">Comentarios:</span> {group.comments}
-                          </div>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="px-3 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                          OCÉANO
+                        </span>
+                        {group.label && (
+                          <span className="text-sm font-semibold text-gray-900">{group.label}</span>
                         )}
                       </div>
+                      {(group.start_time || group.end_time) && (
+                        <div className="text-sm text-gray-700 mb-1">
+                          {group.start_time && <span className="font-medium">Inicio: {group.start_time}</span>}
+                          {group.start_time && group.end_time && <span className="mx-2">-</span>}
+                          {group.end_time && <span className="font-medium">Fin: {group.end_time}</span>}
+                        </div>
+                      )}
+                      {group.comments && (
+                        <div className="text-sm text-gray-700">
+                          <span className="font-semibold">Comentarios:</span> {group.comments}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openAddParticipantDialog(group, "DIVER")}
+                      >
+                        <Plus className="mr-1 h-3 w-3" />
+                        Agregar Buzo
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -858,54 +1154,78 @@ export default function SheetPage() {
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-gray-500 text-center py-4">
-                No hay grupos creados. Crea un grupo de océano o piscina para comenzar.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tabla de buzos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registro de Buzos</CardTitle>
-          <CardDescription>
-            Control de equipos y actividades de buceo
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+                </div>
+              ))}
+          </div>
           <div className="space-y-4">
             {/* Tabla 1: Identificación */}
-            <div className="border border-gray-200 rounded overflow-hidden bg-white">
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
+                  <tr className="border-b border-gray-200 bg-gray-50/50">
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
-                    <th className="p-2 text-left font-semibold text-xs">BUZOS</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">BUZOS</th>
+                    <th className="p-2 text-center font-semibold text-xs w-20">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {buzos.length > 0 ? (
-                    buzos.map((buzo, index) => (
-                      <tr key={buzo.id} className="border-b border-gray-200">
-                        <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
-                        <td className="p-2">
-                          <EditableCell 
-                            type="text" 
-                            defaultValue={buzo.nombre} 
-                            label="Nombre del Buzo"
-                            className="w-full px-2 py-1 font-medium text-xs border-0 bg-transparent"
-                          />
-                        </td>
-                      </tr>
-                    ))
+                  {getOceanDivers().length > 0 ? (
+                    getOceanDivers().map((participant, index) => {
+                      const group = getParticipantGroup(participant.id || "")
+                      return (
+                        <tr key={participant.id || index} className="border-b border-gray-200">
+                          <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="flex items-center gap-2">
+                              <div className="px-2 py-1 font-medium text-xs">
+                                {getParticipantName(participant.person_id)}
+                              </div>
+                              {getParticipantNotes(participant.id || "").length > 0 && (
+                                <span 
+                                  className="px-1.5 py-0.5 rounded-full text-xs font-medium cursor-pointer"
+                                  style={{ 
+                                    backgroundColor: getParticipantNotes(participant.id || "")[0]?.color || "#FFE599",
+                                    color: "#000"
+                                  }}
+                                  title={`${getParticipantNotes(participant.id || "").length} nota(s)`}
+                                >
+                                  📝 {getParticipantNotes(participant.id || "").length}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {group && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openAddNoteDialog(participant)}
+                                    className="h-6 w-6 p-0"
+                                    title="Agregar nota"
+                                  >
+                                    <StickyNote className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditParticipantDialog(participant, group)}
+                                    className="h-6 w-6 p-0"
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={2} className="p-4 text-center text-gray-500">
+                      <td colSpan={3} className="p-4 text-center text-gray-500">
                         No hay buzos registrados
                       </td>
                     </tr>
@@ -916,10 +1236,10 @@ export default function SheetPage() {
 
             {/* Tabla 2: Equipos */}
             <div className="overflow-x-auto">
-              <div className="border border-gray-200 rounded overflow-hidden bg-white inline-block min-w-full">
+              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
+                    <tr className="border-b border-gray-200 bg-gray-50/50">
                       <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
                       <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
                       <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
@@ -933,92 +1253,58 @@ export default function SheetPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {buzos.length > 0 ? (
-                      buzos.map((buzo, index) => (
-                        <tr key={buzo.id} className="border-b border-gray-200">
+                    {getOceanDivers().length > 0 ? (
+                      getOceanDivers().map((participant, index) => (
+                        <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="number" 
-                              defaultValue={buzo.tanque} 
-                              label="Tanque"
-                              className="w-full px-2 py-1 text-center text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-center text-xs">
+                              {participant.tanks || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="number" 
-                              defaultValue={buzo.maleta} 
-                              label="Maleta"
-                              className="w-full px-2 py-1 text-center text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-center text-xs">
+                              {participant.bags || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.regulador} 
-                              label="Regulador"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.regulator || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.chaleco} 
-                              placeholder="-"
-                              label="Chaleco"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.bcd || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.cinturon} 
-                              placeholder="-"
-                              label="Cinturón"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.weightbelt || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.pesas} 
-                              placeholder="-"
-                              label="Pesas"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.weights_kg ? `${participant.weights_kg}kg` : "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.mascara} 
-                              placeholder="-"
-                              label="Máscara"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.misc || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.snorkel} 
-                              placeholder="-"
-                              label="Snorkel"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.snorkel_set || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.aletas} 
-                              placeholder="-"
-                              label="Aletas"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.altimeter || "-"}
+                            </div>
                           </td>
                           <td className="p-2">
-                            <SizeSelector 
-                              defaultValue={buzo.traje} 
-                              className="w-full px-2 py-1 text-xs"
-                            />
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.suit_size || "-"}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1036,10 +1322,10 @@ export default function SheetPage() {
 
             {/* Tabla 3: Actividad y Facturación */}
             <div className="overflow-x-auto">
-              <div className="border border-gray-200 rounded overflow-hidden bg-white inline-block min-w-full">
+              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
+                    <tr className="border-b border-gray-200 bg-gray-50/50">
                       <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Actividad</th>
                       <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Observaciones</th>
                       <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Valor</th>
@@ -1047,38 +1333,28 @@ export default function SheetPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {buzos.length > 0 ? (
-                      buzos.map((buzo, index) => (
-                        <tr key={buzo.id} className="border-b border-gray-200">
+                    {getOceanDivers().length > 0 ? (
+                      getOceanDivers().map((participant, index) => (
+                        <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2">
-                            <ActivitySelector 
-                              defaultValue={buzo.actividad} 
-                              className="w-full px-2 py-1 text-xs"
-                            />
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.activity_id ? "Actividad" : "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.observaciones} 
-                              label="Observaciones"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent"
-                            />
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.observations || "-"}
+                            </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.valor} 
-                              label="Valor"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent text-center"
-                            />
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.value_label || "-"}
+                            </div>
                           </td>
                           <td className="p-2">
-                            <EditableCell 
-                              type="text" 
-                              defaultValue={buzo.factura} 
-                              label="Factura"
-                              className="w-full px-2 py-1 text-xs border-0 bg-transparent text-center"
-                            />
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.invoice_reference || "-"}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1096,9 +1372,11 @@ export default function SheetPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Botón para agregar nueva fila */}
-      <div className="flex justify-center">
+      {/* Botón para agregar nueva fila - Solo se muestra si hay grupos de OCÉANO */}
+      {operation && operationId && hasOceanGroups && (
+      <div className="flex justify-center py-2">
         <Button 
           variant="outline" 
           size="lg"
@@ -1109,101 +1387,126 @@ export default function SheetPage() {
           <span className="text-sm sm:text-base">Agregar Nuevo Buzo</span>
         </Button>
       </div>
+      )}
 
-      {/* Tabla de Instructores */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Instructores</CardTitle>
-          <CardDescription>
-            Registro de instructores y personal de apoyo
-          </CardDescription>
+      {/* Tabla de Instructores - Se muestra siempre que haya operación */}
+      {operation && operationId && (
+      <Card className="border border-gray-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">Instructores</CardTitle>
+              <CardDescription className="mt-1">
+                Registro de instructores y personal de apoyo
+              </CardDescription>
+            </div>
+            {operationGroups.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openAddParticipantDialog(operationGroups[0], "INSTRUCTOR")}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar Instructor
+              </Button>
+            )}
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse min-w-[800px]">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
+                <tr className="border-b border-gray-200 bg-gray-50/50">
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">No</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Nombre</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Tanque</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Equipos</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Actividad</th>
-                  <th className="p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
+                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
+                  <th className="p-1 sm:p-2 text-center font-semibold text-xs sm:text-sm">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {instructores.length > 0 ? (
-                  instructores.map((instructor, index) => (
-                    <tr key={instructor.id} className={`border-b border-gray-200 ${index === 0 ? 'bg-red-100' : index === 1 ? 'bg-green-100' : index === 2 ? 'bg-blue-100' : index === 3 ? 'bg-yellow-100' : index === 4 ? 'bg-purple-100' : 'bg-pink-100'}`}>
-                      <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{instructor.id}</td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={instructor.nombre} 
-                          label="Nombre del Instructor"
-                          className="w-32 sm:w-40 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm"
-                      onValueChange={(value) => {
-                        setInstructores(prev => prev.map(inst => 
-                          inst.id === instructor.id ? { ...inst, nombre: value } : inst
-                        ))
-                      }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="number" 
-                          defaultValue={instructor.tanque} 
-                          label="Tanque"
-                          className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm"
-                      onValueChange={(value) => {
-                        setInstructores(prev => prev.map(inst => 
-                          inst.id === instructor.id ? { ...inst, tanque: value } : inst
-                        ))
-                      }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={instructor.equipos} 
-                          label="Equipos"
-                          className="w-32 sm:w-48 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                      onValueChange={(value) => {
-                        setInstructores(prev => prev.map(inst => 
-                          inst.id === instructor.id ? { ...inst, equipos: value } : inst
-                        ))
-                      }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <ActivitySelector 
-                          defaultValue={instructor.actividad} 
-                          className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                      onValueChange={(value) => {
-                        setInstructores(prev => prev.map(inst => 
-                          inst.id === instructor.id ? { ...inst, actividad: value } : inst
-                        ))
-                      }}
-                        />
-                      </td>
-                      <td className="p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={instructor.observaciones} 
-                          label="Observaciones"
-                          className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                      onValueChange={(value) => {
-                        setInstructores(prev => prev.map(inst => 
-                          inst.id === instructor.id ? { ...inst, observaciones: value } : inst
-                        ))
-                      }}
-                        />
-                      </td>
-                    </tr>
-                  ))
+                {getInstructors().length > 0 ? (
+                  getInstructors().map((participant, index) => {
+                    const group = getParticipantGroup(participant.id || "")
+                    const highlightColor = participant.highlight_color || "#FFFFFF"
+                    return (
+                      <tr 
+                        key={participant.id || index} 
+                        className="border-b border-gray-200"
+                        style={{ backgroundColor: highlightColor }}
+                      >
+                        <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{index + 1}</td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-32 sm:w-40 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm">
+                              {getParticipantName(participant.person_id)}
+                            </div>
+                            {getParticipantNotes(participant.id || "").length > 0 && (
+                              <span 
+                                className="px-1.5 py-0.5 rounded-full text-xs font-medium cursor-pointer"
+                                style={{ 
+                                  backgroundColor: getParticipantNotes(participant.id || "")[0]?.color || "#FFE599",
+                                  color: "#000"
+                                }}
+                                title={`${getParticipantNotes(participant.id || "").length} nota(s)`}
+                              >
+                                📝 {getParticipantNotes(participant.id || "").length}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm">
+                            {participant.tanks || "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-32 sm:w-48 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.misc || "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.activity_id ? "Actividad" : "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.observations || "-"}
+                          </div>
+                        </td>
+                        <td className="p-1 sm:p-2 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openAddNoteDialog(participant)}
+                              className="h-6 w-6 p-0"
+                              title="Agregar nota"
+                            >
+                              <StickyNote className="h-3 w-3" />
+                            </Button>
+                            {group && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditParticipantDialog(participant, group)}
+                                className="h-6 w-6 p-0"
+                                title="Editar"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">
+                    <td colSpan={7} className="p-4 text-center text-gray-500">
                       No hay instructores registrados
                     </td>
                   </tr>
@@ -1213,115 +1516,166 @@ export default function SheetPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Tabla de Piscina */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center">PISCINA</CardTitle>
-          <CardDescription>
+      {/* Tabla de Piscina - Solo se muestra si hay grupos de PISCINA */}
+      {operation && operationId && hasPoolGroups && (
+      <Card className="border border-gray-200">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl text-center">PISCINA</CardTitle>
+          <CardDescription className="mt-1 text-center">
             Registro de actividades en piscina
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
+          {/* Información de grupos de piscina */}
+          <div className="mb-6 space-y-3">
+            {operationGroups
+              .filter(group => group.environment === "POOL")
+              .map((group) => (
+                <div
+                  key={group.id}
+                  className="border border-gray-200 rounded-lg p-4 bg-green-50/30"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="px-3 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">
+                          PISCINA
+                        </span>
+                        {group.label && (
+                          <span className="text-sm font-semibold text-gray-900">{group.label}</span>
+                        )}
+                      </div>
+                      {(group.start_time || group.end_time) && (
+                        <div className="text-sm text-gray-700 mb-1">
+                          {group.start_time && <span className="font-medium">Inicio: {group.start_time}</span>}
+                          {group.start_time && group.end_time && <span className="mx-2">-</span>}
+                          {group.end_time && <span className="font-medium">Fin: {group.end_time}</span>}
+                        </div>
+                      )}
+                      {group.comments && (
+                        <div className="text-sm text-gray-700">
+                          <span className="font-semibold">Comentarios:</span> {group.comments}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openAddParticipantDialog(group, "DIVER")}
+                      >
+                        <Plus className="mr-1 h-3 w-3" />
+                        Agregar Persona
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditGroupDialog(group)}
+                      >
+                        Editar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse min-w-[700px]">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
+                <thead>
+                <tr className="border-b border-gray-200 bg-gray-50/50">
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">No</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Nombre</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Tanque</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Equipos</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Actividad</th>
                   <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Ubicación</th>
-                  <th className="p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
+                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
+                  <th className="p-1 sm:p-2 text-center font-semibold text-xs sm:text-sm">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {piscina.length > 0 ? (
-                  piscina.map((persona, index) => (
-                    <tr key={persona.id} className="border-b border-gray-200">
-                      <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{persona.id}</td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={persona.nombre} 
-                          label="Nombre"
-                          className="w-24 sm:w-32 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm"
-                          onValueChange={(value) => {
-                            setPiscina(prev => prev.map(p => 
-                              p.id === persona.id ? { ...p, nombre: value } : p
-                            ))
-                          }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="number" 
-                          defaultValue={persona.tanque} 
-                          label="Tanque"
-                          className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm"
-                          onValueChange={(value) => {
-                            setPiscina(prev => prev.map(p => 
-                              p.id === persona.id ? { ...p, tanque: value } : p
-                            ))
-                          }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={persona.equipos} 
-                          label="Equipos"
-                          className="w-20 sm:w-24 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                          onValueChange={(value) => {
-                            setPiscina(prev => prev.map(p => 
-                              p.id === persona.id ? { ...p, equipos: value } : p
-                            ))
-                          }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <ActivitySelector 
-                          defaultValue={persona.actividad} 
-                          className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                          onValueChange={(value) => {
-                            setPiscina(prev => prev.map(p => 
-                              p.id === persona.id ? { ...p, actividad: value } : p
-                            ))
-                          }}
-                        />
-                      </td>
-                      <td className="border-r border-gray-200 p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={persona.ubicacion} 
-                          label="Ubicación"
-                          className="w-16 sm:w-20 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                          onValueChange={(value) => {
-                            setPiscina(prev => prev.map(p => 
-                              p.id === persona.id ? { ...p, ubicacion: value } : p
-                            ))
-                          }}
-                        />
-                      </td>
-                      <td className="p-1 sm:p-2">
-                        <EditableCell 
-                          type="text" 
-                          defaultValue={persona.observaciones} 
-                          label="Observaciones"
-                          className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm"
-                          onValueChange={(value) => {
-                            setPiscina(prev => prev.map(p => 
-                              p.id === persona.id ? { ...p, observaciones: value } : p
-                            ))
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))
+                {getPoolDivers().length > 0 ? (
+                  getPoolDivers().map((participant, index) => {
+                    const group = getParticipantGroup(participant.id || "")
+                    return (
+                      <tr key={participant.id || index} className="border-b border-gray-200">
+                        <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{index + 1}</td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 sm:w-32 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm">
+                              {getParticipantName(participant.person_id)}
+                            </div>
+                            {getParticipantNotes(participant.id || "").length > 0 && (
+                              <span 
+                                className="px-1.5 py-0.5 rounded-full text-xs font-medium cursor-pointer"
+                                style={{ 
+                                  backgroundColor: getParticipantNotes(participant.id || "")[0]?.color || "#FFE599",
+                                  color: "#000"
+                                }}
+                                title={`${getParticipantNotes(participant.id || "").length} nota(s)`}
+                              >
+                                📝 {getParticipantNotes(participant.id || "").length}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm">
+                            {participant.tanks || "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-20 sm:w-24 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.misc || "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.activity_id ? "Actividad" : "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-16 sm:w-20 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.misc || "-"}
+                          </div>
+                        </td>
+                        <td className="border-r border-gray-200 p-1 sm:p-2">
+                          <div className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                            {participant.observations || "-"}
+                          </div>
+                        </td>
+                        <td className="p-1 sm:p-2 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openAddNoteDialog(participant)}
+                              className="h-6 w-6 p-0"
+                              title="Agregar nota"
+                            >
+                              <StickyNote className="h-3 w-3" />
+                            </Button>
+                            {group && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditParticipantDialog(participant, group)}
+                                className="h-6 w-6 p-0"
+                                title="Editar"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">
+                    <td colSpan={8} className="p-4 text-center text-gray-500">
                       No hay actividades de piscina registradas
                     </td>
                   </tr>
@@ -1331,9 +1685,11 @@ export default function SheetPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Botón para agregar nueva fila a PISCINA */}
-      <div className="flex justify-center">
+      {/* Botón para agregar nueva fila a PISCINA - Solo se muestra si hay grupos de PISCINA */}
+      {operation && operationId && hasPoolGroups && (
+      <div className="flex justify-center py-2">
         <Button 
           variant="outline" 
           size="lg"
@@ -1344,6 +1700,7 @@ export default function SheetPage() {
           <span className="text-sm sm:text-base">Agregar Nueva Persona a Piscina</span>
         </Button>
       </div>
+      )}
 
       {/* Diálogo para crear operación */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -1680,6 +2037,541 @@ export default function SheetPage() {
               disabled={updatingGroup}
             >
               {updatingGroup ? "Actualizando..." : "Actualizar Grupo"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para agregar participante */}
+      <Dialog open={addParticipantDialogOpen} onOpenChange={setAddParticipantDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Agregar {participantRole === "DIVER" ? "Buzo" : participantRole === "INSTRUCTOR" ? "Instructor" : "Tripulación"}</DialogTitle>
+            <DialogDescription>
+              Agregue una persona al grupo {selectedGroupForParticipant?.label || ""}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            {/* Persona */}
+            <div className="space-y-2">
+              <Label htmlFor="participant-person">Persona *</Label>
+              <Select
+                value={participantFormData.person_id || undefined}
+                onValueChange={(value) => setParticipantFormData({ ...participantFormData, person_id: value || "" })}
+              >
+                <SelectTrigger id="participant-person">
+                  <SelectValue placeholder="Seleccione una persona" />
+                </SelectTrigger>
+                <SelectContent>
+                  {peopleCatalog
+                    .filter(person => {
+                      if (participantRole === "INSTRUCTOR") {
+                        return person.default_role === "INSTRUCTOR"
+                      } else {
+                        return person.default_role === "DIVER" || person.default_role === "CREW"
+                      }
+                    })
+                    .filter(person => person.is_active)
+                    .map((person) => (
+                      <SelectItem key={person.id} value={person.id}>
+                        {person.full_name} {person.default_role ? `(${person.default_role})` : ''}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Actividad */}
+            <div className="space-y-2">
+              <Label htmlFor="participant-activity">Actividad (opcional)</Label>
+              <Select
+                value={participantFormData.activity_id || undefined}
+                onValueChange={(value) => setParticipantFormData({ ...participantFormData, activity_id: value || undefined })}
+              >
+                <SelectTrigger id="participant-activity">
+                  <SelectValue placeholder="Seleccione una actividad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activitiesCatalog
+                    .filter(activity => activity.is_active)
+                    .map((activity) => (
+                      <SelectItem key={activity.id} value={activity.id}>
+                        {activity.name || activity.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Equipos */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="participant-tanks">Tanques</Label>
+                <Input
+                  id="participant-tanks"
+                  type="number"
+                  value={participantFormData.tanks || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, tanks: e.target.value ? parseInt(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="participant-bags">Maletas</Label>
+                <Input
+                  id="participant-bags"
+                  type="number"
+                  value={participantFormData.bags || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, bags: e.target.value ? parseInt(e.target.value) : undefined })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="participant-regulator">Regulador</Label>
+                <Input
+                  id="participant-regulator"
+                  value={participantFormData.regulator || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, regulator: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="participant-bcd">Chaleco (BCD)</Label>
+                <Input
+                  id="participant-bcd"
+                  value={participantFormData.bcd || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, bcd: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="participant-weightbelt">Cinturón</Label>
+                <Input
+                  id="participant-weightbelt"
+                  value={participantFormData.weightbelt || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, weightbelt: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="participant-weights">Pesas (kg)</Label>
+                <Input
+                  id="participant-weights"
+                  type="number"
+                  step="0.1"
+                  value={participantFormData.weights_kg || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, weights_kg: e.target.value ? parseFloat(e.target.value) : undefined })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="participant-misc">Máscara (Msc)</Label>
+                <Input
+                  id="participant-misc"
+                  value={participantFormData.misc || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, misc: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="participant-snorkel">Snorkel</Label>
+                <Input
+                  id="participant-snorkel"
+                  value={participantFormData.snorkel_set || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, snorkel_set: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="participant-altimeter">Altímetro (Alt)</Label>
+                <Input
+                  id="participant-altimeter"
+                  value={participantFormData.altimeter || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, altimeter: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="participant-suit">Traje</Label>
+                <Input
+                  id="participant-suit"
+                  value={participantFormData.suit_size || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, suit_size: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="participant-observations">Observaciones</Label>
+              <Textarea
+                id="participant-observations"
+                value={participantFormData.observations || ""}
+                onChange={(e) => setParticipantFormData({ ...participantFormData, observations: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="participant-value">Valor</Label>
+                <Input
+                  id="participant-value"
+                  value={participantFormData.value_label || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, value_label: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="participant-invoice">Factura</Label>
+                <Input
+                  id="participant-invoice"
+                  value={participantFormData.invoice_reference || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, invoice_reference: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="participant-payment">Estado de Pago</Label>
+              <Input
+                id="participant-payment"
+                value={participantFormData.payment_status || ""}
+                onChange={(e) => setParticipantFormData({ ...participantFormData, payment_status: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddParticipantDialogOpen(false)
+                setSelectedGroupForParticipant(null)
+              }}
+              disabled={addingParticipant}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddParticipant}
+              disabled={addingParticipant || !participantFormData.person_id}
+            >
+              {addingParticipant ? "Agregando..." : "Agregar Participante"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para editar participante */}
+      <Dialog open={editParticipantDialogOpen} onOpenChange={setEditParticipantDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar {participantRole === "DIVER" ? "Buzo" : participantRole === "INSTRUCTOR" ? "Instructor" : "Tripulación"}</DialogTitle>
+            <DialogDescription>
+              Modifique los datos del participante en el grupo {selectedGroupForParticipant?.label || ""}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            {/* Persona (solo lectura en edición) */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-participant-person">Persona</Label>
+              <Input
+                id="edit-participant-person"
+                value={selectedParticipant ? getParticipantName(selectedParticipant.person_id) : ""}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+
+            {/* Rol */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-participant-role">Rol</Label>
+              <Select
+                value={participantFormData.role}
+                onValueChange={(value: 'DIVER' | 'INSTRUCTOR' | 'CREW') => setParticipantFormData({ ...participantFormData, role: value })}
+              >
+                <SelectTrigger id="edit-participant-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DIVER">DIVER</SelectItem>
+                  <SelectItem value="INSTRUCTOR">INSTRUCTOR</SelectItem>
+                  <SelectItem value="CREW">CREW</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Actividad */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-participant-activity">Actividad (opcional)</Label>
+              <Select
+                value={participantFormData.activity_id || undefined}
+                onValueChange={(value) => setParticipantFormData({ ...participantFormData, activity_id: value || undefined })}
+              >
+                <SelectTrigger id="edit-participant-activity">
+                  <SelectValue placeholder="Seleccione una actividad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activitiesCatalog
+                    .filter(activity => activity.is_active)
+                    .map((activity) => (
+                      <SelectItem key={activity.id} value={activity.id}>
+                        {activity.name || activity.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Equipos */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-tanks">Tanques</Label>
+                <Input
+                  id="edit-participant-tanks"
+                  type="number"
+                  value={participantFormData.tanks || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, tanks: e.target.value ? parseInt(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-bags">Maletas</Label>
+                <Input
+                  id="edit-participant-bags"
+                  type="number"
+                  value={participantFormData.bags || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, bags: e.target.value ? parseInt(e.target.value) : undefined })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-regulator">Regulador</Label>
+                <Input
+                  id="edit-participant-regulator"
+                  value={participantFormData.regulator || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, regulator: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-bcd">Chaleco (BCD)</Label>
+                <Input
+                  id="edit-participant-bcd"
+                  value={participantFormData.bcd || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, bcd: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-weightbelt">Cinturón</Label>
+                <Input
+                  id="edit-participant-weightbelt"
+                  value={participantFormData.weightbelt || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, weightbelt: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-weights">Pesas (kg)</Label>
+                <Input
+                  id="edit-participant-weights"
+                  type="number"
+                  step="0.1"
+                  value={participantFormData.weights_kg || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, weights_kg: e.target.value ? parseFloat(e.target.value) : undefined })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-misc">Máscara (Msc)</Label>
+                <Input
+                  id="edit-participant-misc"
+                  value={participantFormData.misc || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, misc: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-snorkel">Snorkel</Label>
+                <Input
+                  id="edit-participant-snorkel"
+                  value={participantFormData.snorkel_set || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, snorkel_set: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-altimeter">Altímetro (Alt)</Label>
+                <Input
+                  id="edit-participant-altimeter"
+                  value={participantFormData.altimeter || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, altimeter: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-suit">Traje</Label>
+                <Input
+                  id="edit-participant-suit"
+                  value={participantFormData.suit_size || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, suit_size: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-participant-observations">Observaciones</Label>
+              <Textarea
+                id="edit-participant-observations"
+                value={participantFormData.observations || ""}
+                onChange={(e) => setParticipantFormData({ ...participantFormData, observations: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-value">Valor</Label>
+                <Input
+                  id="edit-participant-value"
+                  value={participantFormData.value_label || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, value_label: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-invoice">Factura</Label>
+                <Input
+                  id="edit-participant-invoice"
+                  value={participantFormData.invoice_reference || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, invoice_reference: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-participant-payment">Estado de Pago</Label>
+              <Input
+                id="edit-participant-payment"
+                value={participantFormData.payment_status || ""}
+                onChange={(e) => setParticipantFormData({ ...participantFormData, payment_status: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditParticipantDialogOpen(false)
+                setSelectedParticipant(null)
+                setSelectedGroupForParticipant(null)
+              }}
+              disabled={updatingParticipant}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUpdateParticipant}
+              disabled={updatingParticipant}
+            >
+              {updatingParticipant ? "Actualizando..." : "Actualizar Participante"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para agregar nota a participante */}
+      <Dialog open={addNoteDialogOpen} onOpenChange={setAddNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar Nota</DialogTitle>
+            <DialogDescription>
+              Agregue una nota para {selectedParticipantForNote ? getParticipantName(selectedParticipantForNote.person_id) : "el participante"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="note-text">Nota *</Label>
+              <Textarea
+                id="note-text"
+                value={noteFormData.note}
+                onChange={(e) => setNoteFormData({ ...noteFormData, note: e.target.value })}
+                placeholder="Escriba la nota aquí..."
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="note-color">Color (opcional)</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="note-color"
+                  type="color"
+                  value={noteFormData.color || "#FFE599"}
+                  onChange={(e) => setNoteFormData({ ...noteFormData, color: e.target.value })}
+                  className="w-16 h-10 p-1 cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={noteFormData.color || "#FFE599"}
+                  onChange={(e) => setNoteFormData({ ...noteFormData, color: e.target.value })}
+                  placeholder="#FFE599"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            {/* Mostrar notas existentes si hay */}
+            {selectedParticipantForNote && getParticipantNotes(selectedParticipantForNote.id || "").length > 0 && (
+              <div className="space-y-2">
+                <Label>Notas existentes</Label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
+                  {getParticipantNotes(selectedParticipantForNote.id || "").map((note) => (
+                    <div
+                      key={note.id}
+                      className="p-2 rounded text-sm"
+                      style={{ backgroundColor: note.color || "#FFE599", color: "#000" }}
+                    >
+                      <div className="font-medium">{note.note}</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {format(new Date(note.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddNoteDialogOpen(false)
+                setSelectedParticipantForNote(null)
+                setNoteFormData({
+                  note: "",
+                  color: "#FFE599"
+                })
+              }}
+              disabled={addingNote}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddNote}
+              disabled={addingNote || !noteFormData.note.trim()}
+            >
+              {addingNote ? "Agregando..." : "Agregar Nota"}
             </Button>
           </div>
         </DialogContent>
