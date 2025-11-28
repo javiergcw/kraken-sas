@@ -299,6 +299,8 @@ export default function SheetPage() {
   // Estados para diálogo de crear operación
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [creatingOperation, setCreatingOperation] = useState(false)
+  const [editOperationDialogOpen, setEditOperationDialogOpen] = useState(false)
+  const [updatingOperation, setUpdatingOperation] = useState(false)
   const [formData, setFormData] = useState({
     marina_id: "",
     vessel_id: "",
@@ -351,7 +353,8 @@ export default function SheetPage() {
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false)
   const [selectedParticipantForNote, setSelectedParticipantForNote] = useState<ParticipantDto | null>(null)
   const [addingNote, setAddingNote] = useState(false)
-  const [noteFormData, setNoteFormData] = useState<Omit<ParticipantNoteCreateDto, 'person_id'>>({
+  const [loadingNotes, setLoadingNotes] = useState(false)
+  const [noteFormData, setNoteFormData] = useState<ParticipantNoteCreateDto>({
     note: "",
     color: "#FFE599"
   })
@@ -431,6 +434,22 @@ export default function SheetPage() {
     setCreateDialogOpen(true)
   }
 
+  // Función para abrir diálogo de editar operación
+  const openEditOperationDialog = () => {
+    if (operation) {
+      setFormData({
+        marina_id: operation.marina_id || "",
+        vessel_id: operation.vessel_id || "",
+        captain_id: operation.captain_id || "",
+        first_officer_id: operation.first_officer_id || "",
+        weather: operation.weather || "",
+        general_notes: operation.general_notes || "",
+        status: operation.status || "DRAFT"
+      })
+      setEditOperationDialogOpen(true)
+    }
+  }
+
   // Función para crear una nueva operación
   const handleCreateOperation = async () => {
     try {
@@ -466,6 +485,43 @@ export default function SheetPage() {
       console.error('Error al crear operación:', error)
     } finally {
       setCreatingOperation(false)
+    }
+  }
+
+  // Función para actualizar la operación existente
+  const handleUpdateOperation = async () => {
+    if (!operationId) return
+    
+    try {
+      setUpdatingOperation(true)
+      const fechaString = format(fechaSeleccionada, "yyyy-MM-dd")
+      
+      const operationData: any = {}
+      
+      // Solo enviar campos que tengan valores o que hayan cambiado
+      if (formData.marina_id) operationData.marina_id = formData.marina_id
+      if (formData.vessel_id) operationData.vessel_id = formData.vessel_id
+      if (formData.captain_id) operationData.captain_id = formData.captain_id
+      if (formData.first_officer_id) operationData.first_officer_id = formData.first_officer_id
+      if (formData.weather) operationData.weather = formData.weather
+      if (formData.general_notes) operationData.general_notes = formData.general_notes
+      if (formData.status) operationData.status = formData.status
+      
+      const response = await operationController.update(operationId, operationData)
+      
+      if (response?.success && response.data) {
+        setOperation(response.data)
+        setEditOperationDialogOpen(false)
+        // Recargar la operación para obtener los datos completos
+        await loadOperationForDate(fechaString)
+      } else {
+        alert(response?.message || 'Error al actualizar la operación')
+      }
+    } catch (error) {
+      console.error('Error al actualizar operación:', error)
+      alert('Error al actualizar la operación')
+    } finally {
+      setUpdatingOperation(false)
     }
   }
 
@@ -767,27 +823,43 @@ export default function SheetPage() {
   }
 
   // Función para abrir diálogo de agregar nota
-  const openAddNoteDialog = (participant: ParticipantDto) => {
+  const openAddNoteDialog = async (participant: ParticipantDto) => {
     setSelectedParticipantForNote(participant)
     setNoteFormData({
       note: "",
       color: "#FFE599"
     })
     setAddNoteDialogOpen(true)
+    
+    // Siempre recargar las notas existentes del participante desde el servidor
+    // para mostrar la más reciente arriba
+    if (participant.id) {
+      try {
+        setLoadingNotes(true)
+        const response = await operationGroupController.getParticipantNotes(participant.id)
+        if (response.success && response.data) {
+          setParticipantNotes(prev => ({
+            ...prev,
+            [participant.id!]: response.data!
+          }))
+        }
+      } catch (error) {
+        console.error('Error al cargar notas del participante:', error)
+      } finally {
+        setLoadingNotes(false)
+      }
+    }
   }
 
   // Función para agregar nota a un participante
   const handleAddNote = async () => {
-    if (!selectedParticipantForNote || !selectedParticipantForNote.id || !noteFormData.note.trim() || !selectedParticipantForNote.person_id) return
+    if (!selectedParticipantForNote || !selectedParticipantForNote.id || !noteFormData.note.trim()) return
 
     try {
       setAddingNote(true)
       const response = await operationGroupController.addParticipantNote(
         selectedParticipantForNote.id,
-        {
-          ...noteFormData,
-          person_id: selectedParticipantForNote.person_id
-        }
+        noteFormData
       )
 
       if (response.success && response.data) {
@@ -797,6 +869,21 @@ export default function SheetPage() {
           ...prev,
           [participantId]: [...(prev[participantId] || []), response.data!]
         }))
+        
+        // Actualizar el contador notes_count del participante
+        setParticipants(prev => {
+          const updated = { ...prev }
+          for (const groupId in updated) {
+            updated[groupId] = updated[groupId].map(p => 
+              p.id === participantId 
+                ? { ...p, notes_count: (p.notes_count || 0) + 1 }
+                : p
+            )
+          }
+          return updated
+        })
+        
+        // Cerrar el diálogo y limpiar el estado
         setAddNoteDialogOpen(false)
         setSelectedParticipantForNote(null)
         setNoteFormData({
@@ -974,14 +1061,14 @@ export default function SheetPage() {
   const hasPoolGroups = operationGroups.some(group => group.environment === "POOL")
 
   return (
-    <div className="flex-1 space-y-6 px-6 md:px-12 py-6">
+    <div className="flex-1 space-y-3 px-4 md:px-8 py-4">
       {/* Header con selector de fecha */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="space-y-3">
           {/* Fecha y selector */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{formatearFecha(fechaSeleccionada)}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{formatearFecha(fechaSeleccionada)}</h1>
               <Popover open={calendarioAbierto} onOpenChange={setCalendarioAbierto}>
                 <PopoverTrigger asChild>
                   <Button
@@ -1006,45 +1093,73 @@ export default function SheetPage() {
             </div>
             
             {/* Información de operación */}
-          <div className="space-y-4">
+          <div className="space-y-2">
               {loadingOperation ? (
-              <div className="text-sm text-gray-500 py-4">Cargando operación...</div>
-              ) : operation ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">Estado:</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    operation.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
-                    operation.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {operation.status}
-                  </span>
+              // Skeleton de carga
+              <div className="space-y-2 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-12 bg-gray-200 rounded"></div>
+                    <div className="h-5 w-20 bg-gray-300 rounded-full"></div>
                   </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="space-y-2 pb-3 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Capitán</div>
-                    <div className="text-base font-medium text-gray-900">{getPersonName(operation.captain_id)}</div>
+                  <div className="h-7 w-32 bg-gray-200 rounded"></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="space-y-1 pb-2 border-b border-gray-100">
+                      <div className="h-2 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-32 bg-gray-300 rounded"></div>
                     </div>
-                  <div className="space-y-2 pb-3 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Segundo</div>
-                    <div className="text-base font-medium text-gray-900">{getPersonName(operation.first_officer_id)}</div>
+                  ))}
+                </div>
+              </div>
+              ) : operation ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-700">Estado:</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      operation.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                      operation.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {operation.status}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openEditOperationDialog}
+                    className="h-7 text-xs"
+                  >
+                    <Pencil className="mr-1 h-3 w-3" />
+                    Editar
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-1 pb-2 border-b border-gray-100">
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase">Capitán</div>
+                    <div className="text-sm font-medium text-gray-900">{getPersonName(operation.captain_id)}</div>
                     </div>
-                  <div className="space-y-2 pb-3 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Marina</div>
-                    <div className="text-base font-medium text-gray-900">{getMarinaName(operation.marina_id)}</div>
+                  <div className="space-y-1 pb-2 border-b border-gray-100">
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase">Segundo</div>
+                    <div className="text-sm font-medium text-gray-900">{getPersonName(operation.first_officer_id)}</div>
                     </div>
-                  <div className="space-y-2 pb-3 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Embarcación</div>
-                    <div className="text-base font-medium text-gray-900">{getVesselName(operation.vessel_id)}</div>
+                  <div className="space-y-1 pb-2 border-b border-gray-100">
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase">Marina</div>
+                    <div className="text-sm font-medium text-gray-900">{getMarinaName(operation.marina_id)}</div>
                     </div>
-                  <div className="space-y-2 pb-3 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Clima</div>
-                    <div className="text-base font-medium text-gray-900">{operation.weather || 'Sin definir'}</div>
+                  <div className="space-y-1 pb-2 border-b border-gray-100">
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase">Embarcación</div>
+                    <div className="text-sm font-medium text-gray-900">{getVesselName(operation.vessel_id)}</div>
                     </div>
-                  <div className="space-y-2 pb-3 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Notas</div>
-                    <div className="text-base font-medium text-gray-900">{operation.general_notes || 'Sin notas'}</div>
+                  <div className="space-y-1 pb-2 border-b border-gray-100">
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase">Clima</div>
+                    <div className="text-sm font-medium text-gray-900">{operation.weather || 'Sin definir'}</div>
+                    </div>
+                  <div className="space-y-1 pb-2 border-b border-gray-100">
+                    <div className="text-[10px] font-semibold text-gray-500 uppercase">Notas</div>
+                    <div className="text-sm font-medium text-gray-900">{operation.general_notes || 'Sin notas'}</div>
                     </div>
                   </div>
               </div>
@@ -1070,26 +1185,26 @@ export default function SheetPage() {
 
       {/* Botones para crear grupos */}
       {operation && operationId && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => openCreateGroupDialog("OCEAN")}
             disabled={loadingGroups}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 h-8 text-xs"
           >
-            <Plus className="h-4 w-4" />
-            Crear Grupo Océano
+            <Plus className="h-3 w-3" />
+            Grupo Océano
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => openCreateGroupDialog("POOL")}
             disabled={loadingGroups}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 h-8 text-xs"
           >
-            <Plus className="h-4 w-4" />
-            Crear Grupo Piscina
+            <Plus className="h-3 w-3" />
+            Grupo Piscina
           </Button>
         </div>
       )}
@@ -1097,58 +1212,60 @@ export default function SheetPage() {
       {/* Tabla de buzos - Solo se muestra si hay grupos de OCÉANO */}
       {operation && operationId && hasOceanGroups && (
       <Card className="border border-gray-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl">Registro de Buzos</CardTitle>
-          <CardDescription className="mt-1">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-base">Registro de Buzos</CardTitle>
+          <CardDescription className="mt-0.5 text-xs">
             Control de equipos y actividades de buceo
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 px-4 pb-3">
           {/* Información de grupos de océano */}
-          <div className="mb-6 space-y-3">
+          <div className="mb-3 space-y-2">
             {operationGroups
               .filter(group => group.environment === "OCEAN")
               .map((group) => (
                 <div
                   key={group.id}
-                  className="border border-gray-200 rounded-lg p-4 bg-blue-50/30"
+                  className="border border-gray-200 rounded p-2 bg-blue-50/30"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="px-3 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800">
                           OCÉANO
                         </span>
                         {group.label && (
-                          <span className="text-sm font-semibold text-gray-900">{group.label}</span>
+                          <span className="text-xs font-semibold text-gray-900">{group.label}</span>
                         )}
                       </div>
                       {(group.start_time || group.end_time) && (
-                        <div className="text-sm text-gray-700 mb-1">
+                        <div className="text-xs text-gray-700 mb-0.5">
                           {group.start_time && <span className="font-medium">Inicio: {group.start_time}</span>}
-                          {group.start_time && group.end_time && <span className="mx-2">-</span>}
+                          {group.start_time && group.end_time && <span className="mx-1">-</span>}
                           {group.end_time && <span className="font-medium">Fin: {group.end_time}</span>}
                         </div>
                       )}
                       {group.comments && (
-                        <div className="text-sm text-gray-700">
+                        <div className="text-xs text-gray-700">
                           <span className="font-semibold">Comentarios:</span> {group.comments}
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openAddParticipantDialog(group, "DIVER")}
+                        className="h-7 text-xs"
                       >
                         <Plus className="mr-1 h-3 w-3" />
-                        Agregar Buzo
+                        Buzo
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openEditGroupDialog(group)}
+                        className="h-7 text-xs"
                       >
                         Editar
                       </Button>
@@ -1176,37 +1293,30 @@ export default function SheetPage() {
                         <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
                           <td className="border-r border-gray-200 p-2">
-                            <div className="flex items-center gap-2">
-                              <div className="px-2 py-1 font-medium text-xs">
-                                {getParticipantName(participant.person_id)}
-                              </div>
-                              {getParticipantNotes(participant.id || "").length > 0 && (
-                                <span 
-                                  className="px-1.5 py-0.5 rounded-full text-xs font-medium cursor-pointer"
-                                  style={{ 
-                                    backgroundColor: getParticipantNotes(participant.id || "")[0]?.color || "#FFE599",
-                                    color: "#000"
-                                  }}
-                                  title={`${getParticipantNotes(participant.id || "").length} nota(s)`}
-                                >
-                                  📝 {getParticipantNotes(participant.id || "").length}
-                                </span>
-                              )}
+                            <div className="px-2 py-1 font-medium text-xs">
+                              {getParticipantName(participant.person_id)}
                             </div>
                           </td>
                           <td className="p-2 text-center">
                             <div className="flex items-center justify-center gap-1">
                               {group && (
                                 <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openAddNoteDialog(participant)}
-                                    className="h-6 w-6 p-0"
-                                    title="Agregar nota"
-                                  >
-                                    <StickyNote className="h-3 w-3" />
-                                  </Button>
+                                  <div className="relative">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openAddNoteDialog(participant)}
+                                      className="h-6 w-6 p-0"
+                                      title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
+                                    >
+                                      <StickyNote className="h-3 w-3" />
+                                    </Button>
+                                    {participant.notes_count && participant.notes_count > 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                                        {participant.notes_count}
+                                      </span>
+                                    )}
+                                  </div>
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -1376,15 +1486,15 @@ export default function SheetPage() {
 
       {/* Botón para agregar nueva fila - Solo se muestra si hay grupos de OCÉANO */}
       {operation && operationId && hasOceanGroups && (
-      <div className="flex justify-center py-2">
+      <div className="flex justify-center py-1">
         <Button 
           variant="outline" 
-          size="lg"
-          className="flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 w-full sm:w-auto"
+          size="sm"
+          className="flex items-center gap-1 h-8 text-xs"
           onClick={agregarNuevoBuzo}
         >
-          <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-sm sm:text-base">Agregar Nuevo Buzo</span>
+          <Plus className="h-3 w-3" />
+          <span>Agregar Nuevo Buzo</span>
         </Button>
       </div>
       )}
@@ -1392,11 +1502,11 @@ export default function SheetPage() {
       {/* Tabla de Instructores - Se muestra siempre que haya operación */}
       {operation && operationId && (
       <Card className="border border-gray-200">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-2 pt-3 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl">Instructores</CardTitle>
-              <CardDescription className="mt-1">
+              <CardTitle className="text-base">Instructores</CardTitle>
+              <CardDescription className="mt-0.5 text-xs">
                 Registro de instructores y personal de apoyo
               </CardDescription>
             </div>
@@ -1405,14 +1515,15 @@ export default function SheetPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => openAddParticipantDialog(operationGroups[0], "INSTRUCTOR")}
+                className="h-7 text-xs"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar Instructor
+                <Plus className="mr-1 h-3 w-3" />
+                Instructor
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 px-4 pb-3">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse min-w-[800px]">
               <thead>
@@ -1479,15 +1590,22 @@ export default function SheetPage() {
                         </td>
                         <td className="p-1 sm:p-2 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openAddNoteDialog(participant)}
-                              className="h-6 w-6 p-0"
-                              title="Agregar nota"
-                            >
-                              <StickyNote className="h-3 w-3" />
-                            </Button>
+                            <div className="relative">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openAddNoteDialog(participant)}
+                                className="h-6 w-6 p-0"
+                                title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
+                              >
+                                <StickyNote className="h-3 w-3" />
+                              </Button>
+                              {participant.notes_count && participant.notes_count > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                                  {participant.notes_count}
+                                </span>
+                              )}
+                            </div>
                             {group && (
                               <Button
                                 variant="outline"
@@ -1521,58 +1639,60 @@ export default function SheetPage() {
       {/* Tabla de Piscina - Solo se muestra si hay grupos de PISCINA */}
       {operation && operationId && hasPoolGroups && (
       <Card className="border border-gray-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl text-center">PISCINA</CardTitle>
-          <CardDescription className="mt-1 text-center">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-base text-center">PISCINA</CardTitle>
+          <CardDescription className="mt-0.5 text-xs text-center">
             Registro de actividades en piscina
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 px-4 pb-3">
           {/* Información de grupos de piscina */}
-          <div className="mb-6 space-y-3">
+          <div className="mb-3 space-y-2">
             {operationGroups
               .filter(group => group.environment === "POOL")
               .map((group) => (
                 <div
                   key={group.id}
-                  className="border border-gray-200 rounded-lg p-4 bg-green-50/30"
+                  className="border border-gray-200 rounded p-2 bg-green-50/30"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="px-3 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-800">
                           PISCINA
                         </span>
                         {group.label && (
-                          <span className="text-sm font-semibold text-gray-900">{group.label}</span>
+                          <span className="text-xs font-semibold text-gray-900">{group.label}</span>
                         )}
                       </div>
                       {(group.start_time || group.end_time) && (
-                        <div className="text-sm text-gray-700 mb-1">
+                        <div className="text-xs text-gray-700 mb-0.5">
                           {group.start_time && <span className="font-medium">Inicio: {group.start_time}</span>}
-                          {group.start_time && group.end_time && <span className="mx-2">-</span>}
+                          {group.start_time && group.end_time && <span className="mx-1">-</span>}
                           {group.end_time && <span className="font-medium">Fin: {group.end_time}</span>}
                         </div>
                       )}
                       {group.comments && (
-                        <div className="text-sm text-gray-700">
+                        <div className="text-xs text-gray-700">
                           <span className="font-semibold">Comentarios:</span> {group.comments}
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openAddParticipantDialog(group, "DIVER")}
+                        className="h-7 text-xs"
                       >
                         <Plus className="mr-1 h-3 w-3" />
-                        Agregar Persona
+                        Persona
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openEditGroupDialog(group)}
+                        className="h-7 text-xs"
                       >
                         Editar
                       </Button>
@@ -1648,15 +1768,22 @@ export default function SheetPage() {
                         </td>
                         <td className="p-1 sm:p-2 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openAddNoteDialog(participant)}
-                              className="h-6 w-6 p-0"
-                              title="Agregar nota"
-                            >
-                              <StickyNote className="h-3 w-3" />
-                            </Button>
+                            <div className="relative">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openAddNoteDialog(participant)}
+                                className="h-6 w-6 p-0"
+                                title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
+                              >
+                                <StickyNote className="h-3 w-3" />
+                              </Button>
+                              {participant.notes_count && participant.notes_count > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                                  {participant.notes_count}
+                                </span>
+                              )}
+                            </div>
                             {group && (
                               <Button
                                 variant="outline"
@@ -1689,15 +1816,15 @@ export default function SheetPage() {
 
       {/* Botón para agregar nueva fila a PISCINA - Solo se muestra si hay grupos de PISCINA */}
       {operation && operationId && hasPoolGroups && (
-      <div className="flex justify-center py-2">
+      <div className="flex justify-center py-1">
         <Button 
           variant="outline" 
-          size="lg"
-          className="flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 w-full sm:w-auto"
+          size="sm"
+          className="flex items-center gap-1 h-8 text-xs"
           onClick={agregarNuevaPersonaPiscina}
         >
-          <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-sm sm:text-base">Agregar Nueva Persona a Piscina</span>
+          <Plus className="h-3 w-3" />
+          <span>Agregar Persona a Piscina</span>
         </Button>
       </div>
       )}
@@ -1856,6 +1983,165 @@ export default function SheetPage() {
               disabled={creatingOperation}
             >
               {creatingOperation ? "Creando..." : "Crear Operación"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para editar operación */}
+      <Dialog open={editOperationDialogOpen} onOpenChange={setEditOperationDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Operación</DialogTitle>
+            <DialogDescription>
+              Modifique los datos de la operación para el día {format(fechaSeleccionada, "dd/MM/yyyy", { locale: es })}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            {/* Marina */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-marina">Marina</Label>
+              <Select
+                value={formData.marina_id || undefined}
+                onValueChange={(value) => setFormData({ ...formData, marina_id: value || "" })}
+              >
+                <SelectTrigger id="edit-marina">
+                  <SelectValue placeholder="Seleccione una marina" />
+                </SelectTrigger>
+                <SelectContent>
+                  {marinasCatalog
+                    .filter(marina => marina.is_active)
+                    .map((marina) => (
+                      <SelectItem key={marina.id} value={marina.id}>
+                        {marina.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Embarcación */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-vessel">Embarcación</Label>
+              <Select
+                value={formData.vessel_id || undefined}
+                onValueChange={(value) => setFormData({ ...formData, vessel_id: value || "" })}
+              >
+                <SelectTrigger id="edit-vessel">
+                  <SelectValue placeholder="Seleccione una embarcación" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vesselsCatalog
+                    .filter(vessel => vessel.is_active)
+                    .map((vessel) => (
+                      <SelectItem key={vessel.id} value={vessel.id}>
+                        {vessel.name} {vessel.capacity ? `(${vessel.capacity} personas)` : ''}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Capitán */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-captain">Capitán</Label>
+              <Select
+                value={formData.captain_id || undefined}
+                onValueChange={(value) => setFormData({ ...formData, captain_id: value || "" })}
+              >
+                <SelectTrigger id="edit-captain">
+                  <SelectValue placeholder="Seleccione un capitán" />
+                </SelectTrigger>
+                <SelectContent>
+                  {peopleCatalog
+                    .filter(person => person.is_active)
+                    .map((person) => (
+                      <SelectItem key={person.id} value={person.id}>
+                        {person.full_name} {person.default_role ? `(${person.default_role})` : ''}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Segundo */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-first_officer">Segundo al Mando</Label>
+              <Select
+                value={formData.first_officer_id || undefined}
+                onValueChange={(value) => setFormData({ ...formData, first_officer_id: value || "" })}
+              >
+                <SelectTrigger id="edit-first_officer">
+                  <SelectValue placeholder="Seleccione un segundo al mando" />
+                </SelectTrigger>
+                <SelectContent>
+                  {peopleCatalog
+                    .filter(person => person.is_active)
+                    .map((person) => (
+                      <SelectItem key={person.id} value={person.id}>
+                        {person.full_name} {person.default_role ? `(${person.default_role})` : ''}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clima */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-weather">Clima</Label>
+              <Input
+                id="edit-weather"
+                placeholder="Ej: Parcialmente nublado, soleado, lluvioso..."
+                value={formData.weather}
+                onChange={(e) => setFormData({ ...formData, weather: e.target.value })}
+              />
+            </div>
+
+            {/* Notas generales */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notas Generales</Label>
+              <Textarea
+                id="edit-notes"
+                placeholder="Ingrese notas generales sobre la operación..."
+                value={formData.general_notes}
+                onChange={(e) => setFormData({ ...formData, general_notes: e.target.value })}
+                rows={4}
+              />
+            </div>
+
+            {/* Estado */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">Estado</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: "DRAFT" | "CONFIRMED" | "CLOSED") => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger id="edit-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">Borrador</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmado</SelectItem>
+                  <SelectItem value="CLOSED">Cerrado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setEditOperationDialogOpen(false)}
+              disabled={updatingOperation}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUpdateOperation}
+              disabled={updatingOperation}
+            >
+              {updatingOperation ? "Actualizando..." : "Actualizar Operación"}
             </Button>
           </div>
         </DialogContent>
@@ -2530,23 +2816,59 @@ export default function SheetPage() {
               </div>
             </div>
 
-            {/* Mostrar notas existentes si hay */}
-            {selectedParticipantForNote && getParticipantNotes(selectedParticipantForNote.id || "").length > 0 && (
+            {/* Mostrar notas existentes o skeleton de carga */}
+            {selectedParticipantForNote && (
               <div className="space-y-2">
                 <Label>Notas existentes</Label>
                 <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
-                  {getParticipantNotes(selectedParticipantForNote.id || "").map((note) => (
-                    <div
-                      key={note.id}
-                      className="p-2 rounded text-sm"
-                      style={{ backgroundColor: note.color || "#FFE599", color: "#000" }}
-                    >
-                      <div className="font-medium">{note.note}</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {format(new Date(note.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
-                      </div>
+                  {loadingNotes ? (
+                    // Skeleton loading
+                    <>
+                      {[1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className="p-2 rounded bg-gray-100 animate-pulse"
+                        >
+                          <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                      ))}
+                    </>
+                  ) : getParticipantNotes(selectedParticipantForNote.id || "").length > 0 ? (
+                    // Notas cargadas
+                    getParticipantNotes(selectedParticipantForNote.id || "").map((note, index) => {
+                      // Formatear fecha de manera segura
+                      let formattedDate = "Fecha no disponible"
+                      try {
+                        if (note.created_at) {
+                          const date = new Date(note.created_at)
+                          if (!isNaN(date.getTime())) {
+                            formattedDate = format(date, "dd/MM/yyyy HH:mm", { locale: es })
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error al formatear fecha:', error)
+                      }
+
+                      return (
+                        <div
+                          key={note.id || `note-${index}`}
+                          className="p-2 rounded text-sm"
+                          style={{ backgroundColor: note.color || "#FFE599", color: "#000" }}
+                        >
+                          <div className="font-medium">{note.note}</div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {formattedDate}
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    // Sin notas
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      No hay notas anteriores
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}

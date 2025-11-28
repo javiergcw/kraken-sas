@@ -37,6 +37,7 @@ export interface ParticipantDto {
   value_label?: string;
   invoice_reference?: string;
   payment_status?: string;
+  notes_count?: number;
 }
 
 export interface ParticipantCreateDto {
@@ -92,7 +93,6 @@ export interface ParticipantNoteDto {
 export interface ParticipantNoteCreateDto {
   note: string;
   color?: string;
-  person_id: string;
 }
 
 export class OperationGroupController {
@@ -208,13 +208,55 @@ export class OperationGroupController {
   }
 
   /**
+   * Obtiene todas las notas de un participante
+   */
+  async getParticipantNotes(participantId: string): Promise<{ success: boolean; data?: ParticipantNoteDto[]; message?: string }> {
+    try {
+      const url = API_ENDPOINTS.OPERATION_PARTICIPANTS.NOTES(participantId);
+      const response = await httpService.get<any>(url);
+      
+      // Manejar diferentes estructuras de respuesta
+      let notesArray: ParticipantNoteDto[] = [];
+      
+      if (Array.isArray(response)) {
+        notesArray = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        notesArray = response.data;
+      } else if (response?.success && Array.isArray(response.data)) {
+        notesArray = response.data;
+      } else {
+        console.warn('Formato de respuesta inesperado para notas:', response);
+        notesArray = [];
+      }
+      
+      return { success: true, data: notesArray };
+    } catch (error) {
+      console.error('Error al obtener notas del participante:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Error al obtener notas del participante' 
+      };
+    }
+  }
+
+  /**
    * Agrega una nota a un participante
    */
   async addParticipantNote(participantId: string, noteData: ParticipantNoteCreateDto): Promise<{ success: boolean; data?: ParticipantNoteDto; message?: string }> {
     try {
       const url = API_ENDPOINTS.OPERATION_PARTICIPANTS.NOTES(participantId);
-      const response = await httpService.post<ParticipantNoteDto>(url, noteData);
-      return { success: true, data: response };
+      const response = await httpService.post<any>(url, noteData);
+      
+      // La respuesta del API es { success, data, message }
+      if (response?.success && response?.data) {
+        return { success: true, data: response.data };
+      } else if (response?.data) {
+        // Si la respuesta no tiene success pero tiene data, asumimos éxito
+        return { success: true, data: response.data };
+      } else {
+        // Si la respuesta es directamente el objeto de la nota
+        return { success: true, data: response };
+      }
     } catch (error) {
       console.error('Error al agregar nota al participante:', error);
       return { 
