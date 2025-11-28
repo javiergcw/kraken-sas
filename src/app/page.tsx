@@ -142,14 +142,6 @@ export default function Home() {
             >
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </button>
-
-            {/* Botón Iniciar con Email */}
-            <button
-              type="button"
-              className="w-full py-1.5 text-sm bg-white text-gray-900 border border-gray-200 rounded font-medium hover:bg-gray-50 transition-colors"
-            >
-              Iniciar con Email
-            </button>
           </form>
 
           {/* Términos y condiciones */}

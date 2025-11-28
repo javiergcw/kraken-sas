@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/reutilizables/input"
 import { Textarea } from "@/components/reutilizables/text-area"
 import { Label } from "@/components/reutilizables/label"
+import { toast } from "sonner"
 
 // Componente para input con popup
 function EditableCell({ 
@@ -512,14 +513,15 @@ export default function SheetPage() {
       if (response?.success && response.data) {
         setOperation(response.data)
         setEditOperationDialogOpen(false)
+        toast.success('Operación actualizada exitosamente')
         // Recargar la operación para obtener los datos completos
         await loadOperationForDate(fechaString)
-      } else {
-        alert(response?.message || 'Error al actualizar la operación')
-      }
-    } catch (error) {
-      console.error('Error al actualizar operación:', error)
-      alert('Error al actualizar la operación')
+        } else {
+          toast.error(response?.message || 'Error al actualizar la operación')
+        }
+      } catch (error) {
+        console.error('Error al actualizar operación:', error)
+        toast.error('Error al actualizar la operación')
     } finally {
       setUpdatingOperation(false)
     }
@@ -548,7 +550,19 @@ export default function SheetPage() {
       }
 
       if (activitiesRes?.success && activitiesRes.data) {
-        setActivitiesCatalog(activitiesRes.data)
+        // Filtrar solo actividades activas y mapear correctamente
+        const activeActivities = activitiesRes.data
+          .filter(activity => activity.is_active)
+          .map(activity => ({
+            id: activity.id,
+            code: activity.code,
+            description: activity.description || activity.code,
+            name: activity.description || activity.code,
+            label: activity.description || activity.code,
+            is_active: activity.is_active,
+            color: activity.color
+          }))
+        setActivitiesCatalog(activeActivities)
       }
     } catch (error) {
       console.error('Error al cargar catálogos:', error)
@@ -632,6 +646,12 @@ export default function SheetPage() {
     if (!id) return 'Sin asignar'
     const vessel = vesselsCatalog.find(item => item.id === id)
     return vessel?.name ?? 'Sin asignar'
+  }
+
+  const getActivityName = (id?: string | null) => {
+    if (!id) return '-'
+    const activity = activitiesCatalog.find(item => item.id === id)
+    return activity?.description || activity?.code || activity?.name || activity?.label || '-'
   }
 
   const agregarNuevoBuzo = () => {
@@ -733,12 +753,13 @@ export default function SheetPage() {
         await loadGroupParticipants(selectedGroupForParticipant.id)
         setAddParticipantDialogOpen(false)
         setSelectedGroupForParticipant(null)
-      } else {
-        alert(response.message || 'Error al agregar participante')
-      }
-    } catch (error) {
-      console.error('Error al agregar participante:', error)
-      alert('Error al agregar participante')
+        toast.success('Participante agregado exitosamente')
+        } else {
+          toast.error(response.message || 'Error al agregar participante')
+        }
+      } catch (error) {
+        console.error('Error al agregar participante:', error)
+        toast.error('Error al agregar participante')
     } finally {
       setAddingParticipant(false)
     }
@@ -811,12 +832,13 @@ export default function SheetPage() {
         setEditParticipantDialogOpen(false)
         setSelectedParticipant(null)
         setSelectedGroupForParticipant(null)
-      } else {
-        alert(response.message || 'Error al actualizar participante')
-      }
-    } catch (error) {
-      console.error('Error al actualizar participante:', error)
-      alert('Error al actualizar participante')
+        toast.success('Participante actualizado exitosamente')
+        } else {
+          toast.error(response.message || 'Error al actualizar participante')
+        }
+      } catch (error) {
+        console.error('Error al actualizar participante:', error)
+        toast.error('Error al actualizar participante')
     } finally {
       setUpdatingParticipant(false)
     }
@@ -890,12 +912,13 @@ export default function SheetPage() {
           note: "",
           color: "#FFE599"
         })
-      } else {
-        alert(response.message || 'Error al agregar nota')
-      }
-    } catch (error) {
-      console.error('Error al agregar nota:', error)
-      alert('Error al agregar nota')
+        toast.success('Nota agregada exitosamente')
+        } else {
+          toast.error(response.message || 'Error al agregar nota')
+        }
+      } catch (error) {
+        console.error('Error al agregar nota:', error)
+        toast.error('Error al agregar nota')
     } finally {
       setAddingNote(false)
     }
@@ -921,6 +944,16 @@ export default function SheetPage() {
   // Función para crear un grupo
   const handleCreateGroup = async () => {
     if (!operationId) return
+    
+    // Validar que la hora de inicio sea antes de la hora final
+    if (groupFormData.start_time && groupFormData.end_time) {
+      const startTime = groupFormData.start_time.trim()
+      const endTime = groupFormData.end_time.trim()
+      if (startTime && endTime && startTime >= endTime) {
+        toast.error('La hora de inicio debe ser anterior a la hora de fin.')
+        return
+      }
+    }
     
     try {
       setCreatingGroup(true)
@@ -956,6 +989,7 @@ export default function SheetPage() {
       if (response?.success && response.data) {
         await loadOperationGroups(operationId)
         setCreateGroupDialogOpen(false)
+        toast.success(`Grupo de ${groupFormData.environment === "OCEAN" ? "Océano" : "Piscina"} creado exitosamente`)
         // Limpiar formulario
         setGroupFormData({
           environment: "OCEAN",
@@ -966,11 +1000,11 @@ export default function SheetPage() {
         })
       } else {
         console.error('Error en la respuesta:', response)
-        alert(response?.message || 'Error al crear el grupo. Por favor, intente nuevamente.')
+        toast.error(response?.message || 'Error al crear el grupo. Por favor, intente nuevamente.')
       }
     } catch (error) {
       console.error('Error al crear grupo:', error)
-      alert('Error al crear el grupo. Por favor, verifique los datos e intente nuevamente.')
+      toast.error('Error al crear el grupo. Por favor, verifique los datos e intente nuevamente.')
     } finally {
       setCreatingGroup(false)
     }
@@ -992,6 +1026,14 @@ export default function SheetPage() {
   // Función para actualizar un grupo
   const handleUpdateGroup = async () => {
     if (!selectedGroup) return
+    
+    // Validar que la hora de inicio sea antes de la hora final
+    const startTime = groupFormData.start_time?.trim() || ""
+    const endTime = groupFormData.end_time?.trim() || ""
+    if (startTime && endTime && startTime >= endTime) {
+      toast.error('La hora de inicio debe ser anterior a la hora de fin.')
+      return
+    }
     
     try {
       setUpdatingGroup(true)
@@ -1043,9 +1085,13 @@ export default function SheetPage() {
         await loadOperationGroups(operationId)
         setEditGroupDialogOpen(false)
         setSelectedGroup(null)
+        toast.success(`Grupo de ${groupFormData.environment === "OCEAN" ? "Océano" : "Piscina"} actualizado exitosamente`)
+      } else {
+        toast.error(response?.message || 'Error al actualizar el grupo. Por favor, intente nuevamente.')
       }
     } catch (error) {
       console.error('Error al actualizar grupo:', error)
+      toast.error('Error al actualizar el grupo. Por favor, verifique los datos e intente nuevamente.')
     } finally {
       setUpdatingGroup(false)
     }
@@ -1183,32 +1229,6 @@ export default function SheetPage() {
         </div>
       </div>
 
-      {/* Botones para crear grupos */}
-      {operation && operationId && (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openCreateGroupDialog("OCEAN")}
-            disabled={loadingGroups}
-            className="flex items-center gap-1 h-8 text-xs"
-          >
-            <Plus className="h-3 w-3" />
-            Grupo Océano
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openCreateGroupDialog("POOL")}
-            disabled={loadingGroups}
-            className="flex items-center gap-1 h-8 text-xs"
-          >
-            <Plus className="h-3 w-3" />
-            Grupo Piscina
-          </Button>
-        </div>
-      )}
-
       {/* Tabla de buzos - Solo se muestra si hay grupos de OCÉANO */}
       {operation && operationId && hasOceanGroups && (
       <Card className="border border-gray-200">
@@ -1274,14 +1294,27 @@ export default function SheetPage() {
                 </div>
               ))}
           </div>
-          <div className="space-y-4">
-            {/* Tabla 1: Identificación */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-              <table className="w-full border-collapse">
+          <div className="overflow-x-auto w-full">
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
+              <table className="w-full border-collapse" style={{ minWidth: 'max-content' }}>
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50/50">
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
                     <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">BUZOS</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Chal</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Cint</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Pesas</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Msc</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Snk</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Alt</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Traje</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Actividad</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Observaciones</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Valor</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Factura</th>
                     <th className="p-2 text-center font-semibold text-xs w-20">Acciones</th>
                   </tr>
                 </thead>
@@ -1297,75 +1330,6 @@ export default function SheetPage() {
                               {getParticipantName(participant.person_id)}
                             </div>
                           </td>
-                          <td className="p-2 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              {group && (
-                                <>
-                                  <div className="relative">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => openAddNoteDialog(participant)}
-                                      className="h-6 w-6 p-0"
-                                      title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
-                                    >
-                                      <StickyNote className="h-3 w-3" />
-                                    </Button>
-                                    {participant.notes_count && participant.notes_count > 0 && (
-                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
-                                        {participant.notes_count}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openEditParticipantDialog(participant, group)}
-                                    className="h-6 w-6 p-0"
-                                    title="Editar"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="p-4 text-center text-gray-500">
-                        No hay buzos registrados
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Tabla 2: Equipos */}
-            <div className="overflow-x-auto">
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50/50">
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Chal</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Cint</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Pesas</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Msc</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Snk</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Alt</th>
-                      <th className="p-2 text-center font-semibold text-xs">Traje</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getOceanDivers().length > 0 ? (
-                      getOceanDivers().map((participant, index) => (
-                        <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2">
                             <div className="w-full px-2 py-1 text-center text-xs">
                               {participant.tanks || "-"}
@@ -1411,44 +1375,14 @@ export default function SheetPage() {
                               {participant.altimeter || "-"}
                             </div>
                           </td>
-                          <td className="p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <div className="w-full px-2 py-1 text-xs text-center">
                               {participant.suit_size || "-"}
                             </div>
                           </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={10} className="p-4 text-center text-gray-500">
-                          No hay equipos registrados
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Tabla 3: Actividad y Facturación */}
-            <div className="overflow-x-auto">
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50/50">
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Actividad</th>
-                      <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Observaciones</th>
-                      <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Valor</th>
-                      <th className="p-2 text-center font-semibold text-xs">Factura</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getOceanDivers().length > 0 ? (
-                      getOceanDivers().map((participant, index) => (
-                        <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2">
                             <div className="w-full px-2 py-1 text-xs text-center">
-                              {participant.activity_id ? "Actividad" : "-"}
+                              {getActivityName(participant.activity_id)}
                             </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
@@ -1461,42 +1395,72 @@ export default function SheetPage() {
                               {participant.value_label || "-"}
                             </div>
                           </td>
-                          <td className="p-2">
+                          <td className="border-r border-gray-200 p-2">
                             <div className="w-full px-2 py-1 text-xs text-center">
                               {participant.invoice_reference || "-"}
                             </div>
                           </td>
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {group && (
+                                <>
+                                  <div className="relative">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openAddNoteDialog(participant)}
+                                      className="h-6 w-6 p-0"
+                                      title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
+                                    >
+                                      <StickyNote className="h-3 w-3" />
+                                    </Button>
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                                      {participant.notes_count || 0}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditParticipantDialog(participant, group)}
+                                    className="h-6 w-6 p-0"
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="p-4 text-center text-gray-500">
-                          No hay actividades registradas
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={17} className="p-4 text-center text-gray-500">
+                        No hay buzos registrados
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </CardContent>
       </Card>
       )}
 
-      {/* Botón para agregar nueva fila - Solo se muestra si hay grupos de OCÉANO */}
-      {operation && operationId && hasOceanGroups && (
-      <div className="flex justify-center py-1">
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="flex items-center gap-1 h-8 text-xs"
-          onClick={agregarNuevoBuzo}
+      {/* Botón para crear grupo Océano - Arriba de la tabla de instructores */}
+      {operation && operationId && !hasOceanGroups && (
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => openCreateGroupDialog("OCEAN")}
+          disabled={loadingGroups}
+          className="w-full flex items-center justify-center gap-2 h-12 text-base font-semibold"
         >
-          <Plus className="h-3 w-3" />
-          <span>Agregar Nuevo Buzo</span>
+          <Plus className="h-5 w-5" />
+          Agregar Grupo Océano
         </Button>
-      </div>
       )}
 
       {/* Tabla de Instructores - Se muestra siempre que haya operación */}
@@ -1524,124 +1488,121 @@ export default function SheetPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-0 px-4 pb-3">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[800px]">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/50">
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">No</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Nombre</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Tanque</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Equipos</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Actividad</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
-                  <th className="p-1 sm:p-2 text-center font-semibold text-xs sm:text-sm">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getInstructors().length > 0 ? (
-                  getInstructors().map((participant, index) => {
-                    const group = getParticipantGroup(participant.id || "")
-                    const highlightColor = participant.highlight_color || "#FFFFFF"
-                    return (
-                      <tr 
-                        key={participant.id || index} 
-                        className="border-b border-gray-200"
-                        style={{ backgroundColor: highlightColor }}
-                      >
-                        <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{index + 1}</td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 sm:w-40 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm">
+          <div className="overflow-x-auto w-full">
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
+              <table className="w-full border-collapse" style={{ minWidth: 'max-content' }}>
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50/50">
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Nombre</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Equipos</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Actividad</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Observaciones</th>
+                    <th className="p-2 text-center font-semibold text-xs w-20">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getInstructors().length > 0 ? (
+                    getInstructors().map((participant, index) => {
+                      const group = getParticipantGroup(participant.id || "")
+                      return (
+                        <tr key={participant.id || index} className="border-b border-gray-200">
+                          <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="px-2 py-1 font-medium text-xs">
                               {getParticipantName(participant.person_id)}
                             </div>
-                            {getParticipantNotes(participant.id || "").length > 0 && (
-                              <span 
-                                className="px-1.5 py-0.5 rounded-full text-xs font-medium cursor-pointer"
-                                style={{ 
-                                  backgroundColor: getParticipantNotes(participant.id || "")[0]?.color || "#FFE599",
-                                  color: "#000"
-                                }}
-                                title={`${getParticipantNotes(participant.id || "").length} nota(s)`}
-                              >
-                                📝 {getParticipantNotes(participant.id || "").length}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm">
-                            {participant.tanks || "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-32 sm:w-48 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.misc || "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.activity_id ? "Actividad" : "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.observations || "-"}
-                          </div>
-                        </td>
-                        <td className="p-1 sm:p-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <div className="relative">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openAddNoteDialog(participant)}
-                                className="h-6 w-6 p-0"
-                                title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
-                              >
-                                <StickyNote className="h-3 w-3" />
-                              </Button>
-                              {participant.notes_count && participant.notes_count > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
-                                  {participant.notes_count}
-                                </span>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-center text-xs">
+                              {participant.tanks || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.misc || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {getActivityName(participant.activity_id)}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.observations || "-"}
+                            </div>
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {group && (
+                                <>
+                                  <div className="relative">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openAddNoteDialog(participant)}
+                                      className="h-6 w-6 p-0"
+                                      title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
+                                    >
+                                      <StickyNote className="h-3 w-3" />
+                                    </Button>
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                                      {participant.notes_count || 0}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditParticipantDialog(participant, group)}
+                                    className="h-6 w-6 p-0"
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </>
                               )}
                             </div>
-                            {group && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditParticipantDialog(participant, group)}
-                                className="h-6 w-6 p-0"
-                                title="Editar"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">
-                      No hay instructores registrados
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="p-4 text-center text-gray-500">
+                        No hay instructores registrados
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Botón para crear grupo Piscina - Abajo de la tabla de instructores */}
+      {operation && operationId && !hasPoolGroups && (
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => openCreateGroupDialog("POOL")}
+          disabled={loadingGroups}
+          className="w-full flex items-center justify-center gap-2 h-12 text-base font-semibold"
+        >
+          <Plus className="h-5 w-5" />
+          Agregar Grupo Piscina
+        </Button>
       )}
 
       {/* Tabla de Piscina - Solo se muestra si hay grupos de PISCINA */}
       {operation && operationId && hasPoolGroups && (
       <Card className="border border-gray-200">
         <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-base text-center">PISCINA</CardTitle>
-          <CardDescription className="mt-0.5 text-xs text-center">
+          <CardTitle className="text-base">PISCINA</CardTitle>
+          <CardDescription className="mt-0.5 text-xs">
             Registro de actividades en piscina
           </CardDescription>
         </CardHeader>
@@ -1701,132 +1662,159 @@ export default function SheetPage() {
                 </div>
               ))}
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[700px]">
+          <div className="overflow-x-auto w-full">
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white inline-block min-w-full">
+              <table className="w-full border-collapse" style={{ minWidth: 'max-content' }}>
                 <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/50">
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">No</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Nombre</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Tanque</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Equipos</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Actividad</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Ubicación</th>
-                  <th className="border-r border-gray-200 p-1 sm:p-2 text-left font-semibold text-xs sm:text-sm">Observaciones</th>
-                  <th className="p-1 sm:p-2 text-center font-semibold text-xs sm:text-sm">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getPoolDivers().length > 0 ? (
-                  getPoolDivers().map((participant, index) => {
-                    const group = getParticipantGroup(participant.id || "")
-                    return (
-                      <tr key={participant.id || index} className="border-b border-gray-200">
-                        <td className="border-r border-gray-200 p-1 sm:p-2 text-xs sm:text-sm">{index + 1}</td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 sm:w-32 px-1 sm:px-2 py-1 font-medium text-xs sm:text-sm">
+                  <tr className="border-b border-gray-200 bg-gray-50/50">
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Nombre</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Chal</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Cint</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Pesas</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Msc</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Snk</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Alt</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Traje</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Actividad</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Observaciones</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Valor</th>
+                    <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Factura</th>
+                    <th className="p-2 text-center font-semibold text-xs w-20">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getPoolDivers().length > 0 ? (
+                    getPoolDivers().map((participant, index) => {
+                      const group = getParticipantGroup(participant.id || "")
+                      return (
+                        <tr key={participant.id || index} className="border-b border-gray-200">
+                          <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="px-2 py-1 font-medium text-xs">
                               {getParticipantName(participant.person_id)}
                             </div>
-                            {getParticipantNotes(participant.id || "").length > 0 && (
-                              <span 
-                                className="px-1.5 py-0.5 rounded-full text-xs font-medium cursor-pointer"
-                                style={{ 
-                                  backgroundColor: getParticipantNotes(participant.id || "")[0]?.color || "#FFE599",
-                                  color: "#000"
-                                }}
-                                title={`${getParticipantNotes(participant.id || "").length} nota(s)`}
-                              >
-                                📝 {getParticipantNotes(participant.id || "").length}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-center text-xs sm:text-sm">
-                            {participant.tanks || "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-20 sm:w-24 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.misc || "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-12 sm:w-16 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.activity_id ? "Actividad" : "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-16 sm:w-20 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.misc || "-"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-200 p-1 sm:p-2">
-                          <div className="w-24 sm:w-32 px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                            {participant.observations || "-"}
-                          </div>
-                        </td>
-                        <td className="p-1 sm:p-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <div className="relative">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openAddNoteDialog(participant)}
-                                className="h-6 w-6 p-0"
-                                title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
-                              >
-                                <StickyNote className="h-3 w-3" />
-                              </Button>
-                              {participant.notes_count && participant.notes_count > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
-                                  {participant.notes_count}
-                                </span>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-center text-xs">
+                              {participant.tanks || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-center text-xs">
+                              {participant.bags || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.regulator || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.bcd || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.weightbelt || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.weights_kg ? `${participant.weights_kg}kg` : "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.misc || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.snorkel_set || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.altimeter || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.suit_size || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {getActivityName(participant.activity_id)}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs">
+                              {participant.observations || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.value_label || "-"}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
+                            <div className="w-full px-2 py-1 text-xs text-center">
+                              {participant.invoice_reference || "-"}
+                            </div>
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {group && (
+                                <>
+                                  <div className="relative">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openAddNoteDialog(participant)}
+                                      className="h-6 w-6 p-0"
+                                      title={participant.notes_count && participant.notes_count > 0 ? `Ver notas (${participant.notes_count})` : "Agregar nota"}
+                                    >
+                                      <StickyNote className="h-3 w-3" />
+                                    </Button>
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center">
+                                      {participant.notes_count || 0}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditParticipantDialog(participant, group)}
+                                    className="h-6 w-6 p-0"
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </>
                               )}
                             </div>
-                            {group && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditParticipantDialog(participant, group)}
-                                className="h-6 w-6 p-0"
-                                title="Editar"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="p-4 text-center text-gray-500">
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                    <td colSpan={17} className="p-4 text-center text-gray-500">
                       No hay actividades de piscina registradas
                     </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>
-      )}
-
-      {/* Botón para agregar nueva fila a PISCINA - Solo se muestra si hay grupos de PISCINA */}
-      {operation && operationId && hasPoolGroups && (
-      <div className="flex justify-center py-1">
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="flex items-center gap-1 h-8 text-xs"
-          onClick={agregarNuevaPersonaPiscina}
-        >
-          <Plus className="h-3 w-3" />
-          <span>Agregar Persona a Piscina</span>
-        </Button>
-      </div>
       )}
 
       {/* Diálogo para crear operación */}
@@ -1868,8 +1856,9 @@ export default function SheetPage() {
               <Select
                 value={formData.vessel_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, vessel_id: value || "" })}
+                disabled={true}
               >
-                <SelectTrigger id="vessel">
+                <SelectTrigger id="vessel" disabled={true}>
                   <SelectValue placeholder="Seleccione una embarcación" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2027,8 +2016,9 @@ export default function SheetPage() {
               <Select
                 value={formData.vessel_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, vessel_id: value || "" })}
+                disabled={true}
               >
-                <SelectTrigger id="edit-vessel">
+                <SelectTrigger id="edit-vessel" disabled={true}>
                   <SelectValue placeholder="Seleccione una embarcación" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2250,8 +2240,9 @@ export default function SheetPage() {
               <Select
                 value={groupFormData.environment}
                 onValueChange={(value: "OCEAN" | "POOL") => setGroupFormData({ ...groupFormData, environment: value })}
+                disabled={true}
               >
-                <SelectTrigger id="edit-group-environment">
+                <SelectTrigger id="edit-group-environment" disabled={true}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2379,13 +2370,11 @@ export default function SheetPage() {
                   <SelectValue placeholder="Seleccione una actividad" />
                 </SelectTrigger>
                 <SelectContent>
-                  {activitiesCatalog
-                    .filter(activity => activity.is_active)
-                    .map((activity) => (
-                      <SelectItem key={activity.id} value={activity.id}>
-                        {activity.name || activity.label}
-                      </SelectItem>
-                    ))}
+                  {activitiesCatalog.map((activity) => (
+                    <SelectItem key={activity.id} value={activity.id}>
+                      {activity.description || activity.code || activity.name || activity.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -2578,8 +2567,9 @@ export default function SheetPage() {
               <Select
                 value={participantFormData.role}
                 onValueChange={(value: 'DIVER' | 'INSTRUCTOR' | 'CREW') => setParticipantFormData({ ...participantFormData, role: value })}
+                disabled={true}
               >
-                <SelectTrigger id="edit-participant-role">
+                <SelectTrigger id="edit-participant-role" disabled={true}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2601,13 +2591,11 @@ export default function SheetPage() {
                   <SelectValue placeholder="Seleccione una actividad" />
                 </SelectTrigger>
                 <SelectContent>
-                  {activitiesCatalog
-                    .filter(activity => activity.is_active)
-                    .map((activity) => (
-                      <SelectItem key={activity.id} value={activity.id}>
-                        {activity.name || activity.label}
-                      </SelectItem>
-                    ))}
+                  {activitiesCatalog.map((activity) => (
+                    <SelectItem key={activity.id} value={activity.id}>
+                      {activity.description || activity.code || activity.name || activity.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
