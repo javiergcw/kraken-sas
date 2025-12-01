@@ -14,7 +14,7 @@ import {
   OperationGroupCreateRequestDto,
   OperationGroupUpdateRequestDto,
 } from '../dto';
-import { httpService } from '@/utils/http.service';
+import { httpService, HttpError } from '@/utils/http.service';
 import { API_ENDPOINTS } from '@/routes/api.config';
 
 export interface ParticipantDto {
@@ -93,6 +93,17 @@ export interface ParticipantNoteDto {
 export interface ParticipantNoteCreateDto {
   note: string;
   color?: string;
+}
+
+export interface ParticipantValidationResponseDto {
+  success: boolean;
+  message?: string;
+  data?: {
+    available_slots: number;
+    can_add: boolean;
+    current_participants: number;
+    vessel_capacity: number;
+  };
 }
 
 export class OperationGroupController {
@@ -174,15 +185,115 @@ export class OperationGroupController {
   }
 
   /**
+   * Valida si se puede agregar un participante a un grupo
+   */
+  async validateParticipant(groupId: string, participantData: ParticipantCreateDto): Promise<ParticipantValidationResponseDto> {
+    try {
+      const url = API_ENDPOINTS.OPERATION_GROUPS.VALIDATE_PARTICIPANT(groupId);
+      const response = await httpService.post<ParticipantValidationResponseDto>(url, participantData);
+      
+      // Manejar diferentes estructuras de respuesta
+      if (response?.success !== undefined) {
+        return response;
+      } else if (response?.data) {
+        return { success: true, data: response.data };
+      } else {
+        return { success: true, data: response as any };
+      }
+    } catch (error: any) {
+      console.error('Error al validar participante:', error);
+      
+      // Si es un HttpError, extraer el mensaje del body
+      if (error instanceof HttpError && error.data) {
+        const errorData = error.data;
+        
+        // Si tiene la estructura estándar de respuesta con success, message y data
+        if (errorData.success !== undefined || (errorData.message && errorData.data)) {
+          return {
+            success: errorData.success || false,
+            message: errorData.message || 'Error al validar participante',
+            data: errorData.data
+          };
+        }
+        
+        // Si el error tiene información de capacidad directamente (vessel_capacity, can_add, etc.)
+        if (errorData.vessel_capacity !== undefined || errorData.can_add !== undefined || errorData.current_participants !== undefined) {
+          return {
+            success: false,
+            message: errorData.message || 'No se puede agregar más participantes. La embarcación ha alcanzado su capacidad máxima.',
+            data: {
+              vessel_capacity: errorData.vessel_capacity,
+              current_participants: errorData.current_participants,
+              available_slots: errorData.available_slots,
+              can_add: errorData.can_add || false
+            }
+          };
+        }
+        
+        // Si es un string o mensaje simple
+        return {
+          success: false,
+          message: typeof errorData === 'string' ? errorData : errorData.message || 'Error al validar participante'
+        };
+      }
+      
+      // Si es un HttpError pero sin data estructurada
+      if (error instanceof HttpError) {
+        return {
+          success: false,
+          message: error.message || `Error HTTP ${error.status}: ${error.statusText}`
+        };
+      }
+      
+      // Error genérico
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Error al validar participante' 
+      };
+    }
+  }
+
+  /**
    * Agrega un participante a un grupo
    */
   async addParticipant(groupId: string, participantData: ParticipantCreateDto): Promise<{ success: boolean; data?: ParticipantDto; message?: string }> {
     try {
-      const url = API_ENDPOINTS.OPERATION_GROUPS.PARTICIPANTS(groupId);
+      const url = API_ENDPOINTS.OPERATION_GROUPS.VALIDATE_PARTICIPANT(groupId);
       const response = await httpService.post<ParticipantDto>(url, participantData);
       return { success: true, data: response };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al agregar participante:', error);
+      
+      // Si es un HttpError, extraer el mensaje del body
+      if (error instanceof HttpError && error.data) {
+        const errorData = error.data;
+        
+        // Si tiene la estructura { success: false, error: "mensaje" }
+        if (errorData.error) {
+          return {
+            success: false,
+            message: errorData.error
+          };
+        }
+        
+        // Si tiene la estructura estándar de respuesta con message
+        if (errorData.message) {
+          return {
+            success: false,
+            message: errorData.message
+          };
+        }
+        
+        // Si es un string o mensaje simple
+        if (typeof errorData === 'string') {
+          return {
+            success: false,
+            message: errorData
+          };
+        }
+      }
+      
+      // Error genérico
       return { 
         success: false, 
         message: error instanceof Error ? error.message : 'Error al agregar participante' 

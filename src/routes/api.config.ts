@@ -91,6 +91,7 @@ export const API_ENDPOINTS = {
     BY_OPERATION: (operationId: string) => `/v1/operations/${operationId}/groups`,
     BY_ID: (groupId: string) => `/v1/operation-groups/${groupId}`,
     PARTICIPANTS: (groupId: string) => `/v1/operation-groups/${groupId}/participants`,
+    VALIDATE_PARTICIPANT: (groupId: string) => `/v1/operation-groups/${groupId}/participants/validate`,
   },
   OPERATION_PARTICIPANTS: {
     BY_ID: (participantId: string) => `/v1/operation-participants/${participantId}`,
@@ -179,6 +180,7 @@ export const EXTERNAL_ROUTES = {
     BY_OPERATION: (operationId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.BY_OPERATION(operationId)}`,
     BY_ID: (groupId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.BY_ID(groupId)}`,
     PARTICIPANTS: (groupId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.PARTICIPANTS(groupId)}`,
+    VALIDATE_PARTICIPANT: (groupId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_GROUPS.VALIDATE_PARTICIPANT(groupId)}`,
   },
   OPERATION_PARTICIPANTS: {
     BY_ID: (participantId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_PARTICIPANTS.BY_ID(participantId)}`,

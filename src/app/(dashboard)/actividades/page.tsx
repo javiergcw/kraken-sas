@@ -741,18 +741,73 @@ export default function SheetPage() {
   const handleAddParticipant = async () => {
     if (!selectedGroupForParticipant || !participantFormData.person_id) return
 
+    // Validar capacidad del buque antes de hacer la petición
+    // La capacidad es específica de cada operación diaria (cada operación tiene su embarcación)
+    if (operation?.vessel_id && operationId) {
+      const vessel = vesselsCatalog.find(v => v.id === operation.vessel_id)
+      if (vessel?.capacity) {
+        // Contar solo los participantes de los grupos de esta operación específica
+        let totalParticipants = 0
+        operationGroups.forEach(group => {
+          const groupParticipants = participants[group.id]
+          if (Array.isArray(groupParticipants)) {
+            totalParticipants += groupParticipants.length
+          }
+        })
+        
+        // Si al agregar uno más supera la capacidad, no permitir agregar
+        if (totalParticipants + 1 > vessel.capacity) {
+          toast.error('No se pueden añadir más participantes. El buque ya está al máximo de su capacidad.')
+          return
+        }
+      }
+    }
+
     try {
       setAddingParticipant(true)
+      
       const response = await operationGroupController.addParticipant(
         selectedGroupForParticipant.id,
         participantFormData
       )
 
       if (response.success) {
-        // Recargar participantes del grupo
-        await loadGroupParticipants(selectedGroupForParticipant.id)
+        // Limpiar el formulario
+        setParticipantFormData({
+          person_id: "",
+          role: participantRole,
+          tanks: undefined,
+          bags: undefined,
+          regulator: "",
+          bcd: "",
+          weightbelt: "",
+          weights_kg: undefined,
+          misc: "",
+          snorkel_set: "",
+          altimeter: "",
+          suit_size: "",
+          observations: "",
+          value_label: "",
+          invoice_reference: "",
+          payment_status: ""
+        })
+        
+        // Cerrar el diálogo
         setAddParticipantDialogOpen(false)
         setSelectedGroupForParticipant(null)
+        
+        // Recargar participantes del grupo para actualizar la tabla inmediatamente
+        const groupId = selectedGroupForParticipant.id
+        await loadGroupParticipants(groupId)
+        
+        // Si hay una operación activa, también recargar todos los grupos para sincronización completa
+        if (operationId && operationGroups.length > 0) {
+          // Recargar participantes de todos los grupos en paralelo
+          await Promise.all(
+            operationGroups.map(group => loadGroupParticipants(group.id))
+          )
+        }
+        
         toast.success('Participante agregado exitosamente')
         } else {
           toast.error(response.message || 'Error al agregar participante')
