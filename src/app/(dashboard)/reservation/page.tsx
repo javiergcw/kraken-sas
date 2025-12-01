@@ -390,7 +390,7 @@ export default function SheetPage() {
       {/* Tabla de buzos */}
       <Card>
         <CardHeader>
-          <CardTitle>Registro de Buzos</CardTitle>
+          <CardTitle>REGISTRO DE BUZOS</CardTitle>
           <CardDescription>
             Control de equipos y actividades de buceo
           </CardDescription>
@@ -631,7 +631,7 @@ export default function SheetPage() {
       {/* Tabla de Instructores */}
       <Card>
         <CardHeader>
-          <CardTitle>Instructores</CardTitle>
+          <CardTitle>INSTRUCTORES</CardTitle>
           <CardDescription>
             Registro de instructores y personal de apoyo
           </CardDescription>

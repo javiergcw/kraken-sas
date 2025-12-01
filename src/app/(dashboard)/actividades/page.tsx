@@ -1233,7 +1233,7 @@ export default function SheetPage() {
       {operation && operationId && hasOceanGroups && (
       <Card className="border border-gray-200">
         <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-base">Registro de Buzos</CardTitle>
+          <CardTitle className="text-base">REGISTRO DE BUZOS</CardTitle>
           <CardDescription className="mt-0.5 text-xs">
             Control de equipos y actividades de buceo
           </CardDescription>
@@ -1469,7 +1469,7 @@ export default function SheetPage() {
         <CardHeader className="pb-2 pt-3 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Instructores</CardTitle>
+              <CardTitle className="text-base">INSTRUCTORES</CardTitle>
               <CardDescription className="mt-0.5 text-xs">
                 Registro de instructores y personal de apoyo
               </CardDescription>
@@ -1856,9 +1856,8 @@ export default function SheetPage() {
               <Select
                 value={formData.vessel_id || undefined}
                 onValueChange={(value) => setFormData({ ...formData, vessel_id: value || "" })}
-                disabled={true}
               >
-                <SelectTrigger id="vessel" disabled={true}>
+                <SelectTrigger id="vessel">
                   <SelectValue placeholder="Seleccione una embarcación" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2330,15 +2329,15 @@ export default function SheetPage() {
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            {/* Persona */}
+            {/* Persona / Nombre */}
             <div className="space-y-2">
-              <Label htmlFor="participant-person">Persona *</Label>
+              <Label htmlFor="participant-person">{participantRole === "INSTRUCTOR" ? "Nombre" : "Persona"} *</Label>
               <Select
                 value={participantFormData.person_id || undefined}
                 onValueChange={(value) => setParticipantFormData({ ...participantFormData, person_id: value || "" })}
               >
                 <SelectTrigger id="participant-person">
-                  <SelectValue placeholder="Seleccione una persona" />
+                  <SelectValue placeholder={participantRole === "INSTRUCTOR" ? "Seleccione un instructor" : "Seleccione una persona"} />
                 </SelectTrigger>
                 <SelectContent>
                   {peopleCatalog
@@ -2359,163 +2358,223 @@ export default function SheetPage() {
               </Select>
             </div>
 
-            {/* Actividad */}
-            <div className="space-y-2">
-              <Label htmlFor="participant-activity">Actividad (opcional)</Label>
-              <Select
-                value={participantFormData.activity_id || undefined}
-                onValueChange={(value) => setParticipantFormData({ ...participantFormData, activity_id: value || undefined })}
-              >
-                <SelectTrigger id="participant-activity">
-                  <SelectValue placeholder="Seleccione una actividad" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activitiesCatalog.map((activity) => (
-                    <SelectItem key={activity.id} value={activity.id}>
-                      {activity.description || activity.code || activity.name || activity.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Para instructores: solo mostrar Tanque, Equipos, Actividad y Observaciones */}
+            {participantRole === "INSTRUCTOR" ? (
+              <>
+                {/* Tanque */}
+                <div className="space-y-2">
+                  <Label htmlFor="participant-tanks">Tanque</Label>
+                  <Input
+                    id="participant-tanks"
+                    type="number"
+                    value={participantFormData.tanks || ""}
+                    onChange={(e) => setParticipantFormData({ ...participantFormData, tanks: e.target.value ? parseInt(e.target.value) : undefined })}
+                  />
+                </div>
 
-            {/* Equipos */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="participant-tanks">Tanques</Label>
-                <Input
-                  id="participant-tanks"
-                  type="number"
-                  value={participantFormData.tanks || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, tanks: e.target.value ? parseInt(e.target.value) : undefined })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="participant-bags">Maletas</Label>
-                <Input
-                  id="participant-bags"
-                  type="number"
-                  value={participantFormData.bags || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, bags: e.target.value ? parseInt(e.target.value) : undefined })}
-                />
-              </div>
-            </div>
+                {/* Equipos */}
+                <div className="space-y-2">
+                  <Label htmlFor="participant-equipos">Equipos</Label>
+                  <Input
+                    id="participant-equipos"
+                    value={participantFormData.misc || ""}
+                    onChange={(e) => setParticipantFormData({ ...participantFormData, misc: e.target.value })}
+                    placeholder="Ingrese los equipos"
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="participant-regulator">Regulador</Label>
-                <Input
-                  id="participant-regulator"
-                  value={participantFormData.regulator || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, regulator: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="participant-bcd">Chaleco (BCD)</Label>
-                <Input
-                  id="participant-bcd"
-                  value={participantFormData.bcd || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, bcd: e.target.value })}
-                />
-              </div>
-            </div>
+                {/* Actividad */}
+                <div className="space-y-2">
+                  <Label htmlFor="participant-activity">Actividad</Label>
+                  <Select
+                    value={participantFormData.activity_id || undefined}
+                    onValueChange={(value) => setParticipantFormData({ ...participantFormData, activity_id: value || undefined })}
+                  >
+                    <SelectTrigger id="participant-activity">
+                      <SelectValue placeholder="Seleccione una actividad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activitiesCatalog.map((activity) => (
+                        <SelectItem key={activity.id} value={activity.id}>
+                          {activity.description || activity.code || activity.name || activity.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="participant-weightbelt">Cinturón</Label>
-                <Input
-                  id="participant-weightbelt"
-                  value={participantFormData.weightbelt || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, weightbelt: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="participant-weights">Pesas (kg)</Label>
-                <Input
-                  id="participant-weights"
-                  type="number"
-                  step="0.1"
-                  value={participantFormData.weights_kg || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, weights_kg: e.target.value ? parseFloat(e.target.value) : undefined })}
-                />
-              </div>
-            </div>
+                {/* Observaciones */}
+                <div className="space-y-2">
+                  <Label htmlFor="participant-observations">Observaciones</Label>
+                  <Textarea
+                    id="participant-observations"
+                    value={participantFormData.observations || ""}
+                    onChange={(e) => setParticipantFormData({ ...participantFormData, observations: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Actividad */}
+                <div className="space-y-2">
+                  <Label htmlFor="participant-activity">Actividad (opcional)</Label>
+                  <Select
+                    value={participantFormData.activity_id || undefined}
+                    onValueChange={(value) => setParticipantFormData({ ...participantFormData, activity_id: value || undefined })}
+                  >
+                    <SelectTrigger id="participant-activity">
+                      <SelectValue placeholder="Seleccione una actividad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activitiesCatalog.map((activity) => (
+                        <SelectItem key={activity.id} value={activity.id}>
+                          {activity.description || activity.code || activity.name || activity.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="participant-misc">Máscara (Msc)</Label>
-                <Input
-                  id="participant-misc"
-                  value={participantFormData.misc || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, misc: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="participant-snorkel">Snorkel</Label>
-                <Input
-                  id="participant-snorkel"
-                  value={participantFormData.snorkel_set || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, snorkel_set: e.target.value })}
-                />
-              </div>
-            </div>
+                {/* Equipos */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-tanks">Tanques</Label>
+                    <Input
+                      id="participant-tanks"
+                      type="number"
+                      value={participantFormData.tanks || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, tanks: e.target.value ? parseInt(e.target.value) : undefined })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-bags">Maletas</Label>
+                    <Input
+                      id="participant-bags"
+                      type="number"
+                      value={participantFormData.bags || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, bags: e.target.value ? parseInt(e.target.value) : undefined })}
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="participant-altimeter">Altímetro (Alt)</Label>
-                <Input
-                  id="participant-altimeter"
-                  value={participantFormData.altimeter || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, altimeter: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="participant-suit">Traje</Label>
-                <Input
-                  id="participant-suit"
-                  value={participantFormData.suit_size || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, suit_size: e.target.value })}
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-regulator">Regulador</Label>
+                    <Input
+                      id="participant-regulator"
+                      value={participantFormData.regulator || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, regulator: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-bcd">Chaleco (BCD)</Label>
+                    <Input
+                      id="participant-bcd"
+                      value={participantFormData.bcd || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, bcd: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="participant-observations">Observaciones</Label>
-              <Textarea
-                id="participant-observations"
-                value={participantFormData.observations || ""}
-                onChange={(e) => setParticipantFormData({ ...participantFormData, observations: e.target.value })}
-                rows={3}
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-weightbelt">Cinturón</Label>
+                    <Input
+                      id="participant-weightbelt"
+                      value={participantFormData.weightbelt || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, weightbelt: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-weights">Pesas (kg)</Label>
+                    <Input
+                      id="participant-weights"
+                      type="number"
+                      step="0.1"
+                      value={participantFormData.weights_kg || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, weights_kg: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="participant-value">Valor</Label>
-                <Input
-                  id="participant-value"
-                  value={participantFormData.value_label || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, value_label: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="participant-invoice">Factura</Label>
-                <Input
-                  id="participant-invoice"
-                  value={participantFormData.invoice_reference || ""}
-                  onChange={(e) => setParticipantFormData({ ...participantFormData, invoice_reference: e.target.value })}
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-misc">Máscara (Msc)</Label>
+                    <Input
+                      id="participant-misc"
+                      value={participantFormData.misc || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, misc: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-snorkel">Snorkel</Label>
+                    <Input
+                      id="participant-snorkel"
+                      value={participantFormData.snorkel_set || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, snorkel_set: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="participant-payment">Estado de Pago</Label>
-              <Input
-                id="participant-payment"
-                value={participantFormData.payment_status || ""}
-                onChange={(e) => setParticipantFormData({ ...participantFormData, payment_status: e.target.value })}
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-altimeter">Altímetro (Alt)</Label>
+                    <Input
+                      id="participant-altimeter"
+                      value={participantFormData.altimeter || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, altimeter: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-suit">Traje</Label>
+                    <Input
+                      id="participant-suit"
+                      value={participantFormData.suit_size || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, suit_size: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="participant-observations">Observaciones</Label>
+                  <Textarea
+                    id="participant-observations"
+                    value={participantFormData.observations || ""}
+                    onChange={(e) => setParticipantFormData({ ...participantFormData, observations: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-value">Valor</Label>
+                    <Input
+                      id="participant-value"
+                      value={participantFormData.value_label || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, value_label: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-invoice">Factura</Label>
+                    <Input
+                      id="participant-invoice"
+                      value={participantFormData.invoice_reference || ""}
+                      onChange={(e) => setParticipantFormData({ ...participantFormData, invoice_reference: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="participant-payment">Estado de Pago</Label>
+                  <Input
+                    id="participant-payment"
+                    value={participantFormData.payment_status || ""}
+                    onChange={(e) => setParticipantFormData({ ...participantFormData, payment_status: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 mt-6">
