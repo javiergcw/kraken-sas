@@ -97,6 +97,10 @@ export const API_ENDPOINTS = {
     BY_ID: (participantId: string) => `/v1/operation-participants/${participantId}`,
     NOTES: (participantId: string) => `/v1/operation-participants/${participantId}/notes`,
   },
+  PRODUCT_ASSOCIATIONS: {
+    BASE: '/v1/product-associations',
+    BY_PRODUCT_ID: (productId: string) => `/v1/product-associations/${productId}`,
+  },
 } as const;
 
 /**
@@ -185,6 +189,10 @@ export const EXTERNAL_ROUTES = {
   OPERATION_PARTICIPANTS: {
     BY_ID: (participantId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_PARTICIPANTS.BY_ID(participantId)}`,
     NOTES: (participantId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.OPERATION_PARTICIPANTS.NOTES(participantId)}`,
+  },
+  PRODUCT_ASSOCIATIONS: {
+    BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BASE}`,
+    BY_PRODUCT_ID: (productId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BY_PRODUCT_ID(productId)}`,
   },
 } as const;
 

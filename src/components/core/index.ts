@@ -50,3 +50,6 @@ export * from './operations';
 // Operation Groups (Grupos dentro de operaciones) - módulo completo
 export * from './operation-groups';
 
+
+// Product Associations - módulo completo
+export * from './product-associations';

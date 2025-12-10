@@ -17,13 +17,14 @@ export class ActivityService {
    * @param active Si se proporciona, filtra por estado activo
    * @returns Promise con la lista de actividades
    */
-  async getAll(active?: boolean): Promise<ActivityListResponseDto> {
+  async getAll(active?: boolean, token?: string): Promise<ActivityListResponseDto> {
     try {
       let url = API_ENDPOINTS.ACTIVITIES.BASE;
       if (active !== undefined) {
         url += `?active=${active}`;
       }
-      const response = await httpService.get<ActivityListResponseDto>(url);
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      const response = await httpService.get<ActivityListResponseDto>(url, { headers });
       return response;
     } catch (error) {
       if (error instanceof Error) {

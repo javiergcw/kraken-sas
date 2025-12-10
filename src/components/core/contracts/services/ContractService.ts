@@ -22,10 +22,12 @@ import {
 
 export class ContractService {
   // Operaciones de contratos (autenticadas)
-  async getAll(): Promise<ContractsResponseDto> {
+  async getAll(token?: string): Promise<ContractsResponseDto> {
     try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
       const response = await httpService.get<ContractsResponseDto>(
-        API_ENDPOINTS.CONTRACTS.BASE
+        API_ENDPOINTS.CONTRACTS.BASE,
+        { headers }
       );
       return response;
     } catch (error) {
@@ -128,7 +130,7 @@ export class ContractService {
     try {
       // Obtener token usando el servicio centralizado
       const token = tokenService.getToken();
-      
+
       if (!token) {
         throw new Error('No hay sesión activa');
       }
@@ -143,9 +145,9 @@ export class ContractService {
       // Usar /api como prefijo para pasar por el proxy de Next.js
       const response = await fetch(
         `/api${API_ENDPOINTS.CONTRACTS.PDF(id)}`,
-        { 
+        {
           method: 'GET',
-          headers 
+          headers
         }
       );
 
@@ -168,21 +170,21 @@ export class ContractService {
         try {
           const jsonData = JSON.parse(responseText);
           console.log('[ContractService] JSON response:', jsonData);
-          
+
           // Intentar extraer HTML de campos comunes
           const htmlContent = jsonData.html || jsonData.content || jsonData.data || jsonData.body;
-          
+
           if (htmlContent && typeof htmlContent === 'string') {
             console.log('[ContractService] HTML extracted from JSON, length:', htmlContent.length);
             return htmlContent;
           }
-          
+
           // Si no hay HTML pero hay un mensaje de éxito, puede que el HTML esté en otro campo
           // o que necesitemos hacer otra petición
           if (jsonData.message && jsonData.message.includes('successfully')) {
             throw new Error('El backend devolvió un mensaje de éxito pero no contiene HTML. Verifica la respuesta del servidor.');
           }
-          
+
           // Si hay un error en el JSON
           throw new Error(jsonData.message || jsonData.error || 'Error al obtener HTML del contrato');
         } catch (parseError) {
@@ -202,8 +204,8 @@ export class ContractService {
       }
 
       // Validar que no sea solo un mensaje de texto
-      if (htmlContent.trim().toLowerCase().includes('contract retrieved successfully') && 
-          htmlContent.length < 500) {
+      if (htmlContent.trim().toLowerCase().includes('contract retrieved successfully') &&
+        htmlContent.length < 500) {
         throw new Error('El backend devolvió un mensaje de éxito en lugar del HTML del contrato');
       }
 
@@ -225,12 +227,12 @@ export class ContractService {
     try {
       console.log('[ContractService] Generating PDF for contract:', id);
       console.log('[ContractService] Generate data:', generateData);
-      
+
       const response = await httpService.post<ContractPDFResponseDto>(
         API_ENDPOINTS.CONTRACTS.PDF(id),
         generateData
       );
-      
+
       console.log('[ContractService] PDF generation response:', response);
       return response;
     } catch (error) {

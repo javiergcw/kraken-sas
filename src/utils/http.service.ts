@@ -43,10 +43,10 @@ class HttpService {
   private buildURL(endpoint: string, params?: Record<string, string | number | boolean>): string {
     // Asegurar que el endpoint empiece con /
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    
+
     // Construir la URL base
     const baseUrl = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
-    
+
     // Para URLs relativas (rutas API de Next.js), construir directamente
     let urlString: string;
     if (baseUrl.startsWith('/')) {
@@ -57,7 +57,7 @@ class HttpService {
       const url = new URL(cleanEndpoint, baseUrl);
       urlString = url.toString();
     }
-    
+
     // Agregar query params si existen
     if (params && Object.keys(params).length > 0) {
       const searchParams = new URLSearchParams();
@@ -88,7 +88,7 @@ class HttpService {
     } = options;
 
     const url = this.buildURL(endpoint, params);
-    
+
     // Solo agregar Content-Type para métodos que tienen body
     const methodsWithBody: Array<'POST' | 'PUT' | 'PATCH' | 'DELETE'> = ['POST', 'PUT', 'PATCH', 'DELETE'];
     const hasBody = body && methodsWithBody.includes(method as any);
@@ -132,10 +132,10 @@ class HttpService {
 
       let data: T;
       const contentType = response.headers.get('content-type');
-      
+
       // Leer el texto de la respuesta
       const responseText = await response.text();
-      
+
       // Intentar parsear como JSON
       if (contentType?.includes('application/json') || responseText.trim().startsWith('{') || responseText.trim().startsWith('[')) {
         try {
@@ -164,13 +164,13 @@ class HttpService {
       if (error instanceof HttpError) {
         throw error;
       }
-      
+
       console.error('[HttpService] Error de red:', {
         url,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      
+
       // Error de red o desconocido
       throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -179,8 +179,12 @@ class HttpService {
   /**
    * GET request
    */
-  async get<T>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
-    const response = await this.request<T>(endpoint, { method: 'GET', params });
+  /**
+   * GET request
+   */
+  async get<T>(endpoint: string, options: { params?: Record<string, string | number | boolean>; headers?: Record<string, string> } = {}): Promise<T> {
+    const { params, headers } = options;
+    const response = await this.request<T>(endpoint, { method: 'GET', params, headers });
     return response.data;
   }
 

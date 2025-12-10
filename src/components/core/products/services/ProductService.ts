@@ -17,10 +17,12 @@ export class ProductService {
    * Obtiene todos los productos
    * @returns Promise con la lista de productos
    */
-  async getAll(): Promise<ProductsResponseDto> {
+  async getAll(token?: string): Promise<ProductsResponseDto> {
     try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
       const response = await httpService.get<ProductsResponseDto>(
-        API_ENDPOINTS.PRODUCTS.BASE
+        API_ENDPOINTS.PRODUCTS.BASE,
+        { headers }
       );
       return response;
     } catch (error) {

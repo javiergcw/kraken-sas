@@ -44,28 +44,28 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) => {
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Determinar qué sección debe estar abierta según la ruta actual
   const isMarketingRoute = pathname.startsWith('/marketing');
   const isHerramientasRoute = pathname.startsWith('/herramientas');
   const isProyectosRoute = pathname.startsWith('/contract');
   const isActividadesRoute = pathname.startsWith('/actividades') || pathname.startsWith('/maestros');
-  
+
   const [principalOpen, setPrincipalOpen] = useState(!isMarketingRoute && !isHerramientasRoute && !isProyectosRoute && !isActividadesRoute);
   const [marketingOpen, setMarketingOpen] = useState(isMarketingRoute);
   const [herramientasOpen, setHerramientasOpen] = useState(isHerramientasRoute);
   const [proyectosOpen, setProyectosOpen] = useState(isProyectosRoute);
   const [actividadesOpen, setActividadesOpen] = useState(isActividadesRoute);
-  
+
   // Obtener información del usuario desde el contexto
   const { user } = useUser();
   const userEmail = user?.email || '';
   const companyName = user?.company_name || '';
-  
+
   // Estado para el menú de usuario
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
-  
+
   // Función para obtener las iniciales del email
   const getInitials = (email: string): string => {
     if (!email) return 'U';
@@ -144,6 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       children: [
         { title: 'Dashboard', path: '/dashboard', active: pathname === '/dashboard' },
         { title: 'Productos', path: '/productos', active: pathname.startsWith('/productos') },
+        { title: 'Asociaciones', path: '/asociaciones-productos', active: pathname.startsWith('/asociaciones-productos') },
         { title: 'Categorías', path: '/categorias', active: pathname.startsWith('/categorias') },
         { title: 'Historial de ventas', path: '/historial', active: pathname.startsWith('/historial') },
       ],
@@ -197,9 +198,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Box 
-        sx={{ 
-          p: 1.5, 
+      <Box
+        sx={{
+          p: 1.5,
           backgroundColor: 'white',
           cursor: !isExpanded && !isMobile ? 'pointer' : 'default',
           '&:hover': !isExpanded && !isMobile ? { backgroundColor: '#F5F5F5' } : {},
@@ -219,7 +220,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
           {isExpanded && (
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px', lineHeight: 1.1 }}>
-              {companyName || '...'}
+                {companyName || '...'}
               </Typography>
             </Box>
           )}
@@ -341,9 +342,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
       </Box>
 
       {/* Footer */}
-      <Box 
-        sx={{ 
-          p: 1.5, 
+      <Box
+        sx={{
+          p: 1.5,
           backgroundColor: 'white',
           cursor: !isExpanded && !isMobile ? 'pointer' : 'default',
           '&:hover': !isExpanded && !isMobile ? { backgroundColor: '#F5F5F5' } : {},
@@ -368,11 +369,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
             >
               {getInitials(userEmail)}
             </Typography>
-             {isExpanded && (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#424242', 
+            {isExpanded && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#424242',
                   fontSize: '11px',
                   fontWeight: 500,
                   overflow: 'hidden',
