@@ -99,7 +99,7 @@ export const API_ENDPOINTS = {
   },
   PRODUCT_ASSOCIATIONS: {
     BASE: '/v1/product-associations',
-    BY_PRODUCT_ID: (productId: string) => `/v1/product-associations/${productId}`,
+    BY_ID: (id: string) => `/v1/product-associations/${id}`,
   },
 } as const;
 
@@ -192,7 +192,7 @@ export const EXTERNAL_ROUTES = {
   },
   PRODUCT_ASSOCIATIONS: {
     BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BASE}`,
-    BY_PRODUCT_ID: (productId: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BY_PRODUCT_ID(productId)}`,
+    BY_ID: (id: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BY_ID(id)}`,
   },
 } as const;
 

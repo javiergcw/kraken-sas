@@ -130,8 +130,8 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
                     activity_id: formData.activity_id,
                 };
 
-                // Using product_id as the identifier for update as per my service implementation based on requirements
-                await productAssociationService.update(associationToEdit.product_id, updateData);
+                // Using id as the identifier for update as per requirements
+                await productAssociationService.update(associationToEdit.id, updateData);
             } else {
                 await productAssociationService.create(formData);
             }
@@ -171,7 +171,7 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
                                 getOptionLabel={(option) => `${option.sku} - ${option.status}`}
                                 value={contracts.find((c) => c.id === formData.contract_id) || null}
                                 onChange={(_, newValue) => handleChange('contract_id', newValue?.id || '')}
-                                renderInput={(params) => <TextField {...params} label="Contrato" fullWidth required />}
+                                renderInput={(params) => <TextField {...params} label="Contrato" fullWidth />}
                             />
                         </Grid>
                         <Grid size={12}>
@@ -180,7 +180,7 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
                                 getOptionLabel={(option) => `${option.code} - ${option.description}`}
                                 value={activities.find((a) => a.id === formData.activity_id) || null}
                                 onChange={(_, newValue) => handleChange('activity_id', newValue?.id || '')}
-                                renderInput={(params) => <TextField {...params} label="Actividad" fullWidth required />}
+                                renderInput={(params) => <TextField {...params} label="Actividad" fullWidth />}
                             />
                         </Grid>
                     </Grid>
@@ -194,7 +194,7 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
                     onClick={handleSubmit}
                     variant="contained"
                     color="primary"
-                    disabled={loading || saving || !formData.product_id || !formData.contract_id || !formData.activity_id}
+                    disabled={loading || saving || !formData.product_id}
                 >
                     {saving ? 'Guardando...' : 'Guardar'}
                 </Button>

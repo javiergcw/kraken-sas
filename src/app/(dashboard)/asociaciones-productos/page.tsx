@@ -67,21 +67,34 @@ export default function ProductAssociationsPage() {
 
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1a237e' }}>
+            <Box sx={{ display: { md: 'flex', xs: 'block' }, justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#424242', fontSize: { xs: '18px', sm: '20px' }, mb: { xs: 2, sm: 0 } }}>
                     Asociaciones de Productos
                 </Typography>
+
+
                 <Button
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={<AddIcon sx={{ fontSize: { xs: 18, sm: 20 }, display: { xs: 'none', sm: 'flex' } }} />}
+                    size="small"
                     onClick={handleCreate}
-                    sx={{ backgroundColor: '#1a237e', '&:hover': { backgroundColor: '#0d1346' } }}
+                    sx={{
+                        backgroundColor: '#424242',
+                        fontSize: { xs: '13px', sm: '14px' },
+                        px: { xs: 1.5, sm: 2 },
+                        py: 0.5,
+                        textTransform: 'capitalize',
+                        flex: { xs: 1, sm: '0 0 auto' },
+                        '&:hover': { backgroundColor: '#303030' },
+                    }}
                 >
                     Nueva Asociación
                 </Button>
+
+
             </Box>
 
-            <TableContainer component={Paper} elevation={2} sx={{ borderRadius: 2 }}>
+            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #ccc' }}>
                 <Table sx={{ minWidth: 650 }} aria-label="product associations table">
                     <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                         <TableRow>

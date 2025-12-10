@@ -5,7 +5,7 @@ import {
     ProductAssociationResponseDto,
     CreateProductAssociationDto,
     UpdateProductAssociationDto,
-} from '../dto/ProductAssociation.dto'; // Adjusted import path
+} from '../dto/ProductAssociation.dto';
 
 export class ProductAssociationService {
     async getAll(token?: string): Promise<ProductAssociationsResponseDto> {
@@ -48,15 +48,8 @@ export class ProductAssociationService {
 
     async update(id: string, data: UpdateProductAssociationDto): Promise<ProductAssociationResponseDto> {
         try {
-            // NOTE: The user requested the endpoint to be /product-associations/:id_product
-            // However, typically updates are by the Association ID.
-            // I will implement it as requested using the ID passed to this function.
-            // If the ID passed is indeed the product ID as per the request requirement, this works.
-            // But usually you update a resource by its own ID.
-            // Requirement said: {{URL}}/api/v1/product-associations/:id_product
-
             const response = await httpService.put<ProductAssociationResponseDto>(
-                API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BY_PRODUCT_ID(id),
+                API_ENDPOINTS.PRODUCT_ASSOCIATIONS.BY_ID(id),
                 data
             );
             return response;
