@@ -10,7 +10,7 @@ import {
     DropdownMenuCheckboxItem,
     DropdownMenuTrigger,
 } from "@/components/table/dropdown-menu";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ColumnFilter {
     columnIndex: number;
@@ -213,7 +213,7 @@ export default function PrimaryTable({
         ? sortedData.slice((validCurrentPage - 1) * itemsPerPage, validCurrentPage * itemsPerPage)
         : sortedData;
 
-    const handleExportToExcel = () => {
+    const handleExportToExcel = async () => {
         // Preparar los datos para Excel
         const excelData = data.map(row => {
             return row.map(cell => {
@@ -227,12 +227,26 @@ export default function PrimaryTable({
         });
 
         // Crear un libro de Excel
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...excelData]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Datos");
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Datos");
+
+        // Agregar encabezados
+        worksheet.addRow(headers);
+
+        // Agregar datos
+        excelData.forEach(row => {
+            worksheet.addRow(row);
+        });
 
         // Generar el archivo Excel
-        XLSX.writeFile(wb, `${nametable}.xlsx`);
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${nametable}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
     };
 
     return (<>

@@ -4,7 +4,7 @@
 
 El módulo de contratos permite gestionar plantillas de contratos digitales y contratos emitidos con firma electrónica. Está completamente integrado con la arquitectura existente del proyecto y sigue los mismos patrones de diseño.
 
-## Estructura del Módulo
+## Estructura del Módulso
 
 ### 1. Capa de Datos (DTOs)
 
