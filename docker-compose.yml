@@ -1,0 +1,10 @@
+services:
+  kraken-sas:
+    build: .
+    ports:
+      - "4001:4001"
+    restart: unless-stopped
+    environment:
+      - PORT=4001
+      - NODE_ENV=production
+
