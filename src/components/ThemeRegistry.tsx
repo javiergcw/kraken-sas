@@ -8,9 +8,7 @@ import createCache from '@emotion/cache';
 import { Toaster } from 'sonner';
 
 const theme = createTheme({
-  palette: {
-    mode: 'light',
-  },
+
 });
 
 

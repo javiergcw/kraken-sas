@@ -63,6 +63,9 @@ export const API_ENDPOINTS = {
       STATUS: (token: string) => `/v1/public/contracts/${token}/status`,
     },
   },
+  COMPANY_SETTINGS: {
+    BASE: '/v1/company-settings',
+  },
 } as const;
 
 /**
@@ -117,6 +120,9 @@ export const EXTERNAL_ROUTES = {
       SIGN: (token: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.PUBLIC.SIGN(token)}`,
       STATUS: (token: string) => `${EXTERNAL_API_URL}/api${API_ENDPOINTS.CONTRACTS.PUBLIC.STATUS(token)}`,
     },
+  },
+  COMPANY_SETTINGS: {
+    BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.COMPANY_SETTINGS.BASE}`,
   },
 } as const;
 

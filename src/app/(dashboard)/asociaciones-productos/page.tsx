@@ -84,8 +84,7 @@ export default function ProductAssociationsPage() {
                         px: { xs: 1.5, sm: 2 },
                         py: 0.5,
                         textTransform: 'capitalize',
-                        flex: { xs: 1, sm: '0 0 auto' },
-                        '&:hover': { backgroundColor: '#303030' },
+                        flex: { xs: 1, sm: '0 0 auto' }, '&:hover': { backgroundColor: '#303030' },
                     }}
                 >
                     Nueva Asociación

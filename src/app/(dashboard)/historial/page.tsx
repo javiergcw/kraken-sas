@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
@@ -34,68 +35,109 @@ import {
   ModeEditOutlineOutlined as ModeEditOutlineOutlinedIcon,
 } from '@mui/icons-material';
 import HistorialVentasSkeleton from './HistorialVentasSkeleton';
+import { httpService } from '@/utils/http.service';
+import { API_ENDPOINTS } from '@/routes/api.config';
+import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
+
+interface SaleItem {
+  id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  product_name: string;
+  product_sku: string;
+}
 
 interface Sale {
-  id: number;
+  id: string;
+  company_id: string;
+  person_id: string;
+  person_name: string;
+  person_email: string;
+  person_phone: string;
+  person_document_number: string;
+  status: string;
+  total_amount: number;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  reference: string;
+  wompi_transaction_id?: string;
+  payment_method: string;
+  notes?: string;
+  paid_at?: string;
+  items: SaleItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface SalesResponse {
+  success: boolean;
+  data: Sale[];
+}
+
+interface DisplaySale {
+  id: string;
   nombre: string;
-  categoria: string;
   precio: string;
-  imagen: string;
+  persona: string;
   fecha?: string;
-  cantidad?: number;
 }
 
 const HistorialVentasPage: React.FC = () => {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [selectedSale, setSelectedSale] = useState<DisplaySale | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sales, setSales] = useState<DisplaySale[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simular carga de datos (puedes reemplazar esto con una llamada API real)
+  // Cargar datos de la API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchSales = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await httpService.get<SalesResponse>(API_ENDPOINTS.SALES.BASE);
+        
+        if (response.success && response.data) {
+          // Mapear los datos de la API al formato de visualización
+          const mappedSales: DisplaySale[] = response.data.map((sale) => {
+            const firstItem = sale.items[0]; // Tomar el primer item
+            const productName = firstItem?.product_name || 'Sin nombre';
+            const price = firstItem?.total_price || sale.total_amount;
+            const formattedPrice = `$${price.toFixed(2)}`;
+            const fecha = sale.paid_at ? new Date(sale.paid_at).toLocaleDateString('es-ES') : undefined;
 
-  // Datos de ejemplo de ventas
-  const sales: Sale[] = [
-    {
-      id: 1,
-      nombre: 'Camiseta',
-      categoria: 'Ropa',
-      precio: '$20.00',
-      imagen: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop',
-      fecha: '2025-10-25',
-      cantidad: 2,
-    },
-    {
-      id: 2,
-      nombre: 'Zapatos',
-      categoria: 'Calzado',
-      precio: '$50.00',
-      imagen: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop',
-      fecha: '2025-10-24',
-      cantidad: 1,
-    },
-    {
-      id: 3,
-      nombre: 'Mochila',
-      categoria: 'Accesorios',
-      precio: '$35.00',
-      imagen: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100&h=100&fit=crop',
-      fecha: '2025-10-23',
-      cantidad: 1,
-    },
-  ];
+            return {
+              id: sale.id,
+              nombre: productName,
+              precio: formattedPrice,
+              persona: sale.person_name,
+              fecha: fecha,
+            };
+          });
+          
+          setSales(mappedSales);
+        }
+      } catch (err) {
+        console.error('Error al obtener ventas:', err);
+        setError('Error al cargar las ventas. Por favor, intenta nuevamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSales();
+  }, []);
 
   const filteredSales = sales.filter(sale =>
     sale.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sale.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sale.persona.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.precio.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -108,7 +150,7 @@ const HistorialVentasPage: React.FC = () => {
     setCurrentPage(page);
   };
 
-  const handleViewSale = (sale: Sale) => {
+  const handleViewSale = (sale: DisplaySale) => {
     setSelectedSale(sale);
     setViewModalOpen(true);
   };
@@ -118,13 +160,42 @@ const HistorialVentasPage: React.FC = () => {
     setSelectedSale(null);
   };
 
+  const handleEditSale = (saleId: string) => {
+    router.push(`/historial/${saleId}`);
+  };
+
   // Mostrar skeleton mientras carga
   if (loading) {
     return <HistorialVentasSkeleton />;
   }
 
+  // Si hay error, mostrar mensaje de error
+  if (error && !loading) {
+    return (
+      <Box sx={{ 
+        px: { xs: 2, sm: 3, md: 6 }, 
+        py: 2, 
+        backgroundColor: 'white', 
+        height: 'calc(100vh - 64px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ color: '#d32f2f', mb: 2 }}>
+            {error}
+          </Typography>
+          <Button variant="contained" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   // Si no hay ventas, mostrar estado vacío
-  if (filteredSales.length === 0) {
+  if (filteredSales.length === 0 && !loading) {
     return (
       <Box sx={{ 
         px: { xs: 2, sm: 3, md: 6 }, 
@@ -270,8 +341,8 @@ const HistorialVentasPage: React.FC = () => {
         <Table size="small" sx={{ minWidth: { xs: 600, sm: 'auto' } }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Nombre</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Categoría</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Nombre del Producto</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Persona</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Precio</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', textAlign: 'center', py: 0.5, fontSize: '14px' }}>Acciones</TableCell>
             </TableRow>
@@ -280,30 +351,14 @@ const HistorialVentasPage: React.FC = () => {
             {currentSales.map((sale) => (
               <TableRow key={sale.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
                 <TableCell sx={{ py: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar
-                      src={sale.imagen}
-                      alt={sale.nombre}
-                      sx={{ width: 32, height: 32, borderRadius: 1 }}
-                      variant="square"
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 'medium', fontSize: '14px' }}>
-                      {sale.nombre}
-                    </Typography>
-                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'medium', fontSize: '14px' }}>
+                    {sale.nombre}
+                  </Typography>
                 </TableCell>
                 <TableCell sx={{ py: 0.5 }}>
-                  <Chip
-                    label={sale.categoria}
-                    size="small"
-                    sx={{
-                      backgroundColor: '#e3f2fd',
-                      color: '#1976d2',
-                      fontWeight: 'medium',
-                      fontSize: '12px',
-                      height: 20,
-                    }}
-                  />
+                  <Typography variant="body2" sx={{ fontSize: '14px', color: '#424242' }}>
+                    {sale.persona}
+                  </Typography>
                 </TableCell>
                 <TableCell sx={{ py: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>
@@ -314,7 +369,7 @@ const HistorialVentasPage: React.FC = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
                     <IconButton 
                       size="small"
-                      onClick={() => {}}
+                      onClick={() => handleEditSale(sale.id)}
                       sx={{ 
                         border: '1px solid #e0e0e0',
                         borderRadius: '4px',
@@ -327,7 +382,7 @@ const HistorialVentasPage: React.FC = () => {
                         },
                       }}
                     >
-                      <ModeEditOutlineOutlinedIcon sx={{ fontSize: 16 }} />
+                      < RemoveRedEyeOutlinedIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Box>
                 </TableCell>
@@ -466,48 +521,29 @@ const HistorialVentasPage: React.FC = () => {
 
         <DialogContent sx={{ px: 2, pb: 2 }}>
           {selectedSale && (
-            <Box>
-              {/* Imagen de la venta */}
-              <Box
-                component="img"
-                src={selectedSale.imagen}
-                alt={selectedSale.nombre}
-                sx={{
-                  width: '100%',
-                  height: 'auto',
-                  borderRadius: 1,
-                  mb: 2,
-                  objectFit: 'cover',
-                }}
-              />
-
-              {/* Información de la venta */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                    Precio: {selectedSale.precio}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                    Categoría: {selectedSale.categoria}
-                  </Typography>
-                </Box>
-                {selectedSale.fecha && (
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                      Fecha: {selectedSale.fecha}
-                    </Typography>
-                  </Box>
-                )}
-                {selectedSale.cantidad && (
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
-                      Cantidad: {selectedSale.cantidad}
-                    </Typography>
-                  </Box>
-                )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                  Nombre del Producto: {selectedSale.nombre}
+                </Typography>
               </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                  Precio: {selectedSale.precio}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                  Persona: {selectedSale.persona}
+                </Typography>
+              </Box>
+              {selectedSale.fecha && (
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                    Fecha: {selectedSale.fecha}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
         </DialogContent>

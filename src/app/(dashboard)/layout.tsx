@@ -4,8 +4,8 @@ import DashboardGuard from '../../components/core/guards/DashboardGuard';
 import { UserProvider } from '../../contexts/UserContext';
 
 export const metadata: Metadata = {
-  title: 'Dashboard - OCEANOSCUBA',
-  description: 'Dashboard principal de OCEANOSCUBA',
+  title: 'Kraken saas',
+  description: 'Dashboard principal de Kraken SAS',
 };
 
 export default function RootDashboardLayout({
