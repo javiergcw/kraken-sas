@@ -29,6 +29,8 @@ export interface CompanySettingsDto {
   terms_and_conditions: string;
   privacy_policy: string;
   website_email: string;
+  email_sender_email?: string;
+  email_sender_name?: string;
   usd_to_cop_exchange_rate: number;
   created_at: string;
   updated_at: string;

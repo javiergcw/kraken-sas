@@ -121,7 +121,8 @@ const ContractPage: React.FC = () => {
   const [loadingPreview, setLoadingPreview] = useState(false);
   
   // Website URL para construir la URL del contrato
-  const [websiteURL, setWebsiteURL] = useState<string>('');
+  const [websiteURL, 
+    setWebsiteURL] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -132,7 +133,7 @@ const ContractPage: React.FC = () => {
     try {
       const response = await companySettingsController.get();
       if (response?.success && response.data) {
-        setWebsiteURL(response.data.WebsiteURL || '');
+        setWebsiteURL(response.data.website_url || '');
       }
     } catch (error) {
       console.error('Error al cargar configuración de compañía:', error);
@@ -607,11 +608,10 @@ const ContractPage: React.FC = () => {
 
     try {
       const response = await contractController.sign(contractToSign.id, {
-        signed_by_name: signerName,
-        signed_by_email: signerEmail,
-        signature_client: finalSignature,
-        signed_fields: {
-          signature_client: finalSignature
+        fields: {
+          signer_name: signerName,
+          email: signerEmail,
+          signature: finalSignature
         }
       });
 

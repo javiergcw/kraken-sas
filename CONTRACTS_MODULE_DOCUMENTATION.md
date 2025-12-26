@@ -204,6 +204,95 @@ const firmarContrato = async (contractId: string, signatureData: string) => {
 };
 ```
 
+## Variables Disponibles en Plantillas
+
+Las plantillas de contratos pueden usar variables especiales que se reemplazan con los valores proporcionados al crear o firmar un contrato. El formato de uso es `%variable_name%` en el HTML de la plantilla.
+
+### Campos Básicos
+
+- `%email%` - Email del firmante
+- `%signer_name%` - Nombre del que firma
+- `%identity_type%` - Tipo de identidad (CC, NIT, etc.)
+- `%identity_number%` - Número de identidad
+- `%company%` - Empresa
+- `%signature%` - Firma (se convierte automáticamente en tag `<img>` HTML)
+
+### Información General - Sección 1
+
+- `%general_info_first_name%` - 1.1 Nombre
+- `%general_info_last_name%` - 1.2 Apellido
+- `%general_info_nationality%` - 1.3 Nacionalidad
+- `%general_info_document_type%` - 1.4 Tipo de documento
+- `%general_info_document_number%` - 1.5 Número de documento
+- `%general_info_email%` - 1.6 Correo electrónico/email
+- `%general_info_phone%` - 1.7 Celular/WhatsApp
+- `%general_info_address%` - 1.8 Dirección de correspondencia
+- `%general_info_address_additional%` - 1.9 Dirección - Información adicional
+- `%general_info_address_city%` - 1.10 Dirección - Ciudad
+- `%general_info_address_state%` - 1.11 Dirección - Estado
+- `%general_info_address_zip_code%` - 1.12 Dirección - Código postal
+- `%general_info_address_country%` - 1.13 Dirección - País
+- `%general_info_birth_date%` - 1.14 Fecha de nacimiento (formato: YYYY-MM-DD)
+- `%general_info_certification_level%` - 1.15 Nivel de certificación actual
+- `%general_info_dive_count%` - 1.15 Cantidad de buceos / Logbook dives (número)
+- `%general_info_how_did_you_know%` - 1.16 Cómo supo de nosotros
+- `%general_info_accommodation%` - 1.17 Lugar de hospedaje
+- `%general_info_activity%` - 1.18 Actividad a tomar
+- `%general_info_activity_start_date%` - 1.19 Fecha de inicio de la actividad (formato: YYYY-MM-DD)
+- `%general_info_height%` - 1.20 Estatura (centímetros, número)
+- `%general_info_weight%` - 1.21 Peso (kilogramos, número decimal)
+- `%general_info_shoe_size%` - 1.22 Talla de calzado (texto)
+- `%general_info_special_requirements%` - 1.23 Requerimientos especiales (texto largo)
+
+### Contacto de Emergencia - Sección 2
+
+- `%emergency_contact_first_name%` - 2.1 Nombre
+- `%emergency_contact_last_name%` - 2.2 Apellido
+- `%emergency_contact_phone%` - 2.3 Número de teléfono
+- `%emergency_contact_email%` - 2.4 Correo electrónico
+
+### Ejemplo de Uso en Plantilla HTML
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Contrato de Servicio</title>
+</head>
+<body>
+    <h1>CONTRATO DE SERVICIO</h1>
+    
+    <div>
+        <p><strong>Email:</strong> %email%</p>
+        <p><strong>Nombre del firmante:</strong> %signer_name%</p>
+        <p><strong>Tipo de identidad:</strong> %identity_type%</p>
+        <p><strong>Número de identidad:</strong> %identity_number%</p>
+        <p><strong>Empresa:</strong> %company%</p>
+    </div>
+    
+    <h2>Información General</h2>
+    <p><strong>Nombre completo:</strong> %general_info_first_name% %general_info_last_name%</p>
+    <p><strong>Email:</strong> %general_info_email%</p>
+    <p><strong>Teléfono:</strong> %general_info_phone%</p>
+    <p><strong>Dirección:</strong> %general_info_address%, %general_info_address_city%</p>
+    
+    <h2>Contacto de Emergencia</h2>
+    <p><strong>Nombre:</strong> %emergency_contact_first_name% %emergency_contact_last_name%</p>
+    <p><strong>Teléfono:</strong> %emergency_contact_phone%</p>
+    
+    <div>
+        <h2>Firma:</h2>
+        %signature%
+    </div>
+    
+    <p>Fecha: ___________</p>
+</body>
+</html>
+```
+
+**Nota**: La variable `%signature%` se reemplaza automáticamente con un tag `<img>` HTML cuando el contrato es firmado. Si el contrato aún no está firmado, la variable se muestra vacía.
+
 ## Línea Gráfica
 
 El módulo sigue la misma línea gráfica del resto de la aplicación:

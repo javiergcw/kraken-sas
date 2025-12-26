@@ -120,7 +120,7 @@ const ContractPage: React.FC = () => {
     contract.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.signer_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (contract.signer_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -412,8 +412,8 @@ const ContractPage: React.FC = () => {
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ fontSize: '14px' }}>{contract.signer_name}</TableCell>
-                    <TableCell sx={{ fontSize: '13px', color: '#757575' }}>{contract.signer_email}</TableCell>
+                    <TableCell sx={{ fontSize: '14px' }}>{contract.signer_name || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '13px', color: '#757575' }}>{contract.email || contract.signed_by_email || '-'}</TableCell>
                     <TableCell>
                       <Chip
                         label={getStatusLabel(contract.status)}

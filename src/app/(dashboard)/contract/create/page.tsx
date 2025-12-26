@@ -55,6 +55,7 @@ const CreateContractTemplatePage: React.FC = () => {
     html_content: '',
   });
   const [variables, setVariables] = useState<TemplateVariable[]>([
+    // Campos básicos
     {
       key: 'email',
       label: 'Email',
@@ -64,38 +65,236 @@ const CreateContractTemplatePage: React.FC = () => {
     },
     {
       key: 'signer_name',
-      label: 'Nombre del firmante',
+      label: 'Nombre del que firma',
       data_type: 'TEXT',
       required: true,
       sort_order: 2,
     },
     {
       key: 'identity_type',
-      label: 'Tipo de identificación',
+      label: 'Tipo de identidad (CC, NIT, etc.)',
       data_type: 'TEXT',
-      required: true,
+      required: false,
       sort_order: 3,
     },
     {
       key: 'identity_number',
-      label: 'Número de identificación',
+      label: 'Número de identidad',
       data_type: 'TEXT',
-      required: true,
+      required: false,
       sort_order: 4,
     },
     {
       key: 'company',
       label: 'Empresa',
       data_type: 'TEXT',
-      required: true,
+      required: false,
       sort_order: 5,
     },
     {
       key: 'signature',
-      label: 'Firma',
+      label: 'Firma (se convierte en tag <img> HTML)',
       data_type: 'SIGNATURE',
       required: true,
       sort_order: 6,
+    },
+    // Información General - Sección 1
+    {
+      key: 'general_info_first_name',
+      label: '1.1 Nombre',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 7,
+    },
+    {
+      key: 'general_info_last_name',
+      label: '1.2 Apellido',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 8,
+    },
+    {
+      key: 'general_info_nationality',
+      label: '1.3 Nacionalidad',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 9,
+    },
+    {
+      key: 'general_info_document_type',
+      label: '1.4 Tipo de documento',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 10,
+    },
+    {
+      key: 'general_info_document_number',
+      label: '1.5 Número de documento',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 11,
+    },
+    {
+      key: 'general_info_email',
+      label: '1.6 Correo electrónico/email',
+      data_type: 'EMAIL',
+      required: false,
+      sort_order: 12,
+    },
+    {
+      key: 'general_info_phone',
+      label: '1.7 Celular/WhatsApp',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 13,
+    },
+    {
+      key: 'general_info_address',
+      label: '1.8 Dirección de correspondencia',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 14,
+    },
+    {
+      key: 'general_info_address_additional',
+      label: '1.9 Dirección - Información adicional',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 15,
+    },
+    {
+      key: 'general_info_address_city',
+      label: '1.10 Dirección - Ciudad',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 16,
+    },
+    {
+      key: 'general_info_address_state',
+      label: '1.11 Dirección - Estado',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 17,
+    },
+    {
+      key: 'general_info_address_zip_code',
+      label: '1.12 Dirección - Código postal',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 18,
+    },
+    {
+      key: 'general_info_address_country',
+      label: '1.13 Dirección - País',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 19,
+    },
+    {
+      key: 'general_info_birth_date',
+      label: '1.14 Fecha de nacimiento (formato: YYYY-MM-DD)',
+      data_type: 'DATE',
+      required: false,
+      sort_order: 20,
+    },
+    {
+      key: 'general_info_certification_level',
+      label: '1.15 Nivel de certificación actual',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 21,
+    },
+    {
+      key: 'general_info_dive_count',
+      label: '1.15 Cantidad de buceos / Logbook dives (número)',
+      data_type: 'NUMBER',
+      required: false,
+      sort_order: 22,
+    },
+    {
+      key: 'general_info_how_did_you_know',
+      label: '1.16 Cómo supo de nosotros',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 23,
+    },
+    {
+      key: 'general_info_accommodation',
+      label: '1.17 Lugar de hospedaje',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 24,
+    },
+    {
+      key: 'general_info_activity',
+      label: '1.18 Actividad a tomar',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 25,
+    },
+    {
+      key: 'general_info_activity_start_date',
+      label: '1.19 Fecha de inicio de la actividad (formato: YYYY-MM-DD)',
+      data_type: 'DATE',
+      required: false,
+      sort_order: 26,
+    },
+    {
+      key: 'general_info_height',
+      label: '1.20 Estatura (centímetros, número)',
+      data_type: 'NUMBER',
+      required: false,
+      sort_order: 27,
+    },
+    {
+      key: 'general_info_weight',
+      label: '1.21 Peso (kilogramos, número decimal)',
+      data_type: 'NUMBER',
+      required: false,
+      sort_order: 28,
+    },
+    {
+      key: 'general_info_shoe_size',
+      label: '1.22 Talla de calzado (texto)',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 29,
+    },
+    {
+      key: 'general_info_special_requirements',
+      label: '1.23 Requerimientos especiales (texto largo)',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 30,
+    },
+    // Contacto de Emergencia - Sección 2
+    {
+      key: 'emergency_contact_first_name',
+      label: '2.1 Nombre',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 31,
+    },
+    {
+      key: 'emergency_contact_last_name',
+      label: '2.2 Apellido',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 32,
+    },
+    {
+      key: 'emergency_contact_phone',
+      label: '2.3 Número de teléfono',
+      data_type: 'TEXT',
+      required: false,
+      sort_order: 33,
+    },
+    {
+      key: 'emergency_contact_email',
+      label: '2.4 Correo electrónico',
+      data_type: 'EMAIL',
+      required: false,
+      sort_order: 34,
     },
   ]);
   const [newVariable, setNewVariable] = useState<TemplateVariable>({
@@ -128,8 +327,8 @@ const CreateContractTemplatePage: React.FC = () => {
   };
 
   const handleRemoveVariable = (index: number) => {
-    // No permitir eliminar las seis variables por defecto (email, signer_name, identity_type, identity_number, company, signature)
-    if (index < 6) {
+    // No permitir eliminar las variables predefinidas (33 variables: 6 básicas + 23 info general + 4 emergencia)
+    if (index < 34) {
       return;
     }
     setVariables(prev => prev.filter((_, i) => i !== index));
@@ -227,141 +426,149 @@ const CreateContractTemplatePage: React.FC = () => {
         </Button>
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-        {/* Información básica */}
-        <Box sx={{ flex: 1 }}>
-          <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
-              Información básica
+      {/* Información básica */}
+      <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
+          Información básica
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+              Nombre de la plantilla *
             </Typography>
+            <TextField
+              fullWidth
+              placeholder="Ej: Contrato de Arrendamiento"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+            />
+          </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-                  Nombre de la plantilla *
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Ej: Contrato de Arrendamiento"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  size="small"
-                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-                  SKU / Código *
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Ej: LEASE-001"
-                  value={formData.sku}
-                  onChange={(e) => handleInputChange('sku', e.target.value)}
-                  size="small"
-                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-                  Descripción
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  placeholder="Descripción breve de la plantilla"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-                  Contenido HTML del contrato
-                </Typography>
-                <RichTextEditor
-                  value={formData.html_content}
-                  onChange={(value) => handleInputChange('html_content', value)}
-                  placeholder="Escribe el contenido del contrato aquí. Usa %variable% para insertar variables dinámicas."
-                  minHeight={300}
-                />
-                <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
-                  Usa el formato %variable% para insertar variables, por ejemplo: %email%, %signer_name%, %company%, %signature%
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-        </Box>
-
-        {/* Variables dinámicas */}
-        <Box sx={{ flex: 1 }}>
-          <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
-              Variables 
+          <Box>
+            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+              SKU / Código *
             </Typography>
+            <TextField
+              fullWidth
+              placeholder="Ej: LEASE-001"
+              value={formData.sku}
+              onChange={(e) => handleInputChange('sku', e.target.value)}
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+            />
+          </Box>
 
+          <Box>
+            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+              Descripción
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Descripción breve de la plantilla"
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+            />
+          </Box>
 
-            {/* Lista de variables */}
-            {variables.length > 0 ? (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
-                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px' }}>Clave</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px' }}>Etiqueta</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px' }}>Tipo</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Acción</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {variables.map((variable, index) => (
-                      <TableRow key={index}>
-                        <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>%{variable.key}%</TableCell>
-                        <TableCell sx={{ fontSize: '13px' }}>{variable.label}</TableCell>
-                        <TableCell sx={{ fontSize: '13px' }}>
-                          <Chip label={"%"+variable.data_type+"%"} size="small" sx={{ fontSize: '11px', height: 20 }} />
-                        </TableCell>
-                        <TableCell sx={{ textAlign: 'center' }}>
-                          {index >= 6 ? (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveVariable(index)}
-                            sx={{ color: '#f44336', p: 0.5 }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                          ) : (
-                            <Chip
-                              label="Por defecto"
-                              size="small"
-                              sx={{
-                                fontSize: '10px',
-                                height: 20,
-                                backgroundColor: '#e3f2fd',
-                                color: '#1976d2',
-                              }}
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
-                  No hay variables agregadas aún
-                </Typography>
-              </Box>
-            )}
-          </Paper>
+          <Box>
+            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+              Contenido HTML del contrato
+            </Typography>
+            <RichTextEditor
+              value={formData.html_content}
+              onChange={(value) => handleInputChange('html_content', value)}
+              placeholder="Escribe el contenido del contrato aquí. Usa %variable% para insertar variables dinámicas."
+              minHeight={300}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Usa el formato %variable% para insertar variables, por ejemplo: %email%, %signer_name%, %general_info_first_name%, %emergency_contact_phone%, %signature%
+            </Typography>
+          </Box>
         </Box>
-      </Box>
+      </Paper>
+
+      {/* Variables dinámicas */}
+      <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
+          Variables Disponibles ({variables.length})
+        </Typography>
+
+        {/* Lista de variables */}
+        {variables.length > 0 ? (
+          <TableContainer sx={{ maxHeight: '500px', overflow: 'auto' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', minWidth: 150 }}>Clave</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', minWidth: 250 }}>Etiqueta</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', minWidth: 100 }}>Tipo</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', textAlign: 'center', minWidth: 120 }}>Acción</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {variables.map((variable, index) => (
+                  <TableRow key={index} hover>
+                    <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>%{variable.key}%</TableCell>
+                    <TableCell sx={{ fontSize: '13px' }}>{variable.label}</TableCell>
+                    <TableCell sx={{ fontSize: '13px' }}>
+                      <Chip 
+                        label={variable.data_type} 
+                        size="small" 
+                        sx={{ 
+                          fontSize: '11px', 
+                          height: 20,
+                          backgroundColor: variable.data_type === 'SIGNATURE' ? '#fff3e0' :
+                                           variable.data_type === 'EMAIL' ? '#e3f2fd' :
+                                           variable.data_type === 'DATE' ? '#f3e5f5' :
+                                           variable.data_type === 'NUMBER' ? '#e8f5e9' : '#f5f5f5',
+                          color: variable.data_type === 'SIGNATURE' ? '#e65100' :
+                                 variable.data_type === 'EMAIL' ? '#1976d2' :
+                                 variable.data_type === 'DATE' ? '#7b1fa2' :
+                                 variable.data_type === 'NUMBER' ? '#388e3c' : '#424242',
+                        }} 
+                      />
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      {index >= 34 ? (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveVariable(index)}
+                          sx={{ color: '#f44336', p: 0.5 }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      ) : (
+                        <Chip
+                          label="Predefinida"
+                          size="small"
+                          sx={{
+                            fontSize: '10px',
+                            height: 20,
+                            backgroundColor: '#e3f2fd',
+                            color: '#1976d2',
+                          }}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
+              No hay variables agregadas aún
+            </Typography>
+          </Box>
+        )}
+      </Paper>
 
       {/* Snackbar para notificaciones */}
       <Snackbar

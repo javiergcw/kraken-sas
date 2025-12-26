@@ -10,6 +10,8 @@ export interface CompanySettingsUpdateRequestDto {
   terms_and_conditions?: string;
   privacy_policy?: string;
   website_email?: string;
+  email_sender_email?: string;
+  email_sender_name?: string;
   usd_to_cop_exchange_rate?: number;
 }
 

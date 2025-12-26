@@ -10,12 +10,21 @@ import {
   Stack,
   Snackbar,
   Alert,
+  Tabs,
+  Tab,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
+import {
+  Visibility,
+  VisibilityOff,
+} from '@mui/icons-material';
 import { httpService } from '@/utils/http.service';
 import { API_ENDPOINTS } from '@/routes/api.config';
 import ConfiguracionPageSkeleton from './ConfiguracionPageSkeleton';
 
 const ConfiguracionPage: React.FC = () => {
+  const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -27,22 +36,36 @@ const ConfiguracionPage: React.FC = () => {
     terms_and_conditions: '',
     privacy_policy: '',
     website_email: '',
+    email_sender_email: '',
+    email_sender_name: '',
     usd_to_cop_exchange_rate: 0,
+  });
+  const [wompiData, setWompiData] = useState({
+    wompi_public_key: '',
+    wompi_private_key: '',
+    wompi_event_secret: '',
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    public_key: false,
+    private_key: false,
+    event_secret: false,
   });
   const [exchangeRateInput, setExchangeRateInput] = useState<string>('');
 
   // Cargar datos de la API
   useEffect(() => {
-    const loadCompanySettings = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setErrorMessage(null);
-        const response = await httpService.get<{ success: boolean; data: typeof formData }>(
+        
+        // Cargar configuración general
+        const settingsResponse = await httpService.get<{ success: boolean; data: typeof formData }>(
           API_ENDPOINTS.COMPANY_SETTINGS.BASE
         );
         
-        if (response?.success && response.data) {
-          const settings = response.data;
+        if (settingsResponse?.success && settingsResponse.data) {
+          const settings = settingsResponse.data;
           const exchangeRate = settings.usd_to_cop_exchange_rate || 0;
           setFormData({
             website_name: settings.website_name || '',
@@ -52,9 +75,31 @@ const ConfiguracionPage: React.FC = () => {
             terms_and_conditions: settings.terms_and_conditions || '',
             privacy_policy: settings.privacy_policy || '',
             website_email: settings.website_email || '',
+            email_sender_email: settings.email_sender_email || '',
+            email_sender_name: settings.email_sender_name || '',
             usd_to_cop_exchange_rate: exchangeRate,
           });
           setExchangeRateInput(exchangeRate.toString());
+        }
+
+        // Cargar credenciales de Wompi
+        const credentialsResponse = await httpService.get<{ 
+          success: boolean; 
+          data: {
+            WompiPublicKey?: string;
+            WompiPrivateKey?: string;
+            WompiEventSecret?: string;
+          } 
+        }>(
+          API_ENDPOINTS.COMPANY_CREDENTIALS.BASE
+        );
+        
+        if (credentialsResponse?.success && credentialsResponse.data) {
+          setWompiData({
+            wompi_public_key: credentialsResponse.data.WompiPublicKey || '',
+            wompi_private_key: credentialsResponse.data.WompiPrivateKey || '',
+            wompi_event_secret: credentialsResponse.data.WompiEventSecret || '',
+          });
         }
       } catch (error) {
         console.error('Error al cargar configuración:', error);
@@ -64,7 +109,7 @@ const ConfiguracionPage: React.FC = () => {
       }
     };
 
-    loadCompanySettings();
+    loadData();
   }, []);
 
   const handleChange = (field: string, value: string | number) => {
@@ -105,6 +150,39 @@ const ConfiguracionPage: React.FC = () => {
     }
   };
 
+  const handleUpdateWompi = async () => {
+    try {
+      setErrorMessage(null);
+      // Transformar los datos al formato que espera el backend (con mayúsculas)
+      const payload = {
+        wompi_public_key: wompiData.wompi_public_key,
+        wompi_private_key: wompiData.wompi_private_key,
+        wompi_event_secret: wompiData.wompi_event_secret,
+      };
+      const response = await httpService.put<{ success: boolean }>(
+        API_ENDPOINTS.COMPANY_CREDENTIALS.BASE,
+        payload
+      );
+      
+      if (response?.success) {
+        setShowSuccessMessage(true);
+      } else {
+        setErrorMessage('Error al actualizar las credenciales de Wompi');
+      }
+    } catch (error) {
+      console.error('Error al actualizar credenciales de Wompi:', error);
+      setErrorMessage('Error al actualizar las credenciales de Wompi');
+    }
+  };
+
+  const handleWompiChange = (field: string, value: string) => {
+    setWompiData({ ...wompiData, [field]: value });
+  };
+
+  const togglePasswordVisibility = (field: 'public_key' | 'private_key' | 'event_secret') => {
+    setShowPasswords({ ...showPasswords, [field]: !showPasswords[field] });
+  };
+
   const handleCloseSuccessMessage = () => {
     setShowSuccessMessage(false);
   };
@@ -117,7 +195,7 @@ const ConfiguracionPage: React.FC = () => {
   return (
     <Box sx={{ p: { xs: 2, sm: 3 }, backgroundColor: 'white', minHeight: '100%' }}>
       <Typography variant="h5" sx={{ mb: { xs: 2, sm: 3 }, fontWeight: 'bold', fontSize: { xs: '18px', sm: '20px' }, color: '#1a1a1a' }}>
-        Configuración generales
+        Configuración
       </Typography>
 
       {errorMessage && (
@@ -126,6 +204,16 @@ const ConfiguracionPage: React.FC = () => {
         </Alert>
       )}
 
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+          <Tab label="General" />
+          <Tab label="Wompi" />
+        </Tabs>
+      </Box>
+
+      {/* Tab General */}
+      {tabValue === 0 && (
       <Paper sx={{ p: { xs: 2, sm: 3 }, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
         <Stack spacing={3}>
           {/* Nombre del sitio web */}
@@ -275,6 +363,51 @@ const ConfiguracionPage: React.FC = () => {
             </Typography>
           </Box>
 
+          {/* Email del remitente */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
+              Email del remitente
+            </Typography>
+            <TextField
+              fullWidth
+              type="email"
+              value={formData.email_sender_email}
+              onChange={(e) => handleChange('email_sender_email', e.target.value)}
+              size="small"
+              placeholder="contacto@miempresa.com"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Dirección de correo electrónico que aparecerá como remitente en los emails enviados
+            </Typography>
+          </Box>
+
+          {/* Nombre del remitente */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
+              Nombre del remitente
+            </Typography>
+            <TextField
+              fullWidth
+              value={formData.email_sender_name}
+              onChange={(e) => handleChange('email_sender_name', e.target.value)}
+              size="small"
+              placeholder="Mi Empresa"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Nombre que aparecerá como remitente en los emails enviados
+            </Typography>
+          </Box>
+
           {/* Tasa de cambio USD a COP */}
           <Box>
             <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
@@ -323,6 +456,149 @@ const ConfiguracionPage: React.FC = () => {
           </Box>
         </Stack>
       </Paper>
+      )}
+
+      {/* Tab Wompi */}
+      {tabValue === 1 && (
+      <Paper sx={{ p: { xs: 2, sm: 3 }, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
+        <Stack spacing={3}>
+          {/* Wompi Public Key */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
+              Wompi Public Key
+            </Typography>
+            <TextField
+              fullWidth
+              type={showPasswords.public_key ? 'text' : 'password'}
+              value={wompiData.wompi_public_key}
+              onChange={(e) => handleWompiChange('wompi_public_key', e.target.value)}
+              size="small"
+              placeholder="pub_test_..."
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('public_key')}
+                      edge="end"
+                      size="small"
+                      sx={{ color: '#757575' }}
+                    >
+                      {showPasswords.public_key ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Clave pública de Wompi para procesamiento de pagos
+            </Typography>
+          </Box>
+
+          {/* Wompi Private Key */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
+              Wompi Private Key
+            </Typography>
+            <TextField
+              fullWidth
+              type={showPasswords.private_key ? 'text' : 'password'}
+              value={wompiData.wompi_private_key}
+              onChange={(e) => handleWompiChange('wompi_private_key', e.target.value)}
+              size="small"
+              placeholder="prv_test_..."
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('private_key')}
+                      edge="end"
+                      size="small"
+                      sx={{ color: '#757575' }}
+                    >
+                      {showPasswords.private_key ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Clave privada de Wompi (mantener en secreto)
+            </Typography>
+          </Box>
+
+          {/* Wompi Event Secret */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
+              Wompi Event Secret
+            </Typography>
+            <TextField
+              fullWidth
+              type={showPasswords.event_secret ? 'text' : 'password'}
+              value={wompiData.wompi_event_secret}
+              onChange={(e) => handleWompiChange('wompi_event_secret', e.target.value)}
+              size="small"
+              placeholder="test_events_..."
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('event_secret')}
+                      edge="end"
+                      size="small"
+                      sx={{ color: '#757575' }}
+                    >
+                      {showPasswords.event_secret ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Secreto para validar eventos webhook de Wompi
+            </Typography>
+          </Box>
+
+          {/* Botón de guardar */}
+          <Box sx={{ pt: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleUpdateWompi}
+              sx={{
+                backgroundColor: '#1a1a1a',
+                color: 'white',
+                textTransform: 'none',
+                fontSize: { xs: '13px', sm: '14px' },
+                px: { xs: 2, sm: 3 },
+                py: { xs: 0.875, sm: 1 },
+                boxShadow: 'none',
+                width: { xs: '100%', sm: 'auto' },
+                '&:hover': {
+                  backgroundColor: '#000',
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              Actualizar credenciales de Wompi
+            </Button>
+          </Box>
+        </Stack>
+      </Paper>
+      )}
 
       {/* Mensaje de éxito */}
       <Snackbar

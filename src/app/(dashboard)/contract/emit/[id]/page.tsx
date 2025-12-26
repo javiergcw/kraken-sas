@@ -152,12 +152,18 @@ export default function EmitContractPage({ params }: { params: Promise<{ id: str
         }
       });
 
+      // Agregar campos básicos del firmante dentro de fields (según nueva estructura)
+      if (formData.signer_name) {
+        preparedFields.signer_name = formData.signer_name;
+      }
+      if (formData.signer_email) {
+        preparedFields.email = formData.signer_email;
+      }
+
       // Construir payload con todos los campos necesarios
       const payload: any = {
         template_id: resolvedParams.id,
         sku: formData.sku,
-        signer_name: formData.signer_name,
-        signer_email: formData.signer_email,
         fields: preparedFields,
       };
 

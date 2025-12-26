@@ -66,6 +66,9 @@ export const API_ENDPOINTS = {
   COMPANY_SETTINGS: {
     BASE: '/v1/company-settings',
   },
+  COMPANY_CREDENTIALS: {
+    BASE: '/v1/company-credentials',
+  },
   PEOPLE: {
     BASE: '/v1/people',
     BY_ID: (id: string) => `/v1/people/${id}`,
@@ -162,6 +165,9 @@ export const EXTERNAL_ROUTES = {
   },
   COMPANY_SETTINGS: {
     BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.COMPANY_SETTINGS.BASE}`,
+  },
+  COMPANY_CREDENTIALS: {
+    BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.COMPANY_CREDENTIALS.BASE}`,
   },
   PEOPLE: {
     BASE: `${EXTERNAL_API_URL}/api${API_ENDPOINTS.PEOPLE.BASE}`,
