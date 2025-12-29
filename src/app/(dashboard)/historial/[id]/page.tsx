@@ -56,7 +56,7 @@ interface Sale {
   discount: number;
   reference: string;
   wompi_transaction_id?: string;
-  payment_method: string;
+  payment_method: string | null;
   notes?: string;
   paid_at?: string;
   items: SaleItem[];
@@ -69,7 +69,8 @@ interface SaleDetailResponse {
   data: Sale;
 }
 
-const getStatusColor = (status: string): 'success' | 'error' | 'warning' | 'default' => {
+const getStatusColor = (status: string | null | undefined): 'success' | 'error' | 'warning' | 'default' => {
+  if (!status) return 'default';
   switch (status.toUpperCase()) {
     case 'PAID':
       return 'success';
@@ -82,7 +83,8 @@ const getStatusColor = (status: string): 'success' | 'error' | 'warning' | 'defa
   }
 };
 
-const getStatusLabel = (status: string): string => {
+const getStatusLabel = (status: string | null | undefined): string => {
+  if (!status) return 'Desconocido';
   switch (status.toUpperCase()) {
     case 'PAID':
       return 'Pagado';
@@ -95,7 +97,8 @@ const getStatusLabel = (status: string): string => {
   }
 };
 
-const getPaymentMethodLabel = (method: string): string => {
+const getPaymentMethodLabel = (method: string | null | undefined): string => {
+  if (!method) return 'No especificado';
   switch (method.toUpperCase()) {
     case 'CARD':
       return 'Tarjeta';

@@ -4,6 +4,7 @@
 
 import { API_BASE_URL } from './constants';
 import { tokenService } from './token.service';
+import { authController } from '@/components/core';
 
 export interface HttpRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -162,6 +163,13 @@ class HttpService {
       };
     } catch (error) {
       if (error instanceof HttpError) {
+        // Si el error es 401 (no autorizado), desloguear al usuario
+        if (error.status === 401 && typeof window !== 'undefined') {
+          console.warn('[HttpService] Token expirado o inválido, deslogueando usuario...');
+          authController.logout();
+          // Redirigir a la página de login (usando replace para evitar que el usuario pueda volver atrás)
+          window.location.replace('/');
+        }
         throw error;
       }
 

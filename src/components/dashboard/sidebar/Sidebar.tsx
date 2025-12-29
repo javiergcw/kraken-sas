@@ -61,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
   const { user } = useUser();
   const userEmail = user?.email || '';
   const companyName = user?.company_name || '';
+  const companyLogo = user?.company_logo || null;
 
   // Estado para el menú de usuario
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -212,11 +213,26 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', mb: isExpanded ? 0.5 : 0 }}>
-          <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: isExpanded ? 0.75 : 0, borderRadius: '4px' }}>
-            <Typography variant="h6" sx={{ color: 'white', fontSize: '12px' }}>
-              N
-            </Typography>
-          </Avatar>
+          {companyLogo ? (
+            <Box
+              component="img"
+              src={companyLogo}
+              alt={companyName ? `${companyName} Logo` : 'Company Logo'}
+              sx={{
+                width: 28,
+                height: 28,
+                objectFit: 'contain',
+                borderRadius: '4px',
+                mr: isExpanded ? 0.75 : 0,
+              }}
+            />
+          ) : (
+            <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: isExpanded ? 0.75 : 0, borderRadius: '4px' }}>
+              <Typography variant="h6" sx={{ color: 'white', fontSize: '12px' }}>
+                N
+              </Typography>
+            </Avatar>
+          )}
           {isExpanded && (
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px', lineHeight: 1.1 }}>
