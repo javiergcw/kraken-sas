@@ -21,7 +21,7 @@ export interface ProductAssociation {
     id: string;
     company_id: string;
     product_id: string;
-    contract_id: string;
+    contract_template_id: string;
     activity_id: string;
     created_at: string;
     updated_at: string;
@@ -32,12 +32,12 @@ export interface ProductAssociation {
 
 export interface CreateProductAssociationDto {
     product_id: string;
-    contract_id: string;
+    contract_template_id: string;
     activity_id: string;
 }
 
 export interface UpdateProductAssociationDto {
-    contract_id: string;
+    contract_template_id: string;
     activity_id: string;
 }
 

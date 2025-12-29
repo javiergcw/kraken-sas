@@ -16,16 +16,16 @@ import {
 } from '@mui/material';
 import {
     productAssociationService,
-    contractService,
+    contractTemplateController,
     productService,
     activityService,
     ProductAssociation,
     CreateProductAssociationDto,
     UpdateProductAssociationDto,
     Product,
-    Contract,
     Activity,
 } from '@/components/core';
+import { ContractTemplateDto } from '@/components/core/contracts/dto';
 
 // Assuming Contract and Activity types are exported from core
 // If not, I'll use `any` initially or define interfaces here based on my DTO file.
@@ -50,13 +50,13 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
 
     // Data for dropdowns
     const [products, setProducts] = useState<Product[]>([]);
-    const [contracts, setContracts] = useState<Contract[]>([]);
+    const [contracts, setContracts] = useState<ContractTemplateDto[]>([]);
     const [activities, setActivities] = useState<Activity[]>([]);
 
     // Form state
     const [formData, setFormData] = useState<CreateProductAssociationDto>({
         product_id: '',
-        contract_id: '',
+        contract_template_id: '',
         activity_id: '',
     });
 
@@ -66,13 +66,13 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
             if (associationToEdit) {
                 setFormData({
                     product_id: associationToEdit.product_id,
-                    contract_id: associationToEdit.contract_id,
+                    contract_template_id: associationToEdit.contract_template_id,
                     activity_id: associationToEdit.activity_id,
                 });
             } else {
                 setFormData({
                     product_id: '',
-                    contract_id: '',
+                    contract_template_id: '',
                     activity_id: '',
                 });
             }
@@ -85,22 +85,13 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
             const token = tokenService.getToken() || undefined;
             const [productsRes, contractsRes, activitiesRes] = await Promise.all([
                 productService.getAll(token),
-                contractService.getAll(token),
+                contractTemplateController.getAll(),
                 activityService.getAll(undefined, token),
             ]);
 
             // Assuming standard response structure { data: [...] } or direct array
-            // I'll check response, if it's standard DTO it should have .data
-            // The ContractService getAll returns ContractsResponseDto which likely has .data or is the array?
-            // Checking previous file read for ContractService.
-            // ContractService.getAll() returns ContractsResponseDto.
-
-            // I'll be safe and check if .data exists or assume it is the array if not.
-            // Actually, ContractService getAll returns `response` which is `ContractsResponseDto`.
-            // Let's assume `data` property holds the array.
-
             setProducts((productsRes as any).data || productsRes || []);
-            setContracts((contractsRes as any).data || contractsRes || []);
+            setContracts(contractsRes?.data || []);
             setActivities((activitiesRes as any).data || activitiesRes || []);
 
         } catch (error) {
@@ -121,12 +112,9 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
         setSaving(true);
         try {
             if (isEditMode && associationToEdit) {
-                // Edit: only contract_id and activity_id are updatable as per requirements
-                // Also the endpoint is /v1/product-associations/:id_product
-                // So we pass product_id (or association_id if I implemented it that way, but I implemented by Product ID)
-
+                // Edit: only contract_template_id and activity_id are updatable as per requirements
                 const updateData: UpdateProductAssociationDto = {
-                    contract_id: formData.contract_id,
+                    contract_template_id: formData.contract_template_id,
                     activity_id: formData.activity_id,
                 };
 
@@ -168,9 +156,9 @@ const ProductAssociationModal: React.FC<ProductAssociationModalProps> = ({
                         <Grid size={12}>
                             <Autocomplete
                                 options={contracts}
-                                getOptionLabel={(option) => `${option.sku} - ${option.status}`}
-                                value={contracts.find((c) => c.id === formData.contract_id) || null}
-                                onChange={(_, newValue) => handleChange('contract_id', newValue?.id || '')}
+                                getOptionLabel={(option) => `${option.sku} - ${option.name}`}
+                                value={contracts.find((c) => c.id === formData.contract_template_id) || null}
+                                onChange={(_, newValue) => handleChange('contract_template_id', newValue?.id || '')}
                                 renderInput={(params) => <TextField {...params} label="Contrato" fullWidth />}
                             />
                         </Grid>

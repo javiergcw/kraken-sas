@@ -44,11 +44,13 @@ const ConfiguracionPage: React.FC = () => {
     wompi_public_key: '',
     wompi_private_key: '',
     wompi_event_secret: '',
+    token_breko: '',
   });
   const [showPasswords, setShowPasswords] = useState({
     public_key: false,
     private_key: false,
     event_secret: false,
+    token_breko: false,
   });
   const [exchangeRateInput, setExchangeRateInput] = useState<string>('');
 
@@ -89,6 +91,7 @@ const ConfiguracionPage: React.FC = () => {
             WompiPublicKey?: string;
             WompiPrivateKey?: string;
             WompiEventSecret?: string;
+            TokenBreko?: string;
           } 
         }>(
           API_ENDPOINTS.COMPANY_CREDENTIALS.BASE
@@ -99,6 +102,7 @@ const ConfiguracionPage: React.FC = () => {
             wompi_public_key: credentialsResponse.data.WompiPublicKey || '',
             wompi_private_key: credentialsResponse.data.WompiPrivateKey || '',
             wompi_event_secret: credentialsResponse.data.WompiEventSecret || '',
+            token_breko: credentialsResponse.data.TokenBreko || '',
           });
         }
       } catch (error) {
@@ -158,6 +162,7 @@ const ConfiguracionPage: React.FC = () => {
         wompi_public_key: wompiData.wompi_public_key,
         wompi_private_key: wompiData.wompi_private_key,
         wompi_event_secret: wompiData.wompi_event_secret,
+        token_breko: wompiData.token_breko || '',
       };
       const response = await httpService.put<{ success: boolean }>(
         API_ENDPOINTS.COMPANY_CREDENTIALS.BASE,
@@ -179,7 +184,7 @@ const ConfiguracionPage: React.FC = () => {
     setWompiData({ ...wompiData, [field]: value });
   };
 
-  const togglePasswordVisibility = (field: 'public_key' | 'private_key' | 'event_secret') => {
+  const togglePasswordVisibility = (field: 'public_key' | 'private_key' | 'event_secret' | 'token_breko') => {
     setShowPasswords({ ...showPasswords, [field]: !showPasswords[field] });
   };
 
@@ -570,6 +575,43 @@ const ConfiguracionPage: React.FC = () => {
             />
             <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
               Secreto para validar eventos webhook de Wompi
+            </Typography>
+          </Box>
+
+          {/* Token Breko */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, fontSize: '14px', color: '#424242' }}>
+              Token Breko
+            </Typography>
+            <TextField
+              fullWidth
+              type={showPasswords.token_breko ? 'text' : 'password'}
+              value={wompiData.token_breko}
+              onChange={(e) => handleWompiChange('token_breko', e.target.value)}
+              size="small"
+              placeholder=""
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('token_breko')}
+                      edge="end"
+                      size="small"
+                      sx={{ color: '#757575' }}
+                    >
+                      {showPasswords.token_breko ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              Token Breko para integración con Wompi
             </Typography>
           </Box>
 

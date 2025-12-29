@@ -227,11 +227,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle, isMobile = false }) =
               }}
             />
           ) : (
-            <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: isExpanded ? 0.75 : 0, borderRadius: '4px' }}>
-              <Typography variant="h6" sx={{ color: 'white', fontSize: '12px' }}>
-                N
-              </Typography>
-            </Avatar>
+          <Avatar sx={{ width: 28, height: 28, backgroundColor: '#E0E0E0', mr: isExpanded ? 0.75 : 0, borderRadius: '4px' }}>
+            <Typography variant="h6" sx={{ color: 'white', fontSize: '12px' }}>
+              N
+            </Typography>
+          </Avatar>
           )}
           {isExpanded && (
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 32 }}>
