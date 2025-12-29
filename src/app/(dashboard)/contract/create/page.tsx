@@ -426,97 +426,97 @@ const CreateContractTemplatePage: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Información básica */}
-      <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
-          Información básica
-        </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box>
-            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-              Nombre de la plantilla *
+        {/* Información básica */}
+          <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none', mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
+              Información básica
             </Typography>
-            <TextField
-              fullWidth
-              placeholder="Ej: Contrato de Arrendamiento"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              size="small"
-              sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
-            />
-          </Box>
 
-          <Box>
-            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-              SKU / Código *
-            </Typography>
-            <TextField
-              fullWidth
-              placeholder="Ej: LEASE-001"
-              value={formData.sku}
-              onChange={(e) => handleInputChange('sku', e.target.value)}
-              size="small"
-              sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
-            />
-          </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  Nombre de la plantilla *
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Ej: Contrato de Arrendamiento"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+                />
+              </Box>
 
-          <Box>
-            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-              Descripción
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              placeholder="Descripción breve de la plantilla"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
-            />
-          </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  SKU / Código *
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Ej: LEASE-001"
+                  value={formData.sku}
+                  onChange={(e) => handleInputChange('sku', e.target.value)}
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+                />
+              </Box>
 
-          <Box>
-            <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
-              Contenido HTML del contrato
-            </Typography>
-            <RichTextEditor
-              value={formData.html_content}
-              onChange={(value) => handleInputChange('html_content', value)}
-              placeholder="Escribe el contenido del contrato aquí. Usa %variable% para insertar variables dinámicas."
-              minHeight={300}
-            />
-            <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  Descripción
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="Descripción breve de la plantilla"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  sx={{ '& .MuiOutlinedInput-root': { fontSize: '14px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ color: '#424242', mb: 0.5, fontWeight: 'medium', display: 'block' }}>
+                  Contenido HTML del contrato
+                </Typography>
+                <RichTextEditor
+                  value={formData.html_content}
+                  onChange={(value) => handleInputChange('html_content', value)}
+                  placeholder="Escribe el contenido del contrato aquí. Usa %variable% para insertar variables dinámicas."
+                  minHeight={300}
+                />
+                <Typography variant="caption" sx={{ color: '#757575', fontSize: '12px', mt: 0.5, display: 'block' }}>
               Usa el formato %variable% para insertar variables, por ejemplo: %email%, %signer_name%, %general_info_first_name%, %emergency_contact_phone%, %signature%
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
 
-      {/* Variables dinámicas */}
-      <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
+        {/* Variables dinámicas */}
+          <Paper sx={{ p: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#424242', mb: 2, fontSize: '16px' }}>
           Variables Disponibles ({variables.length})
-        </Typography>
+            </Typography>
 
-        {/* Lista de variables */}
-        {variables.length > 0 ? (
+            {/* Lista de variables */}
+            {variables.length > 0 ? (
           <TableContainer sx={{ maxHeight: '500px', overflow: 'auto' }}>
             <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f8f8f8' }}>
                   <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', minWidth: 150 }}>Clave</TableCell>
                   <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', minWidth: 250 }}>Etiqueta</TableCell>
                   <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', minWidth: 100 }}>Tipo</TableCell>
                   <TableCell sx={{ fontWeight: 'bold', fontSize: '12px', textAlign: 'center', minWidth: 120 }}>Acción</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {variables.map((variable, index) => (
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {variables.map((variable, index) => (
                   <TableRow key={index} hover>
-                    <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>%{variable.key}%</TableCell>
-                    <TableCell sx={{ fontSize: '13px' }}>{variable.label}</TableCell>
-                    <TableCell sx={{ fontSize: '13px' }}>
+                        <TableCell sx={{ fontSize: '13px', fontFamily: 'monospace' }}>%{variable.key}%</TableCell>
+                        <TableCell sx={{ fontSize: '13px' }}>{variable.label}</TableCell>
+                        <TableCell sx={{ fontSize: '13px' }}>
                       <Chip 
                         label={variable.data_type} 
                         size="small" 
@@ -533,42 +533,42 @@ const CreateContractTemplatePage: React.FC = () => {
                                  variable.data_type === 'NUMBER' ? '#388e3c' : '#424242',
                         }} 
                       />
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
                       {index >= 34 ? (
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveVariable(index)}
-                          sx={{ color: '#f44336', p: 0.5 }}
-                        >
-                          <DeleteIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      ) : (
-                        <Chip
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveVariable(index)}
+                            sx={{ color: '#f44336', p: 0.5 }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                          ) : (
+                            <Chip
                           label="Predefinida"
-                          size="small"
-                          sx={{
-                            fontSize: '10px',
-                            height: 20,
-                            backgroundColor: '#e3f2fd',
-                            color: '#1976d2',
-                          }}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
-              No hay variables agregadas aún
-            </Typography>
-          </Box>
-        )}
-      </Paper>
+                              size="small"
+                              sx={{
+                                fontSize: '10px',
+                                height: 20,
+                                backgroundColor: '#e3f2fd',
+                                color: '#1976d2',
+                              }}
+                            />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '14px' }}>
+                  No hay variables agregadas aún
+                </Typography>
+              </Box>
+            )}
+          </Paper>
 
       {/* Snackbar para notificaciones */}
       <Snackbar

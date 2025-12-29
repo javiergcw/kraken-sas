@@ -411,10 +411,10 @@ export default function ViewContractPage({ params }: { params: Promise<{ id: str
                         {contract.signed_by_name || contract.signer_name}
                       </Typography>
                        {(contract.signed_by_email || contract.email) && (
-                         <Typography sx={{ fontSize: '13px', color: '#757575' }}>
+                        <Typography sx={{ fontSize: '13px', color: '#757575' }}>
                            {contract.signed_by_email || contract.email}
-                         </Typography>
-                       )}
+                        </Typography>
+                      )}
                     </>
                   ) : (
                     <Typography sx={{ fontSize: '14px', color: '#bdbdbd', fontStyle: 'italic' }}>
