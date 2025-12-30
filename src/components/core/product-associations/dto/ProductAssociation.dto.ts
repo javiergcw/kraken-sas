@@ -4,11 +4,12 @@ export interface Product {
     name: string;
 }
 
-export interface Contract {
+export interface ContractTemplate {
     id: string;
     sku: string;
-    code: string;
-    status: string;
+    name: string;
+    description: string;
+    is_active: boolean;
 }
 
 export interface Activity {
@@ -26,7 +27,7 @@ export interface ProductAssociation {
     created_at: string;
     updated_at: string;
     product: Product;
-    contract: Contract;
+    contract_template: ContractTemplate;
     activity: Activity;
 }
 

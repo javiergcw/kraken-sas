@@ -100,7 +100,6 @@ export default function ProductAssociationsPage() {
                             <TableCell sx={{ fontWeight: 'bold' }}>Producto</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Contrato</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>Actividad</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }} align="right">Acciones</TableCell>
                         </TableRow>
                     </TableHead>
@@ -128,16 +127,15 @@ export default function ProductAssociationsPage() {
                                     <TableCell>
                                         <Box>
                                             <Typography variant="subtitle2">{row.product?.name || 'N/A'}</Typography>
-                                            <Typography variant="caption" color="text.secondary">{row.product?.sku}</Typography>
                                         </Box>
                                     </TableCell>
                                     <TableCell>
                                         <Box>
-                                            <Typography variant="body2">{row.contract?.sku || 'N/A'}</Typography>
+                                            <Typography variant="body2">{row.contract_template?.name || 'N/A'}</Typography>
                                             <Chip
-                                                label={row.contract?.status || 'Unknown'}
+                                                label={row.contract_template?.is_active ? 'Activo' : 'Inactivo'}
                                                 size="small"
-                                                color={row.contract?.status === 'SIGNED' ? 'success' : 'default'}
+                                                color={row.contract_template?.is_active ? 'success' : 'default'}
                                                 variant="outlined"
                                                 sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
                                             />
@@ -149,9 +147,6 @@ export default function ProductAssociationsPage() {
                                                 <Typography variant="body2">{row.activity?.code || 'N/A'}</Typography>
                                             </Box>
                                         </Tooltip>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip label="Active" color="success" size="small" />
                                     </TableCell>
                                     <TableCell align="right">
                                         <Tooltip title="Editar">
