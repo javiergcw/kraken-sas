@@ -38,6 +38,7 @@ export interface ParticipantDto {
   invoice_reference?: string;
   payment_status?: string;
   notes_count?: number;
+  sumergue_person_name?: string | null;
 }
 
 export interface ParticipantCreateDto {
@@ -59,6 +60,7 @@ export interface ParticipantCreateDto {
   value_label?: string;
   invoice_reference?: string;
   payment_status?: string;
+  sumergue_person_name?: string | null;
 }
 
 export interface ParticipantUpdateDto {
@@ -79,6 +81,7 @@ export interface ParticipantUpdateDto {
   value_label?: string;
   invoice_reference?: string;
   payment_status?: string;
+  sumergue_person_name?: string | null;
 }
 
 export interface ParticipantNoteDto {

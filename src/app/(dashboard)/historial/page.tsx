@@ -33,6 +33,7 @@ import {
   ReceiptLongOutlined as ReceiptIcon,
   Close as CloseIcon,
   ModeEditOutlineOutlined as ModeEditOutlineOutlinedIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import HistorialVentasSkeleton from './HistorialVentasSkeleton';
 import { httpService } from '@/utils/http.service';
@@ -83,6 +84,8 @@ interface DisplaySale {
   precio: string;
   persona: string;
   fecha?: string;
+  fechaOriginal?: string;
+  status: string;
 }
 
 const HistorialVentasPage: React.FC = () => {
@@ -95,6 +98,8 @@ const HistorialVentasPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sales, setSales] = useState<DisplaySale[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   // Cargar datos de la API
   useEffect(() => {
@@ -110,8 +115,9 @@ const HistorialVentasPage: React.FC = () => {
             const firstItem = sale.items[0]; // Tomar el primer item
             const productName = firstItem?.product_name || 'Sin nombre';
             const price = firstItem?.total_price || sale.total_amount;
-            const formattedPrice = `$${price.toFixed(2)}`;
+            const formattedPrice = `$${price.toFixed(2)} USD`;
             const fecha = sale.paid_at ? new Date(sale.paid_at).toLocaleDateString('es-ES') : undefined;
+            const fechaOriginal = sale.paid_at || sale.created_at;
 
             return {
               id: sale.id,
@@ -119,6 +125,8 @@ const HistorialVentasPage: React.FC = () => {
               precio: formattedPrice,
               persona: sale.person_name,
               fecha: fecha,
+              fechaOriginal: fechaOriginal,
+              status: sale.status || 'PENDING',
             };
           });
           
@@ -135,11 +143,35 @@ const HistorialVentasPage: React.FC = () => {
     fetchSales();
   }, []);
 
-  const filteredSales = sales.filter(sale =>
-    sale.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sale.persona.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sale.precio.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSales = sales.filter(sale => {
+    const matchesSearch = sale.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.persona.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.precio.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filtro por fecha
+    let matchesDate = true;
+    if (startDate || endDate) {
+      if (sale.fechaOriginal) {
+        const saleDate = new Date(sale.fechaOriginal);
+        saleDate.setHours(0, 0, 0, 0);
+        
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (saleDate < start) matchesDate = false;
+        }
+        if (endDate && matchesDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (saleDate > end) matchesDate = false;
+        }
+      } else {
+        matchesDate = false;
+      }
+    }
+    
+    return matchesSearch && matchesDate;
+  });
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -162,6 +194,13 @@ const HistorialVentasPage: React.FC = () => {
 
   const handleEditSale = (saleId: string) => {
     router.push(`/historial/${saleId}`);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
   };
 
   // Mostrar skeleton mientras carga
@@ -313,27 +352,109 @@ const HistorialVentasPage: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Search Bar */}
-        <TextField
-          fullWidth
-          placeholder="Buscar en todos los campos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ color: '#757575', mr: 1, fontSize: { xs: 18, sm: 20 } }} />,
-          }}
-          sx={{
-            maxWidth: { xs: '100%', sm: '70%' },
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 1,
-              fontSize: { xs: '13px', sm: '14px' },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#bdbdbd',
-              },
-            },
-          }}
-        />
+        {/* Search Bar and Date Filters */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' }, 
+          gap: 2, 
+          mb: 2,
+          flexWrap: 'wrap',
+        }}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: { xs: '100%', sm: '200px' }, maxWidth: { xs: '100%', sm: '400px' } }}>
+            <TextField
+              fullWidth
+              placeholder="Buscar en todos los campos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: '#757575', mr: 1, fontSize: { xs: 18, sm: 20 } }} />,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1,
+                  fontSize: { xs: '13px', sm: '14px' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bdbdbd',
+                  },
+                },
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '0 0 auto' }, minWidth: { xs: '100%', sm: '150px' } }}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Fecha Inicio"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              size="small"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1,
+                  fontSize: { xs: '13px', sm: '14px' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bdbdbd',
+                  },
+                },
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '0 0 auto' }, minWidth: { xs: '100%', sm: '150px' } }}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Fecha Fin"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              size="small"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1,
+                  fontSize: { xs: '13px', sm: '14px' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#bdbdbd',
+                  },
+                },
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '0 0 auto' }, display: 'flex', alignItems: 'center' }}>
+            <Button
+              variant="outlined"
+              startIcon={<ClearIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
+              onClick={handleClearFilters}
+              size="small"
+              disabled={!searchTerm && !startDate && !endDate}
+              sx={{
+                borderColor: '#e0e0e0',
+                color: '#424242',
+                fontSize: { xs: '13px', sm: '14px' },
+                px: { xs: 1.5, sm: 2 },
+                py: 0.5,
+                textTransform: 'capitalize',
+                height: '40px',
+                width: { xs: '100%', sm: 'auto' },
+                '&:hover': { 
+                  borderColor: '#bdbdbd',
+                  backgroundColor: '#f5f5f5',
+                },
+                '&:disabled': {
+                  borderColor: '#e0e0e0',
+                  color: '#bdbdbd',
+                },
+              }}
+            >
+              Limpiar Filtros
+            </Button>
+          </Box>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -344,6 +465,7 @@ const HistorialVentasPage: React.FC = () => {
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Nombre del Producto</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Persona</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Precio</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', color: '#424242', py: 0.5, fontSize: '14px' }}>Estado</TableCell>
               <TableCell sx={{ fontWeight: 'bold', color: '#424242', textAlign: 'center', py: 0.5, fontSize: '14px' }}>Acciones</TableCell>
             </TableRow>
           </TableHead>
@@ -364,6 +486,19 @@ const HistorialVentasPage: React.FC = () => {
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', fontSize: '14px' }}>
                     {sale.precio}
                   </Typography>
+                </TableCell>
+                <TableCell sx={{ py: 0.5 }}>
+                  <Chip
+                    label={sale.status}
+                    size="small"
+                    sx={{
+                      backgroundColor: sale.status === 'PAID' ? '#e8f5e9' : '#fff3e0',
+                      color: sale.status === 'PAID' ? '#2e7d32' : '#e65100',
+                      fontWeight: 'medium',
+                      fontSize: '12px',
+                      height: 24,
+                    }}
+                  />
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
@@ -530,6 +665,11 @@ const HistorialVentasPage: React.FC = () => {
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
                   Precio: {selectedSale.precio}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#424242', mb: 0.5 }}>
+                  Estado: {selectedSale.status}
                 </Typography>
               </Box>
               <Box>

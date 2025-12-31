@@ -375,7 +375,8 @@ export default function SheetPage() {
     observations: "",
     value_label: "",
     invoice_reference: "",
-    payment_status: ""
+    payment_status: "",
+    sumergue_person_name: undefined
   })
 
   // Cargar operación cuando cambie la fecha
@@ -612,9 +613,19 @@ export default function SheetPage() {
     return allParticipants
   }
 
-  // Función helper para obtener nombre de persona
-  const getParticipantName = (personId: string): string => {
-    const person = peopleCatalog.find(p => p.id === personId)
+  // Función helper para obtener nombre de persona que bucea
+  const getParticipantName = (participant: ParticipantDto): string => {
+    // Usar sumergue_person_name (persona que bucea) si existe y no es null
+    if (participant.sumergue_person_name) {
+      return participant.sumergue_person_name
+    }
+    // Si es null o no existe, retornar string vacío
+    return ""
+  }
+
+  // Función helper para obtener nombre del comprador (persona que hizo la compra)
+  const getBuyerName = (participant: ParticipantDto): string => {
+    const person = peopleCatalog.find(p => p.id === participant.person_id)
     return person?.full_name || 'Sin nombre'
   }
 
@@ -732,7 +743,8 @@ export default function SheetPage() {
       observations: "",
       value_label: "",
       invoice_reference: "",
-      payment_status: ""
+      payment_status: "",
+      sumergue_person_name: undefined
     })
     setAddParticipantDialogOpen(true)
   }
@@ -789,7 +801,8 @@ export default function SheetPage() {
           observations: "",
           value_label: "",
           invoice_reference: "",
-          payment_status: ""
+          payment_status: "",
+          sumergue_person_name: undefined
         })
         
         // Cerrar el diálogo
@@ -843,7 +856,8 @@ export default function SheetPage() {
       observations: participant.observations || "",
       value_label: participant.value_label || "",
       invoice_reference: participant.invoice_reference || "",
-      payment_status: participant.payment_status || ""
+      payment_status: participant.payment_status || "",
+      sumergue_person_name: participant.sumergue_person_name || undefined
     })
     setEditParticipantDialogOpen(true)
   }
@@ -873,7 +887,8 @@ export default function SheetPage() {
         observations: participantFormData.observations || undefined,
         value_label: participantFormData.value_label || undefined,
         invoice_reference: participantFormData.invoice_reference || undefined,
-        payment_status: participantFormData.payment_status || undefined
+        payment_status: participantFormData.payment_status || undefined,
+        sumergue_person_name: participantFormData.sumergue_person_name || null
       }
 
       const response = await operationGroupController.updateParticipant(
@@ -1355,7 +1370,8 @@ export default function SheetPage() {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50/50">
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
-                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">BUZOS</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Comprador</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Buzo</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
@@ -1381,8 +1397,13 @@ export default function SheetPage() {
                         <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
                           <td className="border-r border-gray-200 p-2">
+                            <div className="px-2 py-1 text-xs text-gray-600">
+                              {getBuyerName(participant)}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
                             <div className="px-2 py-1 font-medium text-xs">
-                              {getParticipantName(participant.person_id)}
+                              {getParticipantName(participant)}
                             </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
@@ -1549,6 +1570,7 @@ export default function SheetPage() {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50/50">
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Comprador</th>
                     <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Nombre</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Equipos</th>
@@ -1565,8 +1587,13 @@ export default function SheetPage() {
                         <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
                           <td className="border-r border-gray-200 p-2">
+                            <div className="px-2 py-1 text-xs text-gray-600">
+                              {getBuyerName(participant)}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
                             <div className="px-2 py-1 font-medium text-xs">
-                              {getParticipantName(participant.person_id)}
+                              {getParticipantName(participant)}
                             </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
@@ -1723,7 +1750,8 @@ export default function SheetPage() {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50/50">
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs w-20">No</th>
-                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Nombre</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Comprador</th>
+                    <th className="border-r border-gray-200 p-2 text-left font-semibold text-xs">Buzo</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Tanque</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Maleta</th>
                     <th className="border-r border-gray-200 p-2 text-center font-semibold text-xs">Reg</th>
@@ -1749,8 +1777,13 @@ export default function SheetPage() {
                         <tr key={participant.id || index} className="border-b border-gray-200">
                           <td className="border-r border-gray-200 p-2 text-xs text-center">{index + 1}</td>
                           <td className="border-r border-gray-200 p-2">
+                            <div className="px-2 py-1 text-xs text-gray-600">
+                              {getBuyerName(participant)}
+                            </div>
+                          </td>
+                          <td className="border-r border-gray-200 p-2">
                             <div className="px-2 py-1 font-medium text-xs">
-                              {getParticipantName(participant.person_id)}
+                              {getParticipantName(participant)}
                             </div>
                           </td>
                           <td className="border-r border-gray-200 p-2">
@@ -2386,7 +2419,7 @@ export default function SheetPage() {
           <div className="space-y-4 mt-4">
             {/* Persona / Nombre */}
             <div className="space-y-2">
-              <Label htmlFor="participant-person">{participantRole === "INSTRUCTOR" ? "Nombre" : "Persona"} *</Label>
+              <Label htmlFor="participant-person">{participantRole === "INSTRUCTOR" ? "Nombre" : "Comprador"} *</Label>
               <Select
                 value={participantFormData.person_id || undefined}
                 onValueChange={(value) => setParticipantFormData({ ...participantFormData, person_id: value || "" })}
@@ -2412,6 +2445,19 @@ export default function SheetPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Buzo (nombre de quien bucea) - solo para buceadores */}
+            {participantRole !== "INSTRUCTOR" && (
+              <div className="space-y-2">
+                <Label htmlFor="participant-sumergue-person-name">Buzo (opcional)</Label>
+                <Input
+                  id="participant-sumergue-person-name"
+                  value={participantFormData.sumergue_person_name || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, sumergue_person_name: e.target.value || undefined })}
+                  placeholder="Nombre de la persona que bucea"
+                />
+              </div>
+            )}
 
             {/* Para instructores: solo mostrar Tanque, Equipos, Actividad y Observaciones */}
             {participantRole === "INSTRUCTOR" ? (
@@ -2664,16 +2710,29 @@ export default function SheetPage() {
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            {/* Persona (solo lectura en edición) */}
+            {/* Comprador (solo lectura en edición) */}
             <div className="space-y-2">
-              <Label htmlFor="edit-participant-person">Persona</Label>
+              <Label htmlFor="edit-participant-buyer">Comprador</Label>
               <Input
-                id="edit-participant-person"
-                value={selectedParticipant ? getParticipantName(selectedParticipant.person_id) : ""}
+                id="edit-participant-buyer"
+                value={selectedParticipant ? getBuyerName(selectedParticipant) : ""}
                 disabled
                 className="bg-gray-50"
               />
             </div>
+
+            {/* Buzo (nombre de quien bucea) - solo para buceadores */}
+            {participantRole !== "INSTRUCTOR" && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-participant-sumergue-person-name">Buzo (opcional)</Label>
+                <Input
+                  id="edit-participant-sumergue-person-name"
+                  value={participantFormData.sumergue_person_name || ""}
+                  onChange={(e) => setParticipantFormData({ ...participantFormData, sumergue_person_name: e.target.value || undefined })}
+                  placeholder="Nombre de la persona que bucea"
+                />
+              </div>
+            )}
 
             {/* Rol */}
             <div className="space-y-2">
@@ -2881,7 +2940,7 @@ export default function SheetPage() {
           <DialogHeader>
             <DialogTitle>Agregar Nota</DialogTitle>
             <DialogDescription>
-              Agregue una nota para {selectedParticipantForNote ? getParticipantName(selectedParticipantForNote.person_id) : "el participante"}
+              Agregue una nota para {selectedParticipantForNote ? getParticipantName(selectedParticipantForNote) : "el participante"}
             </DialogDescription>
           </DialogHeader>
           
